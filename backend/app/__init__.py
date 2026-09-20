@@ -1,0 +1,1 @@
+"""FisioMove backend application package."""
