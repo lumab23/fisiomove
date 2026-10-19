@@ -1,6 +1,6 @@
 # Autenticação e contas
 
-> Estado: implementado por B02. Cadastro e vínculo de pacientes permanecem em B03.
+> Estado: autenticação implementada por B02 e integrada a pacientes por B03.
 
 ## Access token
 
@@ -50,14 +50,16 @@ python -m app.modules.auth.cli create-physiotherapist \
 
 A senha temporária é lida por prompt oculto, não por argumento ou log. Uma segunda execução é recusada se já existir fisioterapeuta.
 
-`PatientAccountService` é a interface interna para B03:
+`PatientAccountService` é a interface interna consumida por B03:
 
 - `create_access(email)` cria uma conta `patient` ativa com senha temporária;
 - `activate_access(user_id)` reativa e gera nova senha temporária;
 - `reset_temporary_password(user_id)` redefine a senha de conta ativa;
+- `deactivate_access(user_id)` bloqueia a conta e revoga renovações;
+- `change_email(user_id, email)` mantém a identidade sincronizada com o paciente;
 - cada operação retorna a senha temporária uma única vez ao chamador.
 
-B03 deve verificar identidade profissional e vínculo antes de chamar o serviço. Nenhum desses métodos é exposto diretamente como endpoint em B02.
+B03 verifica identidade profissional e vínculo antes de chamar o serviço. As operações são expostas apenas pela rota protegida do paciente; continua inexistente um endpoint público de criação de contas.
 
 ## Erros relevantes
 

@@ -21,6 +21,8 @@ def test_empty_database_migrates_to_head(tmp_path: Path) -> None:
         command.upgrade(config, "head")
         assert inspect(engine).get_table_names() == [
             "alembic_version",
+            "patients",
+            "professional_patient_links",
             "refresh_tokens",
             "users",
         ]
@@ -28,6 +30,6 @@ def test_empty_database_migrates_to_head(tmp_path: Path) -> None:
             revision = connection.scalar(
                 text("SELECT version_num FROM alembic_version")
             )
-        assert revision == "20261019_0002"
+        assert revision == "20261019_0003"
     finally:
         engine.dispose()

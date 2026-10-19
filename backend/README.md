@@ -1,6 +1,6 @@
 # Backend do FisioMove
 
-API FastAPI com PostgreSQL, SQLAlchemy, Alembic e autenticação de contas. B02 implementa acesso e identidade, mas não implementa cadastro ou CRUD de pacientes, treinos, sessões ou progresso.
+API FastAPI com PostgreSQL, SQLAlchemy, Alembic, autenticação de contas e gestão de pacientes vinculados. B03 implementa pacientes e vínculo profissional, mas não implementa treinos, observações, sessões, progresso ou conquistas.
 
 ## Preparação
 
@@ -76,8 +76,17 @@ Rotas implementadas:
 - `POST /api/v1/auth/logout`
 - `GET /api/v1/auth/me`
 - `POST /api/v1/auth/change-password`
+- `POST /api/v1/patients`
+- `GET /api/v1/patients`
+- `GET /api/v1/patients/{id}`
+- `PATCH /api/v1/patients/{id}`
+- `POST /api/v1/patients/{id}/access`
 
-O serviço interno `PatientAccountService` cria, ativa e redefine credenciais temporárias de contas `patient`. Ele não possui endpoint público; B03 deve validar o vínculo profissional antes de chamá-lo.
+As rotas de pacientes exigem um fisioterapeuta autenticado, com senha temporária já trocada. O vínculo é criado pelo servidor a partir da identidade autenticada; nenhum ID profissional é aceito no corpo.
+
+`POST /patients/{id}/access` aceita `{"operation":"activate"}` para criar ou reativar o acesso e `{"operation":"reset_temporary_password"}` para redefinir a credencial. A senha temporária é retornada uma única vez ao profissional autorizado e deve ser entregue ao paciente por canal seguro. Não há cadastro público de contas.
+
+Desativar um paciente usa `PATCH` com `{"is_active":false}`. O registro e o vínculo são preservados, a conta associada é bloqueada e suas renovações são revogadas. Reativar o registro e reativar o acesso são operações separadas.
 
 ## Qualidade
 

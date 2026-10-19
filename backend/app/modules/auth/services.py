@@ -246,6 +246,30 @@ class PatientAccountService:
             )
         return self._set_temporary_password(user)
 
+    def deactivate_access(self, user_id: UUID) -> None:
+        user = self._get_patient(user_id)
+        if user.is_active:
+            user.is_active = False
+            user.auth_version += 1
+            user.updated_at = utc_now()
+            self._refresh_tokens.revoke_active_for_user(user.id, utc_now())
+            self._session.flush()
+
+    def change_email(self, user_id: UUID, email: str) -> User:
+        user = self._get_patient(user_id)
+        normalized_email = normalize_email(email)
+        existing = self._users.get_by_email(normalized_email)
+        if existing is not None and existing.id != user.id:
+            raise ApiError(
+                status_code=409,
+                code="email_conflict",
+                message="An account already uses this email.",
+            )
+        user.email = normalized_email
+        user.updated_at = utc_now()
+        self._session.flush()
+        return user
+
     def _get_patient(self, user_id: UUID) -> User:
         user = self._users.get_by_id(user_id)
         if user is None:

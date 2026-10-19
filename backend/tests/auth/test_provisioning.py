@@ -46,7 +46,7 @@ def test_admin_command_has_no_password_argument() -> None:
     assert not hasattr(args, "password")
 
 
-def test_internal_patient_access_service_has_no_public_endpoint(
+def test_patient_access_has_no_public_account_creation_endpoint(
     client: TestClient,
     auth_app: FastAPI,
 ) -> None:
@@ -62,7 +62,13 @@ def test_internal_patient_access_service_has_no_public_endpoint(
         assert first_password not in stored.password_hash
 
     paths = client.get("/openapi.json").json()["paths"]
-    assert not any("patients" in path for path in paths)
+    assert "/api/v1/patients/{patient_id}/access" in paths
+    assert "/api/v1/auth/register" not in paths
+    protected_access = client.post(
+        f"/api/v1/patients/{user_id}/access",
+        json={"operation": "activate"},
+    )
+    assert protected_access.status_code == 401
 
     first_login = client.post(
         "/api/v1/auth/login",

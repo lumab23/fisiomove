@@ -1,6 +1,6 @@
 # Catálogo proposto de endpoints
 
-> Estado: as cinco rotas B02 estão implementadas. As rotas B03-B09 permanecem apenas propostas e não aparecem no OpenAPI atual.
+> Estado: as rotas B02 e B03 estão implementadas. As rotas B04-B09 permanecem apenas propostas e não aparecem no OpenAPI atual.
 
 | Tarefa | Método e rota proposta | Entrada | Saída principal |
 | --- | --- | --- | --- |
@@ -44,11 +44,16 @@
 
 Tokens e senhas nunca são persistidos ou registrados em texto puro. O comportamento de expiração, hash, rotação e revogação está em `authentication.md`.
 
-## DTOs de escrita propostos
+## DTOs de pacientes implementados
 
 - `PatientCreate`: `full_name`, `email?`, `phone?`.
 - `PatientUpdate`: subconjunto de `full_name`, `email`, `phone`, `is_active`; não aceita `role` nem profissional arbitrário.
-- `PatientAccessRequest`: operação `activate | reset_temporary_password`; detalhes finais em B03.
+- `PatientAccessRequest`: operação `activate | reset_temporary_password`.
+- `PatientResponse`: dados básicos, estado do registro e indicadores de acesso; nunca inclui hashes ou tokens.
+- `PatientAccessResponse`: identifica paciente/conta, ação executada e senha temporária exibida uma única vez.
+
+## DTOs de escrita propostos
+
 - `WorkoutCreate`/`WorkoutUpdate`: instruções e lista ordenada de itens conforme `domain-contracts.md`.
 - `NoteCreate`/`NoteUpdate`: conteúdo e visibilidade conforme `domain-contracts.md`.
 - `SessionResultCreate`: resultado derivado conforme `domain-contracts.md`, sem imagens, vídeo ou áudio.

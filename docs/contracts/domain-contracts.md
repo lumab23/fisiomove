@@ -1,6 +1,6 @@
 # Contratos de domínio
 
-> `User` e `RefreshToken` são implementados por B02. Paciente/vínculo e todos os demais domínios permanecem propostos para suas tarefas responsáveis.
+> `User` e `RefreshToken` são implementados por B02. Paciente e vínculo são implementados por B03. Os demais domínios permanecem propostos para suas tarefas responsáveis.
 
 Campos comuns de entidades persistidas: `id: UUID`, `created_at: datetime UTC` e `updated_at: datetime UTC`.
 
@@ -20,18 +20,17 @@ Hashes de senha e de renovação nunca fazem parte de DTOs de resposta.
 
 `RefreshToken` é interno e nunca é serializado como entidade: `id`, `user_id`, `token_hash: SHA-256`, `family_id`, `expires_at`, `created_at`, `revoked_at`, `replaced_by_id`. O token opaco completo só existe no cliente e na resposta que o emitiu.
 
-As entidades `Patient` e `ProfessionalPatientLink` abaixo ainda pertencem a B03 e não estão implementadas.
-
 `Patient`:
 
 - `id: UUID`;
+- `user_id: UUID | null`, único, referência opcional à conta B02;
 - `full_name: string`, obrigatório, sem exigir CPF;
 - `email: string | null`;
 - `phone: string | null`;
 - `is_active: boolean`;
 - `created_at`, `updated_at`.
 
-`ProfessionalPatientLink`: `id`, `physiotherapist_id`, `patient_id`, `is_active`, `created_at`, `updated_at`. O par profissional/paciente deve ser único. Desativação não remove histórico.
+`ProfessionalPatientLink`: `id`, `physiotherapist_id`, `patient_id`, `is_active`, `created_at`, `updated_at`. O par profissional/paciente é único. As FKs usam `RESTRICT`; desativação não remove paciente, vínculo nem recursos futuros.
 
 ## Catálogo de exercícios (B04)
 
