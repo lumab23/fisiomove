@@ -71,6 +71,8 @@ npm run format:check
 
 ## Backend
 
+As instruções completas da fundação do backend estão em [`backend/README.md`](backend/README.md).
+
 Prepare o ambiente local:
 
 ```bash
@@ -79,6 +81,13 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e '.[dev]'
+cp .env.example .env
+```
+
+Configure `DATABASE_URL` no `.env` com uma instância PostgreSQL local e aplique as migrações:
+
+```bash
+alembic upgrade head
 ```
 
 Execute a API:
