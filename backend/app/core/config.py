@@ -1,7 +1,7 @@
 from enum import StrEnum
 from functools import lru_cache
 
-from pydantic import Field, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -35,6 +35,36 @@ class Settings(BaseSettings):
         validation_alias="DATABASE_URL",
     )
     db_echo: bool = Field(default=False, validation_alias="DB_ECHO")
+    auth_secret_key: SecretStr = Field(validation_alias="AUTH_SECRET_KEY")
+    auth_access_token_minutes: int = Field(
+        default=15,
+        ge=1,
+        le=1440,
+        validation_alias="AUTH_ACCESS_TOKEN_MINUTES",
+    )
+    auth_refresh_token_days: int = Field(
+        default=30,
+        ge=1,
+        le=90,
+        validation_alias="AUTH_REFRESH_TOKEN_DAYS",
+    )
+    auth_issuer: str = Field(
+        default="fisiomove-api",
+        min_length=1,
+        validation_alias="AUTH_ISSUER",
+    )
+    auth_audience: str = Field(
+        default="fisiomove-mobile",
+        min_length=1,
+        validation_alias="AUTH_AUDIENCE",
+    )
+
+    @field_validator("auth_secret_key")
+    @classmethod
+    def validate_auth_secret_key(cls, value: SecretStr) -> SecretStr:
+        if len(value.get_secret_value()) < 32:
+            raise ValueError("AUTH_SECRET_KEY must contain at least 32 characters")
+        return value
 
     @model_validator(mode="after")
     def validate_environment_database(self) -> "Settings":
@@ -51,6 +81,11 @@ class Settings(BaseSettings):
                 "DATABASE_URL must use postgresql+psycopg; "
                 "sqlite+pysqlite is allowed only when APP_ENV=test"
             )
+        if (
+            self.environment is Environment.PRODUCTION
+            and self.auth_secret_key.get_secret_value().startswith("replace-")
+        ):
+            raise ValueError("AUTH_SECRET_KEY placeholder is forbidden in production")
         return self
 
 

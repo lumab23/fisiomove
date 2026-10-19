@@ -10,10 +10,16 @@ class Database:
     """Own the SQLAlchemy engine and transactional session factory."""
 
     def __init__(self, database_url: str, *, echo: bool = False) -> None:
+        connect_args = (
+            {"check_same_thread": False}
+            if database_url.startswith("sqlite+pysqlite://")
+            else {}
+        )
         self.engine: Engine = create_engine(
             database_url,
             echo=echo,
             pool_pre_ping=True,
+            connect_args=connect_args,
         )
         self._session_factory = sessionmaker(
             bind=self.engine,

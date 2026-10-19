@@ -23,18 +23,28 @@ class ApiError(Exception):
         code: str,
         message: str,
         details: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = None,
+        headers: Mapping[str, str] | None = None,
     ) -> None:
         super().__init__(message)
         self.status_code = status_code
         self.error = ErrorResponse(code=code, message=message, details=details)
+        self.headers = headers
 
 
-def _response(status_code: int, error: ErrorResponse) -> JSONResponse:
-    return JSONResponse(status_code=status_code, content=error.model_dump())
+def _response(
+    status_code: int,
+    error: ErrorResponse,
+    headers: Mapping[str, str] | None = None,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status_code,
+        content=error.model_dump(),
+        headers=headers,
+    )
 
 
 async def api_error_handler(_: Request, exc: ApiError) -> JSONResponse:
-    return _response(exc.status_code, exc.error)
+    return _response(exc.status_code, exc.error, exc.headers)
 
 
 async def validation_error_handler(

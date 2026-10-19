@@ -1,6 +1,6 @@
 # Catálogo proposto de endpoints
 
-> Estado: somente `GET /health` está implementado em B01. Todas as rotas `/api/v1` abaixo são contratos para tarefas futuras e não aparecem no OpenAPI atual.
+> Estado: as cinco rotas B02 estão implementadas. As rotas B03-B09 permanecem apenas propostas e não aparecem no OpenAPI atual.
 
 | Tarefa | Método e rota proposta | Entrada | Saída principal |
 | --- | --- | --- | --- |
@@ -37,12 +37,12 @@
 
 ## DTOs de autenticação propostos
 
-- `LoginRequest`: `email: string`, `password: string`.
-- `RefreshRequest` e `LogoutRequest`: `refresh_token: string`.
+- `LoginRequest`: `email: string` válido, `password: string` entre 12 e 128 caracteres.
+- `RefreshRequest` e `LogoutRequest`: `refresh_token: string` opaco.
 - `TokenPairResponse`: `access_token: string`, `refresh_token: string`, `token_type: bearer`, `expires_in: integer > 0`.
-- `ChangePasswordRequest`: `current_password: string`, `new_password: string` conforme política definida em B02.
+- `ChangePasswordRequest`: `current_password: string`, `new_password: string` entre 12 e 128 caracteres e diferente da atual.
 
-Tokens e senhas nunca são persistidos ou registrados em texto puro. Política de expiração, hash, rotação e revogação pertence a B02.
+Tokens e senhas nunca são persistidos ou registrados em texto puro. O comportamento de expiração, hash, rotação e revogação está em `authentication.md`.
 
 ## DTOs de escrita propostos
 

@@ -1,6 +1,6 @@
-# Contratos de domínio propostos
+# Contratos de domínio
 
-> Nenhuma entidade, tabela ou rota descrita aqui é implementada por B01. Os campos abaixo estabilizam a integração e ainda exigem revisão das responsáveis pelos módulos.
+> `User` e `RefreshToken` são implementados por B02. Paciente/vínculo e todos os demais domínios permanecem propostos para suas tarefas responsáveis.
 
 Campos comuns de entidades persistidas: `id: UUID`, `created_at: datetime UTC` e `updated_at: datetime UTC`.
 
@@ -13,9 +13,14 @@ Campos comuns de entidades persistidas: `id: UUID`, `created_at: datetime UTC` e
 - `role: patient | physiotherapist`, imutável pelo cliente;
 - `is_active: boolean`;
 - `must_change_password: boolean`;
+- `auth_version: integer >= 1`, incrementado ao invalidar credenciais existentes;
 - `created_at`, `updated_at`.
 
 Hashes de senha e de renovação nunca fazem parte de DTOs de resposta.
+
+`RefreshToken` é interno e nunca é serializado como entidade: `id`, `user_id`, `token_hash: SHA-256`, `family_id`, `expires_at`, `created_at`, `revoked_at`, `replaced_by_id`. O token opaco completo só existe no cliente e na resposta que o emitiu.
+
+As entidades `Patient` e `ProfessionalPatientLink` abaixo ainda pertencem a B03 e não estão implementadas.
 
 `Patient`:
 
