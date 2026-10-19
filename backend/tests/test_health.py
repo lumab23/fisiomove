@@ -10,3 +10,10 @@ def test_health() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+def test_openapi_keeps_versioned_prefix_available() -> None:
+    response = client.get("/openapi.json")
+
+    assert response.status_code == 200
+    assert "/health" in response.json()["paths"]
