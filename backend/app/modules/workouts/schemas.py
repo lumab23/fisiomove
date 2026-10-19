@@ -1,8 +1,8 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.modules.exercises.schemas import Side
 
@@ -72,6 +72,15 @@ class WorkoutResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     items: list[WorkoutItemResponse]
+
+    @field_validator("created_at", "updated_at", "published_at")
+    @classmethod
+    def utc_dates(cls, value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        return (
+            value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+        )
 
 
 class WorkoutPage(BaseModel):

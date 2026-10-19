@@ -18,6 +18,7 @@ from app.modules.workouts.models import (  # noqa: F401
     WorkoutItem,
     WorkoutRevision,
 )
+from app.modules.workouts.router import router as workouts_router
 
 
 @pytest.fixture
@@ -30,6 +31,7 @@ def application(tmp_path) -> Generator[FastAPI, None, None]:
     )
     app = create_app(settings)
     app.include_router(exercises_router, prefix="/api/v1")
+    app.include_router(workouts_router, prefix="/api/v1")
     Base.metadata.create_all(app.state.database.engine)
     yield app
     app.state.database.dispose()
