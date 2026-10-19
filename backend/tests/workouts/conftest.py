@@ -12,6 +12,7 @@ from app.modules.auth.models import User, UserRole
 from app.modules.auth.security import PasswordManager, TokenService
 from app.modules.exercises.models import Exercise
 from app.modules.exercises.router import router as exercises_router
+from app.modules.notes.router import router as notes_router
 from app.modules.patients.models import Patient, ProfessionalPatientLink
 from app.modules.workouts.models import (  # noqa: F401
     Workout,
@@ -32,6 +33,7 @@ def application(tmp_path) -> Generator[FastAPI, None, None]:
     app = create_app(settings)
     app.include_router(exercises_router, prefix="/api/v1")
     app.include_router(workouts_router, prefix="/api/v1")
+    app.include_router(notes_router, prefix="/api/v1")
     Base.metadata.create_all(app.state.database.engine)
     yield app
     app.state.database.dispose()
