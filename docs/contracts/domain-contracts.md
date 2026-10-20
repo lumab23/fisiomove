@@ -1,6 +1,6 @@
 # Contratos de domínio
 
-> `User` e `RefreshToken` são implementados por B02. Paciente e vínculo são implementados por B03. Os demais domínios permanecem propostos para suas tarefas responsáveis.
+> `User` e `RefreshToken` são implementados por B02. Paciente e vínculo são implementados por B03. Exercícios, treinos e observações são implementados por B04–B06; sessões, progresso e conquistas permanecem propostos.
 
 Campos comuns de entidades persistidas: `id: UUID`, `created_at: datetime UTC` e `updated_at: datetime UTC`.
 

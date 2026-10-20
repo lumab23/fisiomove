@@ -2,7 +2,7 @@
 
 Estes documentos são a referência versionada para a integração do backend. Devem ser revisados pelas responsáveis antes da implementação dos módulos consumidores.
 
-## Estado após B03
+## Estado após integração B04–B06
 
 Implementado:
 
@@ -19,12 +19,16 @@ Implementado:
 - vínculo paciente-profissional e função reutilizável de autorização;
 - criação, ativação e redefinição de acesso do paciente integradas a B02.
 
+B04–B06 implementados: catálogo autenticado, treinos/revisões, publicação,
+edição, arquivamento e observações com privacidade. Routers/modelos registrados
+e migrações executáveis até 20261020_0005. Definição clínica do primeiro
+exercício e contrato de parâmetros permanecem pendentes de aprovação.
+
 Somente proposto, não implementado:
 
-- exercícios, treinos e observações (B04-B06);
 - sessões, progresso e conquistas (B07-B09).
 
-As tabelas `patients` e `professional_patient_links` pertencem a B03. Nenhuma rota, tabela ou serviço dos domínios B04-B09 foi criado.
+As tabelas `patients` e `professional_patient_links` pertencem a B03. B04–B06 referenciam essas tabelas sem reimplementar autenticação ou vínculo.
 
 ## Documentos
 

@@ -1,6 +1,6 @@
 # Backend do FisioMove
 
-API FastAPI com PostgreSQL, SQLAlchemy, Alembic, autenticação de contas e gestão de pacientes vinculados. B03 implementa pacientes e vínculo profissional, mas não implementa treinos, observações, sessões, progresso ou conquistas.
+API FastAPI com PostgreSQL, SQLAlchemy, Alembic, autenticação de contas e gestão de pacientes vinculados. B04–B06 implementam catálogo, treinos versionados e observações. Sessões, progresso e conquistas permanecem em desenvolvimento.
 
 ## Preparação
 
@@ -82,6 +82,21 @@ Rotas implementadas:
 - `PATCH /api/v1/patients/{id}`
 - `POST /api/v1/patients/{id}/access`
 
+Rotas B04–B06 registradas sob `/api/v1`:
+
+- `GET /exercises` e `GET /exercises/{exercise_id}`
+- `POST` e `GET /patients/{patient_id}/workouts`
+- `GET` e `PATCH /workouts/{workout_id}`
+- `POST /workouts/{workout_id}/publish` e `/archive`
+- `GET /me/workouts`
+- `POST` e `GET /patients/{patient_id}/notes`
+- `PATCH /notes/{note_id}`
+
+Execute `alembic upgrade head` para criar as tabelas B04–B06. O catálogo
+permanece vazio até aprovação da definição clínica do primeiro exercício;
+nenhuma fixture é seed de produção. Contratos de parâmetros clínicos ainda não
+aprovados são bloqueados. Consulte [treinos e observações](../docs/modules/workouts.md).
+
 As rotas de pacientes exigem um fisioterapeuta autenticado, com senha temporária já trocada. O vínculo é criado pelo servidor a partir da identidade autenticada; nenhum ID profissional é aceito no corpo.
 
 `POST /patients/{id}/access` aceita `{"operation":"activate"}` para criar ou reativar o acesso e `{"operation":"reset_temporary_password"}` para redefinir a credencial. A senha temporária é retornada uma única vez ao profissional autorizado e deve ser entregue ao paciente por canal seguro. Não há cadastro público de contas.
@@ -97,3 +112,8 @@ pytest
 ```
 
 Os contratos e estados de implementação estão em `../docs/contracts/`.
+
+O teste PostgreSQL opcional é ativado por `FISIOMOVE_TEST_POSTGRES_URL`, apontando
+para servidor exclusivo de testes com permissão de criar bancos. Ele cria e
+remove seu próprio banco temporário e valida migrações, API e concorrência.
+Sem a variável, o teste PostgreSQL é ignorado; SQLite continua sendo executado.

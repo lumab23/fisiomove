@@ -1,25 +1,24 @@
 from collections.abc import Generator
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
+from alembic import command
+from alembic.config import Config
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.core.config import Environment, Settings
-from app.db.base import Base
 from app.main import create_app
 from app.modules.auth.models import User, UserRole
 from app.modules.auth.security import PasswordManager, TokenService
 from app.modules.exercises.models import Exercise
-from app.modules.exercises.router import router as exercises_router
-from app.modules.notes.router import router as notes_router
 from app.modules.patients.models import Patient, ProfessionalPatientLink
 from app.modules.workouts.models import (  # noqa: F401
     Workout,
     WorkoutItem,
     WorkoutRevision,
 )
-from app.modules.workouts.router import router as workouts_router
 
 
 @pytest.fixture
@@ -31,10 +30,9 @@ def application(tmp_path) -> Generator[FastAPI, None, None]:
         auth_secret_key="tests-only-secret-key-with-at-least-32-characters",
     )
     app = create_app(settings)
-    app.include_router(exercises_router, prefix="/api/v1")
-    app.include_router(workouts_router, prefix="/api/v1")
-    app.include_router(notes_router, prefix="/api/v1")
-    Base.metadata.create_all(app.state.database.engine)
+    config = Config(str(Path(__file__).resolve().parents[2] / "alembic.ini"))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+    command.upgrade(config, "head")
     yield app
     app.state.database.dispose()
 

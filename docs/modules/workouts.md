@@ -13,13 +13,15 @@ fica vazio até esse cadastro. Contratos de parâmetros não vazios falham com
 409 parameter_contract_pending; parâmetros enviados sem suporte falham com
 422 unsupported_parameters. Isso não é um validador clínico concluído.
 
-Os routers estão implementados e testados com autenticação real, mas **não estão
-registrados na aplicação de produção**. A Luma deve revisar e integrar os
-patches de docs/integration/ e as migrações especificadas, sem usar create_all
-em produção. Não foram alterados main, core, db, dependências, contratos,
-migrações compartilhadas ou módulos das colegas. A suíte usa SQLite temporário;
-a cadeia nova de migrações e os bloqueios concorrentes precisam de validação
-no PostgreSQL após integração. Não há verificador de tipos configurado.
+Os routers estão registrados em app/api/router.py e os modelos no registro
+app/db/models.py. As migrações executáveis 20261020_0004 (catálogo/treinos) e
+20261020_0005 (observações) seguem a cadeia B03. Execute `alembic upgrade head`
+antes de iniciar a API. Não use create_all em produção.
+
+A integração foi validada no PostgreSQL 15: upgrade da B03, comparação com
+metadados sem diferenças, fluxo HTTP autenticado, duas edições concorrentes,
+preservação de revisões e downgrade/reupgrade. Não há verificador estático de
+tipos configurado no projeto.
 
 ## Usar treinos e notas em conjunto
 
@@ -53,8 +55,8 @@ do total retorna items vazio. Sem observações: items=[], total=0, pages=0.
 
 ## Verificação manual após integração pela Luma
 
-1. Aplicar os patches de rotas e registro de modelos, gerar/revisar migrações
-   conforme docs/integration/b04.md e b06.md, testar upgrade/downgrade e subir API.
+1. Configurar DATABASE_URL e AUTH_SECRET_KEY; executar `alembic upgrade head`
+   e iniciar `uvicorn app.main:app --reload`. Rotas/modelos já estão registrados.
 2. Provisionar profissional e trocar senha; criar paciente/vínculo e acesso
    pelas rotas B02/B03. Cadastrar somente exercício aprovado no catálogo.
 3. GET /api/v1/exercises e /api/v1/exercises/{id}. Sem definição aprovada,
@@ -78,12 +80,12 @@ do total retorna items vazio. Sem observações: items=[], total=0, pages=0.
 ## Validação automatizada
 
 Executar no backend com Python >= 3.12: ruff check ., ruff format --check .,
-pytest. Os testes em tests/workouts/ registram os três routers explicitamente
-em uma aplicação isolada, criam dados fictícios apenas no banco temporário e
-usam tokens reais de B02 e vínculos persistidos de B03. Isso verifica integração
-com autenticação/vínculo, mas não registro de rotas ou migrações em produção.
+pytest. Os testes em tests/workouts/ usam a aplicação real e criam o banco
+pelas migrações Alembic, sem registro manual de routers e sem create_all. Dados
+fictícios existem somente nos bancos de teste, com tokens B02 e vínculos B03.
 
-Para integrar todas as tarefas juntas, a proposta consolidada é
-[../integration/b04-b06-integration.patch](../integration/b04-b06-integration.patch).
-Ela substitui os patches individuais de rotas/registro de modelos. A Luma deve
-revisar as migrações separadamente conforme as especificações B04 e B06.
+Para executar também a integração PostgreSQL, definir
+FISIOMOVE_TEST_POSTGRES_URL com URL SQLAlchemy `postgresql+psycopg://.../postgres`
+de um servidor exclusivo para testes. A conta precisa poder criar bancos: a
+fixture cria um banco com nome aleatório e o remove ao finalizar. Sem essa
+variável, apenas esse teste é ignorado. Nenhum seed clínico é criado na migração.

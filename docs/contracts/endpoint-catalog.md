@@ -1,6 +1,6 @@
 # Catálogo proposto de endpoints
 
-> Estado: as rotas B02 e B03 estão implementadas. As rotas B04-B09 permanecem apenas propostas e não aparecem no OpenAPI atual.
+> Estado: as rotas B02 e B03 estão implementadas. As rotas B04–B06 também estão implementadas e registradas no OpenAPI; B07–B09 permanecem propostas.
 
 | Tarefa | Método e rota proposta | Entrada | Saída principal |
 | --- | --- | --- | --- |
