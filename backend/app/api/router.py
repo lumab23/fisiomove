@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.modules.achievements.router import router as achievements_router
 from app.modules.auth.router import router as auth_router
 from app.modules.exercises.router import router as exercises_router
 from app.modules.notes.router import router as notes_router
@@ -16,3 +17,4 @@ api_router.include_router(workouts_router)
 api_router.include_router(notes_router)
 api_router.include_router(sessions_router)
 api_router.include_router(progress_router)
+api_router.include_router(achievements_router)

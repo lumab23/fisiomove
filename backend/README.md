@@ -1,6 +1,6 @@
 # Backend do FisioMove
 
-API FastAPI com PostgreSQL, SQLAlchemy, Alembic, autenticação de contas e gestão de pacientes vinculados. B04–B08 implementam catálogo, treinos versionados, observações, registro de sessões, histórico e progresso. Conquistas permanecem em desenvolvimento.
+API FastAPI com PostgreSQL, SQLAlchemy, Alembic, autenticação de contas e gestão de pacientes vinculados. B04–B09 implementam catálogo, treinos versionados, observações, registro de sessões, histórico, progresso, conquistas e seed fictício.
 
 ## Preparação
 
@@ -109,6 +109,7 @@ nenhuma fixture é seed de produção. Contratos de parâmetros clínicos ainda 
 aprovados são bloqueados. Consulte [treinos e observações](../docs/modules/workouts.md).
 O contrato de sessões está em [registro de sessões](../docs/modules/sessions.md).
 O contrato de histórico e progresso está em [resultados e progresso](../docs/modules/progress.md).
+O contrato de conquistas e seed está em [resultados e conquista](../docs/modules/results.md).
 
 As rotas de pacientes exigem um fisioterapeuta autenticado, com senha temporária já trocada. O vínculo é criado pelo servidor a partir da identidade autenticada; nenhum ID profissional é aceito no corpo.
 
@@ -130,3 +131,10 @@ O teste PostgreSQL opcional é ativado por `FISIOMOVE_TEST_POSTGRES_URL`, aponta
 para servidor exclusivo de testes com permissão de criar bancos. Ele cria e
 remove seu próprio banco temporário e valida migrações, API e concorrência.
 Sem a variável, o teste PostgreSQL é ignorado; SQLite continua sendo executado.
+
+## Seed fictício de demonstração (B09)
+
+Depois das migrações, defina `DEMO_PRO_EMAIL`, `DEMO_PRO_PASSWORD`,
+`DEMO_MARIA_EMAIL`, `DEMO_MARIA_PASSWORD`, `DEMO_ANA_EMAIL` e `DEMO_ANA_PASSWORD`
+no ambiente local e execute `python -m scripts.seed_demo`. O seed é idempotente,
+recusa produção, deixa Ana sem sessões e identifica o resultado fictício de Maria.

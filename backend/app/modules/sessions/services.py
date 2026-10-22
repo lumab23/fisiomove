@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
 
 from app.core.errors import ApiError
+from app.modules.achievements.services import AchievementService
 from app.modules.auth.models import User, UserRole
 from app.modules.patients.authorization import get_authorized_patient
 from app.modules.patients.models import Patient
@@ -130,6 +131,7 @@ class SessionService:
         if existing is not None:
             if existing.payload_hash != digest:
                 _idempotency_conflict()
+            AchievementService(self.session).award_session_goal(existing)
             return self.response(existing)
 
         snapshot = WorkoutService(self.session).published_snapshot(
@@ -211,7 +213,9 @@ class SessionService:
                 raise
             if existing.payload_hash != digest:
                 _idempotency_conflict()
+            AchievementService(self.session).award_session_goal(existing)
             return self.response(existing)
+        AchievementService(self.session).award_session_goal(record)
         return self.response(record)
 
     @staticmethod
