@@ -1,6 +1,6 @@
 # Backend do FisioMove
 
-API FastAPI com PostgreSQL, SQLAlchemy, Alembic, autenticação de contas e gestão de pacientes vinculados. B04–B06 implementam catálogo, treinos versionados e observações. Sessões, progresso e conquistas permanecem em desenvolvimento.
+API FastAPI com PostgreSQL, SQLAlchemy, Alembic, autenticação de contas e gestão de pacientes vinculados. B04–B07 implementam catálogo, treinos versionados, observações e registro de sessões. Progresso e conquistas permanecem em desenvolvimento.
 
 ## Preparação
 
@@ -92,10 +92,15 @@ Rotas B04–B06 registradas sob `/api/v1`:
 - `POST` e `GET /patients/{patient_id}/notes`
 - `PATCH /notes/{note_id}`
 
-Execute `alembic upgrade head` para criar as tabelas B04–B06. O catálogo
+Rotas B07 registradas sob `/api/v1`:
+
+- `POST /me/sessions`
+
+Execute `alembic upgrade head` para criar as tabelas B04–B07. O catálogo
 permanece vazio até aprovação da definição clínica do primeiro exercício;
 nenhuma fixture é seed de produção. Contratos de parâmetros clínicos ainda não
 aprovados são bloqueados. Consulte [treinos e observações](../docs/modules/workouts.md).
+O contrato de sessões está em [registro de sessões](../docs/modules/sessions.md).
 
 As rotas de pacientes exigem um fisioterapeuta autenticado, com senha temporária já trocada. O vínculo é criado pelo servidor a partir da identidade autenticada; nenhum ID profissional é aceito no corpo.
 

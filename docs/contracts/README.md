@@ -2,7 +2,7 @@
 
 Estes documentos são a referência versionada para a integração do backend. Devem ser revisados pelas responsáveis antes da implementação dos módulos consumidores.
 
-## Estado após integração B04–B06
+## Estado do backend após B07
 
 Implementado:
 
@@ -20,13 +20,14 @@ Implementado:
 - criação, ativação e redefinição de acesso do paciente integradas a B02.
 
 B04–B06 implementados: catálogo autenticado, treinos/revisões, publicação,
-edição, arquivamento e observações com privacidade. Routers/modelos registrados
-e migrações executáveis até 20261020_0005. Definição clínica do primeiro
-exercício e contrato de parâmetros permanecem pendentes de aprovação.
+edição, arquivamento e observações com privacidade. B07 implementa registro e
+idempotência de sessões. Migrações executáveis até 20261022_0006.
+Definição clínica do primeiro exercício e contrato de parâmetros permanecem
+pendentes de aprovação.
 
 Somente proposto, não implementado:
 
-- sessões, progresso e conquistas (B07-B09).
+- progresso e conquistas (B08-B09).
 
 As tabelas `patients` e `professional_patient_links` pertencem a B03. B04–B06 referenciam essas tabelas sem reimplementar autenticação ou vínculo.
 
@@ -38,3 +39,4 @@ As tabelas `patients` e `professional_patient_links` pertencem a B03. B04–B06 
 - [`endpoint-catalog.md`](endpoint-catalog.md): inventário proposto de rotas e DTOs.
 - [`domain-contracts.md`](domain-contracts.md): DTOs e regras propostas para os módulos futuros.
 - [`integration-fixtures.md`](integration-fixtures.md): exemplos estáveis e interfaces entre módulos.
+- [`../modules/sessions.md`](../modules/sessions.md): registro e consulta de sessões B07.
