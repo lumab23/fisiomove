@@ -84,7 +84,12 @@ def test_business_routes_registered_once() -> None:
             "/api/v1/me/workouts": {"get"},
             "/api/v1/patients/{patient_id}/notes": {"get", "post"},
             "/api/v1/notes/{note_id}": {"patch"},
-            "/api/v1/me/sessions": {"post"},
+            "/api/v1/me/sessions": {"get", "post"},
+            "/api/v1/me/sessions/{session_id}": {"get"},
+            "/api/v1/patients/{patient_id}/sessions": {"get"},
+            "/api/v1/patients/{patient_id}/sessions/{session_id}": {"get"},
+            "/api/v1/me/progress": {"get"},
+            "/api/v1/patients/{patient_id}/progress": {"get"},
         }
         for path, methods in expected.items():
             assert set(paths[path]) == methods

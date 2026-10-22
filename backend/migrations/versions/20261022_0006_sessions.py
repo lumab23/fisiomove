@@ -74,9 +74,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index(
-        "ix_session_results_patient_started", table_name="session_results"
-    )
+    op.drop_index("ix_session_results_patient_started", table_name="session_results")
     op.drop_index(
         "uq_session_results_patient_client_session", table_name="session_results"
     )

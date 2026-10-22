@@ -27,5 +27,5 @@ sessão já persistida; conteúdo diferente para a mesma chave retorna HTTP 409
 com `idempotency_conflict`. A restrição no banco também protege contra retries
 concorrentes.
 
-Os resultados são persistidos uma vez em `session_results`. Histórico,
-paginação, detalhe e progresso derivados pertencem a B08.
+Os resultados são persistidos uma vez em `session_results`. B08 implementa
+histórico, paginação, detalhe e progresso derivados desses registros.

@@ -43,9 +43,7 @@ class SessionResult(Base):
     low_confidence_summary: Mapped[dict[str, Any] | None] = mapped_column(
         JSON, nullable=True
     )
-    feedback_summary: Mapped[dict[str, Any] | None] = mapped_column(
-        JSON, nullable=True
-    )
+    feedback_summary: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     workout_snapshot: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     items: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
     payload_hash: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -54,9 +52,7 @@ class SessionResult(Base):
     )
 
     __table_args__ = (
-        CheckConstraint(
-            "status IN ('completed', 'interrupted')", name="status"
-        ),
+        CheckConstraint("status IN ('completed', 'interrupted')", name="status"),
         CheckConstraint("active_duration_ms >= 0", name="active_duration_ms"),
         CheckConstraint("finished_at >= started_at", name="time_range"),
         Index(

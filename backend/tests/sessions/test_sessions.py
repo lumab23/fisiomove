@@ -26,9 +26,10 @@ def test_identical_retry_returns_persisted_session_once(
     with application.state.database.session() as session:
         assert session.query(SessionResult).count() == 1
         stored = session.get(SessionResult, UUID(first["id"]))
-        assert stored.workout_snapshot["workout_revision_id"] == session_payload[
-            "workout_revision_id"
-        ]
+        assert (
+            stored.workout_snapshot["workout_revision_id"]
+            == session_payload["workout_revision_id"]
+        )
 
 
 def test_reused_idempotency_key_with_different_payload_conflicts(
@@ -48,14 +49,18 @@ def test_reused_idempotency_key_with_different_payload_conflicts(
     "change",
     [
         {"active_duration_ms": -1},
-        {"items": [{
-            "workout_item_id": "invalid",
-            "position": 1,
-            "completed_sets": 1,
-            "completed_repetitions": 3,
-            "active_duration_ms": 0,
-            "interrupted": False,
-        }]},
+        {
+            "items": [
+                {
+                    "workout_item_id": "invalid",
+                    "position": 1,
+                    "completed_sets": 1,
+                    "completed_repetitions": 3,
+                    "active_duration_ms": 0,
+                    "interrupted": False,
+                }
+            ]
+        },
     ],
 )
 def test_invalid_values_are_rejected(client, data, headers, session_payload, change):

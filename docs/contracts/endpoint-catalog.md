@@ -1,6 +1,6 @@
 # Catálogo proposto de endpoints
 
-> Estado: as rotas B02–B07 estão implementadas e registradas no OpenAPI; B08–B09 permanecem propostas.
+> Estado: as rotas B02–B08 estão implementadas e registradas no OpenAPI; B09 permanece proposta.
 
 | Tarefa | Método e rota proposta | Entrada | Saída principal |
 | --- | --- | --- | --- |
@@ -28,11 +28,11 @@
 | B06 | `PATCH /api/v1/notes/{id}` | `NoteUpdate` | `NoteResponse` |
 | B07 | `POST /api/v1/me/sessions` | `SessionResultCreate` | `SessionResultResponse` idempotente |
 | B08 | `GET /api/v1/me/sessions` | período/paginação | `Page[SessionSummary]` |
-| B08 | `GET /api/v1/me/sessions/{id}` | UUID no caminho | `SessionResultResponse` |
-| B08 | `GET /api/v1/patients/{id}/sessions` | período/paginação | `Page[SessionSummary]` |
-| B08 | `GET /api/v1/patients/{id}/sessions/{session_id}` | UUIDs no caminho | `SessionResultResponse` |
+| B08 | `GET /api/v1/me/sessions/{session_id}` | UUID no caminho | `SessionResultResponse` |
+| B08 | `GET /api/v1/patients/{patient_id}/sessions` | período/paginação | `Page[SessionSummary]` |
+| B08 | `GET /api/v1/patients/{patient_id}/sessions/{session_id}` | UUIDs no caminho | `SessionResultResponse` |
 | B08 | `GET /api/v1/me/progress` | período | `ProgressSummary` |
-| B08 | `GET /api/v1/patients/{id}/progress` | período | `ProgressSummary` |
+| B08 | `GET /api/v1/patients/{patient_id}/progress` | período | `ProgressSummary` |
 | B09 | `GET /api/v1/me/achievements` | paginação | `Page[AchievementResponse]` |
 
 ## DTOs de autenticação propostos

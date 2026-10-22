@@ -92,3 +92,29 @@ class SessionResultResponse(SessionResultFields):
         return value.astimezone(UTC)
 
 
+class SessionSummary(BaseModel):
+    id: UUID
+    patient_id: UUID
+    workout_id: UUID
+    workout_revision_id: UUID
+    status: Literal["completed", "interrupted"]
+    started_at: datetime
+    finished_at: datetime
+    active_duration_ms: int
+    prescribed_repetitions: int
+    performed_repetitions: int
+
+    @field_validator("started_at", "finished_at")
+    @classmethod
+    def utc_dates(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            return value.replace(tzinfo=UTC)
+        return value.astimezone(UTC)
+
+
+class SessionPage(BaseModel):
+    items: list[SessionSummary]
+    page: int
+    page_size: int
+    total: int
+    pages: int

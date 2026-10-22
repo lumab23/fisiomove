@@ -1,6 +1,6 @@
 # Contratos de domínio
 
-> `User` e `RefreshToken` são implementados por B02. Paciente e vínculo são implementados por B03. Exercícios, treinos e observações são implementados por B04–B06; registro de sessões por B07. Progresso e conquistas permanecem propostos.
+> `User` e `RefreshToken` são implementados por B02. Paciente e vínculo são implementados por B03. Exercícios, treinos e observações são implementados por B04–B06; registro de sessões por B07; histórico e progresso por B08. Conquistas permanecem propostas.
 
 Campos comuns de entidades persistidas: `id: UUID`, `created_at: datetime UTC` e `updated_at: datetime UTC`.
 
@@ -110,10 +110,12 @@ Exemplo:
 }
 ```
 
-## Progresso e conquistas (B08-B09)
+## Progresso (B08)
 
 `ProgressSummary`: `patient_id`, `period_start`, `period_end`, `completed_sessions`, `interrupted_sessions`, `active_duration_ms`, `prescribed_repetitions`, `performed_repetitions`, `generated_at`.
 
 Progresso é derivado de sessões persistidas e não representa conclusão de recuperação clínica. Estado vazio retorna zeros coerentes.
+
+## Conquistas (B09)
 
 `Achievement`: `id`, `patient_id`, `code`, `session_id`, `earned_at`. O par `(patient_id, code, session_id)` deve ser único. A regra proposta recompensa atingir a meta da sessão, nunca exceder a prescrição.
