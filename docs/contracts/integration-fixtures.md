@@ -26,12 +26,15 @@ Nomes, contatos e senhas reais não devem aparecer em fixtures. B02 fornece `get
 - B04-B06 recebem o `User.id` do profissional autenticado e chamam `get_authorized_patient` antes de ler ou escrever recursos de um paciente.
 - Rotas de negócio devem depender de `get_current_user`, que bloqueia conta inativa, token invalidado e senha temporária pendente.
 - Rotas profissionais combinam `require_role(UserRole.PHYSIOTHERAPIST)` com `get_authorized_patient`. Rotas do próprio paciente obtêm a identidade da conta e não aceitam `patient_id` do corpo para conceder acesso.
-- B05 fornece a B07 uma revisão publicada e um snapshot imutável do treino.
+- B05 fornece a B07 uma revisão publicada e um snapshot imutável do treino;
+  B07 restringe resultados atrasados à janela em que a revisão estava vigente.
 - B07 implementa `POST /api/v1/me/sessions` com resultados persistidos e idempotentes, diferenciando `completed` de `interrupted`; B08/B09 consomem esses resultados.
 - B08 implementa histórico e resumos derivados das sessões persistidas; não duplica sua persistência.
 - B09 usa a sessão persistida como origem e impõe unicidade para evitar recompensa duplicada.
 
-As assinaturas Python dos domínios B04-B09 serão adicionadas pelas responsáveis. B03 não cria imports, tabelas, repositórios ou endpoints fictícios desses domínios.
+As interfaces B04–B09 estão implementadas. Fixtures sintéticas continuam
+restritas aos testes e nunca devem ser copiadas para migrações ou catálogo de
+produção.
 
 ## Exemplo de lista vazia
 

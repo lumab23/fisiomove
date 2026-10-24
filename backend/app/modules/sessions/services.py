@@ -135,7 +135,10 @@ class SessionService:
             return self.response(existing)
 
         snapshot = WorkoutService(self.session).published_snapshot(
-            user, payload.workout_id, payload.workout_revision_id
+            user,
+            payload.workout_id,
+            payload.workout_revision_id,
+            session_started_at=payload.started_at,
         )
         prescribed = {UUID(item["id"]): item for item in snapshot["items"]}
         results: list[dict[str, Any]] = []

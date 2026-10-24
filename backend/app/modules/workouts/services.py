@@ -1,4 +1,5 @@
 from copy import deepcopy
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -222,12 +223,19 @@ class WorkoutService:
         return self.response(workout)
 
     def published_snapshot(
-        self, user: User, workout_id: UUID, revision_id: UUID
+        self,
+        user: User,
+        workout_id: UUID,
+        revision_id: UUID,
+        *,
+        session_started_at: datetime | None = None,
     ) -> dict:
-        """B07 interface: authorized published snapshot, including archived history.
+        """Return an authorized immutable snapshot of a published prescription.
 
-        Current catalog data is never consulted. B07 must enforce its own rules for
-        accepting a new session against an archived/noncurrent prescription.
+        When a session start is supplied, historical revisions are accepted only
+        inside the interval in which that revision was the patient's current
+        published prescription. This permits delayed/offline uploads after an edit
+        or archive without accepting an arbitrary old revision.
         """
         workout = self.session.get(Workout, workout_id)
         if workout is None:
@@ -240,6 +248,10 @@ class WorkoutService:
             or revision.published_at is None
         ):
             fail("revision_not_found")
+        if session_started_at is not None:
+            self._validate_session_revision_window(
+                workout, revision, session_started_at
+            )
         return dict(
             workout_id=str(workout.id),
             workout_revision_id=str(revision.id),
@@ -251,3 +263,45 @@ class WorkoutService:
                 for x in self.items(revision.id)
             ],
         )
+
+    def _validate_session_revision_window(
+        self,
+        workout: Workout,
+        revision: WorkoutRevision,
+        session_started_at: datetime,
+    ) -> None:
+        def utc(value: datetime) -> datetime:
+            if value.tzinfo is None or value.utcoffset() is None:
+                return value.replace(tzinfo=UTC)
+            return value.astimezone(UTC)
+
+        started_at = utc(session_started_at)
+        published_at = utc(revision.published_at)  # type: ignore[arg-type]
+        next_revision_at = self.session.scalar(
+            select(WorkoutRevision.created_at)
+            .where(
+                WorkoutRevision.workout_id == workout.id,
+                WorkoutRevision.revision_number > revision.revision_number,
+            )
+            .order_by(WorkoutRevision.revision_number)
+            .limit(1)
+        )
+        valid_until = (
+            utc(next_revision_at)
+            if next_revision_at is not None
+            else utc(workout.updated_at)
+            if workout.status == "archived"
+            else None
+        )
+        if started_at < published_at or (
+            valid_until is not None and started_at >= valid_until
+        ):
+            raise ApiError(
+                status_code=409,
+                code="session_revision_not_active_at_start",
+                message=(
+                    "The selected workout revision was not active when the session "
+                    "started."
+                ),
+                details={"field": "workout_revision_id"},
+            )

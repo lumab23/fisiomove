@@ -1,4 +1,4 @@
-# Catálogo proposto de endpoints
+# Catálogo de endpoints implementados
 
 > Estado: as rotas B02–B09 estão implementadas e registradas no OpenAPI.
 
@@ -36,7 +36,7 @@
 | B09 | `GET /api/v1/me/achievements` | identidade autenticada | `list[AchievementResponse]` |
 | B09 | `GET /api/v1/patients/{patient_id}/achievements` | UUID de paciente vinculado | `list[AchievementResponse]` |
 
-## DTOs de autenticação propostos
+## DTOs de autenticação implementados
 
 - `LoginRequest`: `email: string` válido, `password: string` entre 12 e 128 caracteres.
 - `RefreshRequest` e `LogoutRequest`: `refresh_token: string` opaco.
@@ -53,10 +53,11 @@ Tokens e senhas nunca são persistidos ou registrados em texto puro. O comportam
 - `PatientResponse`: dados básicos, estado do registro e indicadores de acesso; nunca inclui hashes ou tokens.
 - `PatientAccessResponse`: identifica paciente/conta, ação executada e senha temporária exibida uma única vez.
 
-## DTOs de escrita propostos
+## DTOs de escrita implementados
 
 - `WorkoutCreate`/`WorkoutUpdate`: instruções e lista ordenada de itens conforme `domain-contracts.md`.
 - `NoteCreate`/`NoteUpdate`: conteúdo e visibilidade conforme `domain-contracts.md`.
 - `SessionResultCreate`: resultado derivado conforme `domain-contracts.md`, sem imagens, vídeo ou áudio.
 
-Todos os DTOs de escrita rejeitam campos desconhecidos. As tarefas donas devem materializar e testar os schemas sem mudar silenciosamente este contrato.
+Todos os DTOs de escrita rejeitam campos desconhecidos. O catálogo permanece
+sem registros de produção enquanto não existir exercício clinicamente aprovado.

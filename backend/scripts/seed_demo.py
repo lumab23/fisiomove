@@ -187,7 +187,12 @@ def seed_maria_example_session(
     )
     if item is None:
         raise ValueError("The Maria demo workout is missing its published revision")
-    now = datetime.now(UTC).replace(microsecond=0)
+    published_at = revision.published_at
+    if published_at is None:
+        raise ValueError("The Maria demo workout revision is not published")
+    if published_at.tzinfo is None:
+        published_at = published_at.replace(tzinfo=UTC)
+    now = max(datetime.now(UTC), published_at).replace(microsecond=0)
     SessionService(session).create(
         user,
         SessionResultCreate(
@@ -195,8 +200,8 @@ def seed_maria_example_session(
             workout_id=workout.id,
             workout_revision_id=revision.id,
             status="completed",
-            started_at=now - timedelta(minutes=2),
-            finished_at=now,
+            started_at=published_at,
+            finished_at=max(now, published_at + timedelta(minutes=2)),
             active_duration_ms=120_000,
             feedback_summary={"demo": True, "label": DEMO_MARKER},
             items=[

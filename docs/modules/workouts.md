@@ -35,9 +35,11 @@ alterar o treino nem o snapshot de sessões passadas.
 Criar e editar treino gera revisão nova. Publicar cria uma revisão identificada
 por current_revision_id com published_at. Editar um publicado move o agregado
 para draft até republicação. O paciente só consulta publicados, e arquivar não
-apaga revisões. WorkoutService.published_snapshot é a interface autorizada para
-B07 obter uma cópia da revisão publicada antiga; B07 decide a elegibilidade de
-novas sessões. B06 não implementa sessões, histórico de sessões nem progresso.
+apaga revisões. `WorkoutService.published_snapshot` é a interface autorizada
+para B07 obter uma cópia da revisão publicada antiga. Quando recebe o início da
+sessão, ela também valida a janela histórica descrita em `sessions.md`;
+arquivar não apaga o histórico nem invalida uploads que começaram antes da
+mudança.
 
 Observações usam content não vazio e visibility explícita: patient_visible ou
 professional_only. Autor e datas vêm do servidor. Profissionais vinculados

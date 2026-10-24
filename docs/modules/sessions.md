@@ -14,6 +14,13 @@ Resultados de itens precisam referenciar itens dessa revisão, respeitar
 posição e não superar séries e repetições prescritas. A sessão `completed` precisa registrar
 a prescrição completa; `interrupted` preserva os resultados parciais enviados.
 
+Uma sessão iniciada antes de uma edição ou arquivamento pode ser enviada depois:
+o backend usa a revisão informada e o snapshot histórico, desde que `started_at`
+esteja entre a publicação dessa revisão e a próxima edição/arquivamento. Revisão
+antiga fora dessa janela retorna `409 session_revision_not_active_at_start`.
+O mobile deve persistir os identificadores e horários antes de iniciar e não
+substituí-los pela prescrição atual ao reenviar.
+
 `active_duration_ms` e duração dos itens são inteiros não negativos. A soma das
 durações dos itens não pode exceder a duração ativa total. Datas precisam conter
 fuso horário; são normalizadas para UTC e `finished_at` não pode anteceder
@@ -29,3 +36,16 @@ concorrentes.
 
 Os resultados são persistidos uma vez em `session_results`. B08 implementa
 histórico, paginação, detalhe e progresso derivados desses registros.
+
+## Erros que o mobile deve tratar
+
+- `401`: renovar a sessão ou solicitar novo login;
+- `403 password_change_required`: abrir o fluxo obrigatório de troca de senha;
+- `403 account_inactive`: interromper o uso da conta;
+- `404 workout_not_found`/`revision_not_found`: não reenviar contra outro treino;
+- `409 idempotency_conflict`: conservar o resultado local para diagnóstico e não
+  gerar novo conteúdo com o mesmo `client_session_id`;
+- `409 session_revision_not_active_at_start`: sincronizar as prescrições; o
+  resultado não corresponde a uma revisão vigente no horário informado;
+- `422 completed_session_incomplete` e `session_result_exceeds_plan`: corrigir a
+  montagem local do resultado, sem truncar silenciosamente.

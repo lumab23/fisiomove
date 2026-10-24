@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -17,13 +18,14 @@ def session_payload(client, data, headers, payload):
     )
     assert published.status_code == 200, published.text
     workout = published.json()
+    started_at = datetime.fromisoformat(workout["published_at"])
     return {
         "client_session_id": str(uuid4()),
         "workout_id": workout["id"],
         "workout_revision_id": workout["current_revision_id"],
         "status": "completed",
-        "started_at": "2026-10-20T14:00:00Z",
-        "finished_at": "2026-10-20T14:05:00Z",
+        "started_at": started_at.isoformat(),
+        "finished_at": (started_at + timedelta(minutes=5)).isoformat(),
         "active_duration_ms": 180000,
         "low_confidence_summary": None,
         "feedback_summary": None,

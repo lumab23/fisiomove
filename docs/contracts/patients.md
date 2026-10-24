@@ -1,6 +1,6 @@
 # Pacientes e vínculo profissional
 
-> Estado: implementado por B03. Integrações com treinos, observações, sessões, progresso e conquistas permanecem pendentes dos módulos B04-B09.
+> Estado: implementado por B03 e integrado aos módulos B04–B09.
 
 ## Autorização
 
@@ -81,6 +81,10 @@ A resposta inclui a senha temporária somente nessa chamada. O hash permanece in
 | 409 | `patient_access_already_active` | ativação redundante |
 | 409 | `email_conflict` | e-mail já usado por outra conta |
 
-## Integrações ainda pendentes
+## Integrações B04–B09
 
-B03 não cria catálogo, treinos, observações, sessões, progresso ou conquistas. Esses módulos devem referenciar `patients.id`, preservar registros inativos e usar a autorização deste documento. O fluxo completo do produto só poderá ser declarado integrado após B04-B09.
+Treinos, notas, sessões, progresso e conquistas referenciam `patients.id`,
+preservam registros inativos e reutilizam a autorização por vínculo. Desativar
+o paciente bloqueia novos acessos sem excluir o histórico. A integração técnica
+está implementada; o fluxo clínico continua dependente da aprovação do primeiro
+exercício do catálogo.

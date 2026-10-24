@@ -1,6 +1,8 @@
 # Contratos de domínio
 
-> `User` e `RefreshToken` são implementados por B02. Paciente e vínculo são implementados por B03. Exercícios, treinos e observações são implementados por B04–B06; registro de sessões por B07; histórico e progresso por B08. Conquistas permanecem propostas.
+> `User` e `RefreshToken` são implementados por B02; paciente e vínculo por B03;
+> exercícios, treinos e observações por B04–B06; sessões por B07; histórico e
+> progresso por B08; conquistas por B09.
 
 Campos comuns de entidades persistidas: `id: UUID`, `created_at: datetime UTC` e `updated_at: datetime UTC`.
 
@@ -93,6 +95,22 @@ vem do usuário autenticado, e o snapshot é obtido no servidor da revisão
 publicada autorizada. Uma sessão `completed` contém todos os itens e metas da
 prescrição; `interrupted` pode conter apenas os resultados parciais observados.
 
+### Sessão pendente após edição ou arquivamento
+
+O servidor valida `started_at` contra a janela histórica da revisão. A janela
+começa em `published_at` (inclusive) e termina na criação da revisão seguinte
+ou no arquivamento do treino (limite exclusivo). Assim, um resultado iniciado
+enquanto aquela prescrição estava vigente pode chegar depois de uma queda de
+conexão, edição ou arquivamento e ainda será conferido contra seu snapshot.
+Uma revisão antiga escolhida para uma sessão iniciada depois desse limite é
+recusada com `409 session_revision_not_active_at_start`.
+
+O cliente deve persistir antes da execução `client_session_id`, `workout_id`,
+`workout_revision_id` e `started_at`, e reutilizar exatamente esses valores no
+retry. Esta versão do contrato usa o horário informado pelo dispositivo e exige
+UTC/fuso explícito; um comprovante de início assinado pelo servidor seria uma
+evolução incompatível de protocolo e não está implementado.
+
 Exemplo:
 
 ```json
@@ -118,4 +136,7 @@ Progresso é derivado de sessões persistidas e não representa conclusão de re
 
 ## Conquistas (B09)
 
-`Achievement`: `id`, `patient_id`, `code`, `session_id`, `earned_at`. O par `(patient_id, code, session_id)` deve ser único. A regra proposta recompensa atingir a meta da sessão, nunca exceder a prescrição.
+`Achievement`: `id`, `patient_id`, `code`, `session_result_id`, `achieved_at`.
+O trio `(patient_id, session_result_id, code)` é único. A regra implementada
+concede `session_goal_reached` somente quando uma sessão `completed` atinge
+exatamente todos os itens do snapshot; sessão interrompida não concede.

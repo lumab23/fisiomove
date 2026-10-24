@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -22,13 +23,15 @@ def published_workout(client, data, headers, payload):
 
 @pytest.fixture
 def session_payload(published_workout):
+    started_at = datetime.fromisoformat(published_workout["published_at"])
+    finished_at = started_at + timedelta(minutes=5)
     return {
         "client_session_id": str(uuid4()),
         "workout_id": published_workout["id"],
         "workout_revision_id": published_workout["current_revision_id"],
         "status": "completed",
-        "started_at": "2026-10-20T14:00:00Z",
-        "finished_at": "2026-10-20T14:05:00Z",
+        "started_at": started_at.isoformat(),
+        "finished_at": finished_at.isoformat(),
         "active_duration_ms": 180000,
         "low_confidence_summary": None,
         "feedback_summary": None,
