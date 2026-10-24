@@ -20,12 +20,14 @@ def test_empty_database_migrates_to_head(tmp_path: Path) -> None:
 
         command.upgrade(config, "head")
         assert inspect(engine).get_table_names() == [
+            "achievements",
             "alembic_version",
             "exercises",
             "notes",
             "patients",
             "professional_patient_links",
             "refresh_tokens",
+            "session_results",
             "users",
             "workout_items",
             "workout_revisions",
@@ -35,7 +37,7 @@ def test_empty_database_migrates_to_head(tmp_path: Path) -> None:
             revision = connection.scalar(
                 text("SELECT version_num FROM alembic_version")
             )
-        assert revision == "20261020_0005"
+        assert revision == "20261022_0007"
         with engine.connect() as connection:
             from alembic.autogenerate import compare_metadata
             from alembic.migration import MigrationContext
@@ -83,6 +85,14 @@ def test_business_routes_registered_once() -> None:
             "/api/v1/me/workouts": {"get"},
             "/api/v1/patients/{patient_id}/notes": {"get", "post"},
             "/api/v1/notes/{note_id}": {"patch"},
+            "/api/v1/me/sessions": {"get", "post"},
+            "/api/v1/me/sessions/{session_id}": {"get"},
+            "/api/v1/patients/{patient_id}/sessions": {"get"},
+            "/api/v1/patients/{patient_id}/sessions/{session_id}": {"get"},
+            "/api/v1/me/progress": {"get"},
+            "/api/v1/patients/{patient_id}/progress": {"get"},
+            "/api/v1/me/achievements": {"get"},
+            "/api/v1/patients/{patient_id}/achievements": {"get"},
         }
         for path, methods in expected.items():
             assert set(paths[path]) == methods

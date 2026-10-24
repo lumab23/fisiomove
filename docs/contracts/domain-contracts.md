@@ -1,6 +1,6 @@
 # Contratos de domínio
 
-> `User` e `RefreshToken` são implementados por B02. Paciente e vínculo são implementados por B03. Exercícios, treinos e observações são implementados por B04–B06; sessões, progresso e conquistas permanecem propostos.
+> `User` e `RefreshToken` são implementados por B02. Paciente e vínculo são implementados por B03. Exercícios, treinos e observações são implementados por B04–B06; registro de sessões por B07; histórico e progresso por B08. Conquistas permanecem propostas.
 
 Campos comuns de entidades persistidas: `id: UUID`, `created_at: datetime UTC` e `updated_at: datetime UTC`.
 
@@ -88,7 +88,12 @@ Somente o autor profissional, ainda autorizado pelo vínculo, pode editar. Notas
 
 Idempotência usa a chave única `(patient_id, client_session_id)`. Mesmo conteúdo retorna o resultado existente; conteúdo divergente retorna `409 idempotency_conflict`. Retry não duplica sessão nem conquista. Apenas dados derivados são aceitos; mídia não é enviada.
 
-Exemplo proposto:
+O corpo recebido não contém `patient_id` nem `workout_snapshot`: a identidade
+vem do usuário autenticado, e o snapshot é obtido no servidor da revisão
+publicada autorizada. Uma sessão `completed` contém todos os itens e metas da
+prescrição; `interrupted` pode conter apenas os resultados parciais observados.
+
+Exemplo:
 
 ```json
 {
@@ -101,15 +106,16 @@ Exemplo proposto:
   "active_duration_ms": 180000,
   "low_confidence_summary": null,
   "feedback_summary": null,
-  "workout_snapshot": {},
   "items": []
 }
 ```
 
-## Progresso e conquistas (B08-B09)
+## Progresso (B08)
 
 `ProgressSummary`: `patient_id`, `period_start`, `period_end`, `completed_sessions`, `interrupted_sessions`, `active_duration_ms`, `prescribed_repetitions`, `performed_repetitions`, `generated_at`.
 
 Progresso é derivado de sessões persistidas e não representa conclusão de recuperação clínica. Estado vazio retorna zeros coerentes.
+
+## Conquistas (B09)
 
 `Achievement`: `id`, `patient_id`, `code`, `session_id`, `earned_at`. O par `(patient_id, code, session_id)` deve ser único. A regra proposta recompensa atingir a meta da sessão, nunca exceder a prescrição.
