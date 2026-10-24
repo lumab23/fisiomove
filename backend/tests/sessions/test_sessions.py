@@ -1,4 +1,5 @@
 from copy import deepcopy
+from datetime import datetime, timedelta
 from uuid import UUID, uuid4
 
 import pytest
@@ -82,6 +83,20 @@ def test_result_above_prescription_is_rejected(client, data, headers, session_pa
     assert response.json()["code"] == "session_result_exceeds_plan"
 
 
+def test_completed_session_requires_the_full_prescription(
+    client, data, headers, session_payload
+):
+    payload = deepcopy(session_payload)
+    payload["items"][0]["completed_repetitions"] -= 1
+    response = client.post(
+        "/api/v1/me/sessions",
+        headers=headers(data["patient_user"]),
+        json=payload,
+    )
+    assert response.status_code == 422
+    assert response.json()["code"] == "completed_session_incomplete"
+
+
 def test_revision_must_belong_to_an_accessible_published_workout(
     client, data, headers, session_payload
 ):
@@ -145,7 +160,9 @@ def test_interrupted_session_keeps_partial_results(
         active_duration_ms=60000,
     )
     payload["active_duration_ms"] = 60000
-    payload["finished_at"] = "2026-10-20T14:01:00Z"
+    payload["finished_at"] = (
+        datetime.fromisoformat(payload["started_at"]) + timedelta(minutes=1)
+    ).isoformat()
     response = client.post(
         "/api/v1/me/sessions", headers=headers(data["patient_user"]), json=payload
     )
@@ -165,3 +182,51 @@ def test_patient_id_cannot_be_supplied_by_client(
         "/api/v1/me/sessions", headers=headers(data["patient_user"]), json=payload
     )
     assert response.status_code == 422
+
+
+def test_pending_session_uses_revision_that_was_active_when_it_started(
+    client, data, headers, published_workout, session_payload
+):
+    original_item = session_payload["items"][0]
+    update = client.patch(
+        f"/api/v1/workouts/{published_workout['id']}",
+        headers=headers(data["pro"]),
+        json={"instructions": "Edited after the offline session started"},
+    )
+    assert update.status_code == 200, update.text
+    archive = client.post(
+        f"/api/v1/workouts/{published_workout['id']}/archive",
+        headers=headers(data["pro"]),
+    )
+    assert archive.status_code == 200, archive.text
+
+    result = create(client, data, headers, session_payload)
+    assert result["workout_revision_id"] == published_workout["current_revision_id"]
+    assert (
+        result["workout_snapshot"]["items"][0]["id"] == original_item["workout_item_id"]
+    )
+
+
+def test_old_revision_is_rejected_for_session_started_after_edit(
+    client, data, headers, published_workout, session_payload
+):
+    update = client.patch(
+        f"/api/v1/workouts/{published_workout['id']}",
+        headers=headers(data["pro"]),
+        json={"instructions": "Prescription changed"},
+    )
+    assert update.status_code == 200, update.text
+    changed = deepcopy(session_payload)
+    changed["client_session_id"] = str(uuid4())
+    changed["started_at"] = update.json()["updated_at"]
+    changed["finished_at"] = (
+        datetime.fromisoformat(changed["started_at"]) + timedelta(minutes=5)
+    ).isoformat()
+
+    response = client.post(
+        "/api/v1/me/sessions",
+        headers=headers(data["patient_user"]),
+        json=changed,
+    )
+    assert response.status_code == 409
+    assert response.json()["code"] == "session_revision_not_active_at_start"

@@ -76,6 +76,15 @@ def test_business_routes_registered_once() -> None:
     try:
         paths = application.openapi()["paths"]
         expected = {
+            "/health": {"get"},
+            "/api/v1/auth/login": {"post"},
+            "/api/v1/auth/refresh": {"post"},
+            "/api/v1/auth/logout": {"post"},
+            "/api/v1/auth/me": {"get"},
+            "/api/v1/auth/change-password": {"post"},
+            "/api/v1/patients": {"get", "post"},
+            "/api/v1/patients/{patient_id}": {"get", "patch"},
+            "/api/v1/patients/{patient_id}/access": {"post"},
             "/api/v1/exercises": {"get"},
             "/api/v1/exercises/{exercise_id}": {"get"},
             "/api/v1/patients/{patient_id}/workouts": {"get", "post"},

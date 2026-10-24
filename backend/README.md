@@ -103,7 +103,12 @@ Rotas B08 registradas sob `/api/v1`:
 - `GET /patients/{patient_id}/sessions/{session_id}`
 - `GET /me/progress` e `GET /patients/{patient_id}/progress`
 
-Execute `alembic upgrade head` para criar as tabelas B04–B07. O catálogo
+Rotas B09 registradas sob `/api/v1`:
+
+- `GET /me/achievements`
+- `GET /patients/{patient_id}/achievements`
+
+Execute `alembic upgrade head` para criar todas as tabelas B01–B09. O catálogo
 permanece vazio até aprovação da definição clínica do primeiro exercício;
 nenhuma fixture é seed de produção. Contratos de parâmetros clínicos ainda não
 aprovados são bloqueados. Consulte [treinos e observações](../docs/modules/workouts.md).
@@ -129,8 +134,21 @@ Os contratos e estados de implementação estão em `../docs/contracts/`.
 
 O teste PostgreSQL opcional é ativado por `FISIOMOVE_TEST_POSTGRES_URL`, apontando
 para servidor exclusivo de testes com permissão de criar bancos. Ele cria e
-remove seu próprio banco temporário e valida migrações, API e concorrência.
+remove seu próprio banco temporário e valida migrações, downgrade/reupgrade,
+transações, API, isolamento e concorrência de treinos e sessões.
 Sem a variável, o teste PostgreSQL é ignorado; SQLite continua sendo executado.
+
+Exemplo com um servidor PostgreSQL de teste local, sem reutilizar o banco de
+desenvolvimento:
+
+```bash
+export FISIOMOVE_TEST_POSTGRES_URL='postgresql+psycopg://usuario@127.0.0.1:5432/postgres'
+pytest -q -rs tests/test_postgresql_integration.py
+```
+
+A conta informada precisa poder criar bancos. A fixture usa um nome aleatório e
+remove apenas o banco que ela própria criou; nunca aponte a variável para um
+servidor de produção.
 
 ## Seed fictício de demonstração (B09)
 
@@ -138,3 +156,15 @@ Depois das migrações, defina `DEMO_PRO_EMAIL`, `DEMO_PRO_PASSWORD`,
 `DEMO_MARIA_EMAIL`, `DEMO_MARIA_PASSWORD`, `DEMO_ANA_EMAIL` e `DEMO_ANA_PASSWORD`
 no ambiente local e execute `python -m scripts.seed_demo`. O seed é idempotente,
 recusa produção, deixa Ana sem sessões e identifica o resultado fictício de Maria.
+Ela não cria exercício: exige um registro ativo com contrato de parâmetros
+vazio. O operador deve disponibilizar somente um exercício aprovado para a
+demonstração; na ausência dele, o seed falha sem inventar dados clínicos.
+
+## Integração do mobile
+
+O mobile deve persistir localmente, antes de iniciar uma execução,
+`client_session_id`, `workout_id`, `workout_revision_id` e `started_at`. Um
+upload atrasado é aceito somente se a revisão estava vigente nesse horário e é
+validado contra o snapshot histórico, mesmo após edição ou arquivamento. Consulte
+[`docs/modules/sessions.md`](../docs/modules/sessions.md) para idempotência e
+erros que precisam de tratamento explícito.

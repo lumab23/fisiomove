@@ -19,6 +19,9 @@ recusa `APP_ENV=production`, usa os serviços públicos de provisionamento e é
 idempotente.
 
 Maria recebe um resultado de demonstração identificado no treino e no resumo da
-sessão. O exemplo usa um exercício ativo do catálogo com contrato de parâmetros vazio;
-se não houver um, o seed falha com uma mensagem explicativa. Ana é criada sem sessões.
-Os dados são fictícios e não constituem prescrição ou orientação clínica.
+sessão. O seed não cria exercício: exige que o ambiente não produtivo já possua
+um exercício ativo com contrato de parâmetros vazio; o operador é responsável
+por usar somente um registro aprovado para a demonstração. Se não houver, o
+seed falha com mensagem explicativa. O exercício
+`fictional-test-only` da suíte automatizada não deve ser usado. Ana é criada sem
+sessões. Os dados são fictícios e não constituem prescrição ou orientação clínica.
