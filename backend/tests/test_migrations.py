@@ -1,4 +1,6 @@
+import json
 from pathlib import Path
+from uuid import uuid4
 
 from alembic import command
 from alembic.config import Config
@@ -22,6 +24,7 @@ def test_empty_database_migrates_to_head(tmp_path: Path) -> None:
         assert inspect(engine).get_table_names() == [
             "achievements",
             "alembic_version",
+            "exercise_approval_events",
             "exercises",
             "notes",
             "patients",
@@ -37,7 +40,7 @@ def test_empty_database_migrates_to_head(tmp_path: Path) -> None:
             revision = connection.scalar(
                 text("SELECT version_num FROM alembic_version")
             )
-        assert revision == "20261022_0007"
+        assert revision == "20261024_0009"
         with engine.connect() as connection:
             from alembic.autogenerate import compare_metadata
             from alembic.migration import MigrationContext
@@ -114,3 +117,82 @@ def test_business_routes_registered_once() -> None:
         assert len(ids) == len(set(ids))
     finally:
         application.state.database.dispose()
+
+
+def test_migrations_backfill_scores_and_keep_existing_exercises_pending(
+    tmp_path: Path,
+) -> None:
+    database_url = f"sqlite+pysqlite:///{tmp_path / 'backfill.db'}"
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("sqlalchemy.url", database_url)
+    engine = create_engine(database_url)
+    session_id = uuid4().hex
+    item_id = str(uuid4())
+    try:
+        command.upgrade(config, "20261022_0007")
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO exercises "
+                    "(id, code, name, instructions, allowed_sides, rule_version, "
+                    "supported_parameters, is_active, created_at, updated_at) "
+                    "VALUES (:id, 'legacy', 'Legacy', 'Test only', :sides, "
+                    "'legacy-v1', :parameters, 1, :created, :created)"
+                ),
+                {
+                    "id": uuid4().hex,
+                    "sides": json.dumps(["left"]),
+                    "parameters": json.dumps({}),
+                    "created": "2026-10-24T12:00:00+00:00",
+                },
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO session_results "
+                    "(id, client_session_id, patient_id, workout_id, "
+                    "workout_revision_id, status, started_at, finished_at, "
+                    "active_duration_ms, workout_snapshot, items, payload_hash, "
+                    "created_at) VALUES (:id, :client, :patient, :workout, "
+                    ":revision, 'interrupted', :started, :finished, 1000, "
+                    ":snapshot, :items, :hash, :started)"
+                ),
+                {
+                    "id": session_id,
+                    "client": uuid4().hex,
+                    "patient": uuid4().hex,
+                    "workout": uuid4().hex,
+                    "revision": uuid4().hex,
+                    "started": "2026-10-24T12:00:00+00:00",
+                    "finished": "2026-10-24T12:01:00+00:00",
+                    "snapshot": json.dumps(
+                        {"items": [{"id": item_id, "sets": 2, "repetitions": 3}]}
+                    ),
+                    "items": json.dumps(
+                        [
+                            {
+                                "workout_item_id": item_id,
+                                "completed_repetitions": 2,
+                            }
+                        ]
+                    ),
+                    "hash": "a" * 64,
+                },
+            )
+
+        command.upgrade(config, "head")
+        with engine.connect() as connection:
+            assert (
+                connection.scalar(
+                    text("SELECT score FROM session_results WHERE id = :id"),
+                    {"id": session_id},
+                )
+                == 2
+            )
+            assert (
+                connection.scalar(
+                    text("SELECT approval_status FROM exercises WHERE code = 'legacy'")
+                )
+                == "pending"
+            )
+    finally:
+        engine.dispose()

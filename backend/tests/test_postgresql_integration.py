@@ -24,7 +24,8 @@ from app.main import create_app
 from app.modules.achievements.models import Achievement
 from app.modules.auth.models import User, UserRole
 from app.modules.auth.security import PasswordManager
-from app.modules.exercises.models import Exercise
+from app.modules.exercises.models import Exercise, ExerciseApprovalEvent
+from app.modules.exercises.services import ExerciseGovernanceService
 from app.modules.patients.models import Patient
 from app.modules.sessions.models import SessionResult
 from app.modules.sessions.schemas import SessionResultCreate
@@ -111,6 +112,11 @@ def test_postgresql_migrations_api_and_concurrent_revisions(postgres_url: str) -
             )
             session.add_all([professional, other_professional, exercise])
             session.flush()
+            ExerciseGovernanceService(session).approve(
+                professional,
+                exercise.id,
+                "test-fixture://postgresql-fictional-exercise/v1",
+            )
         with pytest.raises(RuntimeError, match="rollback probe"):
             with database.session() as session:
                 session.add(
@@ -431,6 +437,13 @@ def test_postgresql_migrations_api_and_concurrent_revisions(postgres_url: str) -
                 assert (
                     session.scalar(select(func.count()).select_from(Achievement)) == 1
                 )
+                assert session.scalar(select(SessionResult.score)) == 6
+                assert (
+                    session.scalar(
+                        select(func.count()).select_from(ExerciseApprovalEvent)
+                    )
+                    == 1
+                )
 
             retry = client.post(
                 "/api/v1/me/sessions",
@@ -439,6 +452,7 @@ def test_postgresql_migrations_api_and_concurrent_revisions(postgres_url: str) -
             )
             assert retry.status_code == 201
             assert retry.json()["id"] == str(result_ids[0])
+            assert retry.json()["score"] == 6
             divergent = dict(session_payload)
             divergent["feedback_summary"] = {"changed": True}
             conflict = client.post(
@@ -465,14 +479,13 @@ def test_postgresql_migrations_api_and_concurrent_revisions(postgres_url: str) -
                     }
                 ],
             }
-            assert (
-                client.post(
-                    "/api/v1/me/sessions",
-                    headers=patient_headers,
-                    json=interrupted,
-                ).status_code
-                == 201
+            interrupted_response = client.post(
+                "/api/v1/me/sessions",
+                headers=patient_headers,
+                json=interrupted,
             )
+            assert interrupted_response.status_code == 201
+            assert interrupted_response.json()["score"] == 2
             history = client.get("/api/v1/me/sessions", headers=patient_headers).json()
             assert history["total"] == 2
             period_end = (session_started_at + timedelta(days=1)).isoformat()
@@ -487,6 +500,7 @@ def test_postgresql_migrations_api_and_concurrent_revisions(postgres_url: str) -
             assert progress.status_code == 200, progress.text
             assert progress.json()["completed_sessions"] == 1
             assert progress.json()["interrupted_sessions"] == 1
+            assert progress.json()["score"] == 8
             achievements = client.get(
                 "/api/v1/me/achievements", headers=patient_headers
             )
@@ -523,6 +537,26 @@ def test_postgresql_migrations_api_and_concurrent_revisions(postgres_url: str) -
                 session.flush()
         with database.session() as session:
             assert session.get(User, professional.id) is not None
+        command.downgrade(config, "20261022_0007")
+        assert "score" not in {
+            column["name"]
+            for column in inspect(database.engine).get_columns("session_results")
+        }
+        command.upgrade(config, "head")
+        with database.engine.connect() as connection:
+            assert connection.scalar(select(func.sum(SessionResult.score))) == 8
+            assert (
+                connection.scalar(
+                    select(Exercise.approval_status).where(
+                        Exercise.code == "fictional-test-only"
+                    )
+                )
+                == "pending"
+            )
+            assert (
+                compare_metadata(MigrationContext.configure(connection), Base.metadata)
+                == []
+            )
         command.downgrade(config, "20261019_0003")
         assert "workouts" not in inspect(database.engine).get_table_names()
         assert "notes" not in inspect(database.engine).get_table_names()

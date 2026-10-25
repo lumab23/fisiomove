@@ -146,7 +146,11 @@ def seed_maria_example_session(
                 candidate
                 for candidate in session.scalars(
                     select(Exercise)
-                    .where(Exercise.is_active.is_(True))
+                    .where(
+                        Exercise.is_active.is_(True),
+                        Exercise.approval_status == "approved",
+                        Exercise.approved_rule_version == Exercise.rule_version,
+                    )
                     .order_by(Exercise.code)
                 )
                 if not candidate.supported_parameters

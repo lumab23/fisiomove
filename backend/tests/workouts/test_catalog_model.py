@@ -26,6 +26,8 @@ def test_catalog_detail_pagination(client, data, headers):
     )
     item = client.get(f"/api/v1/exercises/{data['exercise'].id}", headers=auth)
     assert item.json()["rule_version"] == "test-v1"
+    assert item.json()["approval_status"] == "approved"
+    assert item.json()["approved_rule_version"] == "test-v1"
     assert client.get(f"/api/v1/exercises/{uuid4()}", headers=auth).status_code == 404
 
 

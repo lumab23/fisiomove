@@ -47,6 +47,7 @@ def data(application):
     from app.modules.auth.models import User, UserRole
     from app.modules.auth.security import PasswordManager
     from app.modules.exercises.models import Exercise
+    from app.modules.exercises.services import ExerciseGovernanceService
     from app.modules.patients.models import Patient, ProfessionalPatientLink
     from app.modules.workouts.models import (  # noqa: F401
         Workout,
@@ -85,6 +86,9 @@ def data(application):
         )
         session.add_all([link, exercise])
         session.flush()
+        ExerciseGovernanceService(session).approve(
+            users[0], exercise.id, "test-fixture://fictional-exercise/v1"
+        )
         return dict(
             pro=users[0],
             other=users[1],

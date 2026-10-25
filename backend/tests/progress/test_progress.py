@@ -52,6 +52,7 @@ def test_empty_history_and_progress_return_coherent_zeros(client, data, headers)
     assert progress.json()["active_duration_ms"] == 0
     assert progress.json()["prescribed_repetitions"] == 0
     assert progress.json()["performed_repetitions"] == 0
+    assert progress.json()["score"] == 0
 
 
 def test_history_filters_paginates_and_returns_session_details(
@@ -120,6 +121,7 @@ def test_progress_counts_each_persisted_session_once_and_separates_statuses(
     assert body["active_duration_ms"] == 240000
     assert body["prescribed_repetitions"] == 12
     assert body["performed_repetitions"] == 8
+    assert body["score"] == 8
 
 
 def test_professional_reads_only_patients_with_active_link(

@@ -24,6 +24,8 @@ def test_identical_retry_returns_persisted_session_once(
     first = create(client, data, headers, session_payload)
     retry = create(client, data, headers, session_payload)
     assert retry["id"] == first["id"]
+    assert first["score"] == 6
+    assert retry["score"] == 6
     with application.state.database.session() as session:
         assert session.query(SessionResult).count() == 1
         stored = session.get(SessionResult, UUID(first["id"]))
@@ -171,6 +173,7 @@ def test_interrupted_session_keeps_partial_results(
     assert result["status"] == "interrupted"
     assert result["items"][0]["completed_repetitions"] == 2
     assert result["items"][0]["interrupted"] is True
+    assert result["score"] == 2
 
 
 def test_patient_id_cannot_be_supplied_by_client(
@@ -178,6 +181,25 @@ def test_patient_id_cannot_be_supplied_by_client(
 ):
     payload = deepcopy(session_payload)
     payload["patient_id"] = str(data["patient"].id)
+    response = client.post(
+        "/api/v1/me/sessions", headers=headers(data["patient_user"]), json=payload
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("score", 999),
+        ("calibration_result", {"reference_angle": 90}),
+        ("video", "base64-is-not-accepted"),
+    ],
+)
+def test_server_only_or_media_fields_are_rejected(
+    client, data, headers, session_payload, field, value
+):
+    payload = deepcopy(session_payload)
+    payload[field] = value
     response = client.post(
         "/api/v1/me/sessions", headers=headers(data["patient_user"]), json=payload
     )
@@ -205,6 +227,7 @@ def test_pending_session_uses_revision_that_was_active_when_it_started(
     assert (
         result["workout_snapshot"]["items"][0]["id"] == original_item["workout_item_id"]
     )
+    assert result["score"] == 6
 
 
 def test_old_revision_is_rejected_for_session_started_after_edit(

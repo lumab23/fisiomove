@@ -2,7 +2,7 @@
 
 from app.modules.achievements.models import Achievement
 from app.modules.auth.models import RefreshToken, User
-from app.modules.exercises.models import Exercise
+from app.modules.exercises.models import Exercise, ExerciseApprovalEvent
 from app.modules.notes.models import Note
 from app.modules.patients.models import Patient, ProfessionalPatientLink
 from app.modules.sessions.models import SessionResult
@@ -11,6 +11,7 @@ from app.modules.workouts.models import Workout, WorkoutItem, WorkoutRevision
 __all__ = [
     "Achievement",
     "Exercise",
+    "ExerciseApprovalEvent",
     "Note",
     "Patient",
     "ProfessionalPatientLink",

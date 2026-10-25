@@ -47,6 +47,7 @@ class SessionResult(Base):
     workout_snapshot: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     items: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
     payload_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    score: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, nullable=False
     )
@@ -54,6 +55,7 @@ class SessionResult(Base):
     __table_args__ = (
         CheckConstraint("status IN ('completed', 'interrupted')", name="status"),
         CheckConstraint("active_duration_ms >= 0", name="active_duration_ms"),
+        CheckConstraint("score >= 0", name="score"),
         CheckConstraint("finished_at >= started_at", name="time_range"),
         Index(
             "uq_session_results_patient_client_session",
