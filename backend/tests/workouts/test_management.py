@@ -4,6 +4,7 @@ import pytest
 from sqlalchemy import select
 
 from app.modules.exercises.models import Exercise
+from app.modules.exercises.services import ExerciseGovernanceService
 from app.modules.patients.models import Patient, ProfessionalPatientLink
 from app.modules.workouts.models import WorkoutItem, WorkoutRevision
 from app.modules.workouts.services import WorkoutService
@@ -41,7 +42,11 @@ def test_draft_publish_edit_archive_and_history(
             data_uuid(published["id"]),
             data_uuid(published["current_revision_id"]),
         )
-        session.get(Exercise, data["exercise"].id).rule_version = "test-v2"
+        exercise = session.get(Exercise, data["exercise"].id)
+        exercise.rule_version = "test-v2"
+        ExerciseGovernanceService(session).approve(
+            data["pro"], exercise.id, "test-fixture://fictional-exercise/v2"
+        )
     changed = deepcopy(payload)
     changed["items"][0]["repetitions"] = 4
     updated = client.patch(url, headers=pro, json=changed).json()

@@ -13,6 +13,7 @@ class ProgressSummary(BaseModel):
     active_duration_ms: int
     prescribed_repetitions: int
     performed_repetitions: int
+    score: int
     generated_at: datetime
 
     @field_validator("period_start", "period_end", "generated_at")

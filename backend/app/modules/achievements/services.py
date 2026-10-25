@@ -11,6 +11,7 @@ from app.modules.auth.models import User
 from app.modules.patients.authorization import get_authorized_patient
 from app.modules.patients.models import Patient
 from app.modules.sessions.models import SessionResult
+from app.modules.sessions.scoring import maximum_session_score
 
 SESSION_GOAL_REACHED = "session_goal_reached"
 
@@ -22,6 +23,8 @@ class AchievementService:
     def award_session_goal(self, result: SessionResult) -> Achievement | None:
         """Award only when every prescribed item was completed exactly."""
         if result.status != "completed":
+            return None
+        if result.score != maximum_session_score(result.workout_snapshot):
             return None
         planned = {item["id"]: item for item in result.workout_snapshot["items"]}
         performed = {item["workout_item_id"]: item for item in result.items}

@@ -7,6 +7,11 @@ O paciente autenticado registra resultados derivados em
 O paciente é identificado pela conta autenticada; não existe `patient_id` no
 corpo da requisição.
 
+`score` é campo de resposta calculado no servidor e é rejeitado quando enviado
+no corpo. `calibration_result`, imagens, vídeo, áudio e landmarks também não
+fazem parte de `SessionResultCreate`. `low_confidence_summary` e
+`feedback_summary` são resumos derivados; não constituem prova clínica.
+
 O treino precisa pertencer ao paciente e a revisão precisa ser publicada e
 pertencer ao treino informado. A sessão grava o snapshot retornado pela
 interface pública de B05, sem reconstruí-lo a partir do catálogo atual.

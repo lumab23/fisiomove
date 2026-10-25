@@ -21,7 +21,7 @@
 
 Nomes, contatos e senhas reais não devem aparecer em fixtures. B02 fornece `get_authenticated_user`, `get_current_user` e `require_role`; B03 fornece `get_authorized_patient(session, physiotherapist_id, patient_id)`.
 
-## Interfaces esperadas pelos módulos futuros
+## Interfaces entre os módulos implementados
 
 - B04-B06 recebem o `User.id` do profissional autenticado e chamam `get_authorized_patient` antes de ler ou escrever recursos de um paciente.
 - Rotas de negócio devem depender de `get_current_user`, que bloqueia conta inativa, token invalidado e senha temporária pendente.
@@ -31,8 +31,15 @@ Nomes, contatos e senhas reais não devem aparecer em fixtures. B02 fornece `get
 - B07 implementa `POST /api/v1/me/sessions` com resultados persistidos e idempotentes, diferenciando `completed` de `interrupted`; B08/B09 consomem esses resultados.
 - B08 implementa histórico e resumos derivados das sessões persistidas; não duplica sua persistência.
 - B09 usa a sessão persistida como origem e impõe unicidade para evitar recompensa duplicada.
+- A pontuação individual é calculada no servidor a partir da sessão persistida,
+  limitada à prescrição da revisão; retries idempotentes não pontuam novamente.
+- Calibração e análise de movimento permanecem no dispositivo. O backend não
+  aceita imagens, vídeos ou um objeto de calibração no resultado da sessão.
+- O catálogo só disponibiliza exercícios ativos, aprovados e cuja versão de
+  regras ainda corresponde à versão aprovada. A aprovação é uma operação
+  administrativa interna, não uma permissão exposta aos clientes.
 
-As interfaces B04–B09 estão implementadas. Fixtures sintéticas continuam
+As interfaces B04–B09 e a pontuação do MVP estão implementadas. Fixtures sintéticas continuam
 restritas aos testes e nunca devem ser copiadas para migrações ou catálogo de
 produção.
 

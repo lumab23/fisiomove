@@ -16,6 +16,7 @@ def test_exact_completed_session_creates_one_readable_achievement(
         json=session_payload,
     )
     assert first.status_code == 201, first.text
+    assert first.json()["score"] == 6
     retry = client.post(
         "/api/v1/me/sessions",
         headers=headers(data["patient_user"]),
@@ -65,6 +66,7 @@ def test_interrupted_session_does_not_create_achievement(
         json=payload,
     )
     assert response.status_code == 201, response.text
+    assert response.json()["score"] == 2
     assert (
         client.get(
             "/api/v1/me/achievements", headers=headers(data["patient_user"])
@@ -94,6 +96,7 @@ def test_excess_over_snapshot_goal_does_not_award_achievement(application):
             id=uuid4(),
             patient_id=uuid4(),
             status="completed",
+            score=6,
             workout_snapshot={"items": [{"id": "item-1", "sets": 2, "repetitions": 3}]},
             items=[
                 {

@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -22,6 +22,8 @@ class ExerciseResponse(BaseModel):
     rule_version: str
     supported_parameters: dict[str, Any]
     is_active: bool
+    approval_status: Literal["pending", "approved", "revoked"]
+    approved_rule_version: str | None
 
 
 class ExercisePage(BaseModel):

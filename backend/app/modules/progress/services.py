@@ -41,5 +41,6 @@ class ProgressService:
                 for record in records
                 for item in record.items
             ),
+            score=sum(record.score for record in records),
             generated_at=utc_now(),
         )

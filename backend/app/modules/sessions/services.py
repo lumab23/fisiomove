@@ -21,6 +21,7 @@ from app.modules.sessions.schemas import (
     SessionResultResponse,
     SessionSummary,
 )
+from app.modules.sessions.scoring import calculate_session_score
 from app.modules.workouts.services import WorkoutService
 
 
@@ -112,6 +113,7 @@ class SessionService:
             finished_at=value.finished_at,
             active_duration_ms=value.active_duration_ms,
             completed_repetitions=completed_repetitions,
+            score=value.score,
             low_confidence_summary=value.low_confidence_summary,
             feedback_summary=value.feedback_summary,
             workout_snapshot=value.workout_snapshot,
@@ -200,6 +202,7 @@ class SessionService:
             workout_snapshot=snapshot,
             items=results,
             payload_hash=digest,
+            score=calculate_session_score(snapshot, results),
         )
         try:
             with self.session.begin_nested():
@@ -239,6 +242,7 @@ class SessionService:
             active_duration_ms=value.active_duration_ms,
             prescribed_repetitions=prescribed,
             performed_repetitions=performed,
+            score=value.score,
         )
 
     def _filtered_query(

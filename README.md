@@ -4,7 +4,8 @@ Projeto acadêmico de TCC voltado ao apoio à execução de exercícios fisioter
 
 **Status:** em desenvolvimento.
 
-> O backend B01–B09 está implementado tecnicamente. O catálogo de produção
+> O backend do MVP está implementado tecnicamente, incluindo pontuação individual
+> e governança do catálogo. O catálogo de produção
 > permanece vazio até a aprovação clínica explícita do primeiro exercício; o
 > produto e o mobile continuam em desenvolvimento.
 

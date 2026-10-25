@@ -1,6 +1,6 @@
 # Backend do FisioMove
 
-API FastAPI com PostgreSQL, SQLAlchemy, Alembic, autenticação de contas e gestão de pacientes vinculados. B04–B09 implementam catálogo, treinos versionados, observações, registro de sessões, histórico, progresso, conquistas e seed fictício.
+API FastAPI com PostgreSQL, SQLAlchemy, Alembic, autenticação de contas e gestão de pacientes vinculados. B04–B09 implementam catálogo, treinos versionados, observações, registro de sessões, histórico, progresso, conquistas e seed fictício. A conclusão técnica do MVP acrescenta pontuação individual e governança auditável do catálogo, sem transferir visão computacional ou calibração para o servidor.
 
 ## Preparação
 
@@ -108,7 +108,13 @@ Rotas B09 registradas sob `/api/v1`:
 - `GET /me/achievements`
 - `GET /patients/{patient_id}/achievements`
 
-Execute `alembic upgrade head` para criar todas as tabelas B01–B09. O catálogo
+As rotas existentes de sessões e progresso também retornam `score`. Não existe
+endpoint de pontuação separado: o paciente consulta sua sessão/progresso, e o
+profissional usa as rotas equivalentes do paciente vinculado.
+
+Execute `alembic upgrade head` para criar todas as tabelas. As revisões
+`20261024_0008` e `20261024_0009` adicionam, respectivamente, pontuação de
+sessões e governança do catálogo. O catálogo
 permanece vazio até aprovação da definição clínica do primeiro exercício;
 nenhuma fixture é seed de produção. Contratos de parâmetros clínicos ainda não
 aprovados são bloqueados. Consulte [treinos e observações](../docs/modules/workouts.md).
@@ -168,3 +174,22 @@ upload atrasado é aceito somente se a revisão estava vigente nesse horário e 
 validado contra o snapshot histórico, mesmo após edição ou arquivamento. Consulte
 [`docs/modules/sessions.md`](../docs/modules/sessions.md) para idempotência e
 erros que precisam de tratamento explícito.
+
+A pontuação é calculada pelo servidor: um ponto por repetição aceita, limitada
+à prescrição de cada item. O mobile não envia `score`. Repetições acima do plano
+são rejeitadas e retries não geram novos pontos.
+
+A calibração permanece no motor local do mobile, conforme o plano de
+desenvolvimento. O backend fornece revisão, `rule_version`, parâmetros e
+snapshot do exercício; não recebe imagens, landmarks nem um objeto arbitrário
+de calibração. O contrato de armazenamento local e invalidação está em
+[`docs/modules/calibration.md`](../docs/modules/calibration.md).
+
+## Governança do catálogo
+
+`is_active` não significa aprovação clínica. Somente exercícios com
+`approval_status=approved` e `approved_rule_version` igual à versão atual são
+listados e aceitos em novos treinos. Aprovação e revogação deixam eventos
+imutáveis em `exercise_approval_events`; não existe rota pública para registrar
+essas decisões. A infraestrutura registra evidência, mas não substitui a
+política institucional nem a validação efetiva do fisioterapeuta.

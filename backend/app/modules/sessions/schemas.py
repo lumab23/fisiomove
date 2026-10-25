@@ -68,6 +68,7 @@ class SessionResultFields(BaseModel):
     finished_at: datetime
     active_duration_ms: int
     completed_repetitions: int
+    score: int
 
     @field_validator("started_at", "finished_at")
     @classmethod
@@ -103,6 +104,7 @@ class SessionSummary(BaseModel):
     active_duration_ms: int
     prescribed_repetitions: int
     performed_repetitions: int
+    score: int
 
     @field_validator("started_at", "finished_at")
     @classmethod

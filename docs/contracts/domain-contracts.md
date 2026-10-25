@@ -46,6 +46,17 @@ Hashes de senha e de renovação nunca fazem parte de DTOs de resposta.
 - `rule_version: string`;
 - `supported_parameters: object` versionado;
 - `is_active: boolean`.
+- `approval_status: pending | approved | revoked`;
+- `approved_rule_version: string | null`;
+- evidência interna: profissional, data e referência documental da última
+  aprovação válida.
+
+`ExerciseApprovalEvent` registra, de forma append-only, exercício, versão da
+regra, decisão `approved | revoked`, profissional responsável, data e referência
+documental. O registro técnico da evidência não substitui a validação clínica.
+Uma mudança de `rule_version` invalida a aprovação anterior até nova evidência.
+Somente exercício ativo, aprovado e com versão coincidente aparece no catálogo
+e pode entrar em nova prescrição.
 
 Nenhum limiar clínico ou parâmetro angular padrão é definido em B01.
 
@@ -84,9 +95,15 @@ Somente o autor profissional, ainda autorizado pelo vínculo, pode editar. Notas
 - `low_confidence_summary: object | null`;
 - `feedback_summary: object | null`;
 - `workout_snapshot: object` imutável;
-- `items: SessionItemResult[]`.
+- `items: SessionItemResult[]`;
+- `score: integer >= 0`, calculado exclusivamente pelo servidor.
 
 `SessionItemResult`: `workout_item_id`, `position`, `completed_sets: integer >= 0`, `completed_repetitions: integer >= 0`, `active_duration_ms: integer >= 0`, `interrupted: boolean`.
+
+O cliente não envia `score`. A regra B10 concede um ponto por repetição aceita,
+limitada a `sets × repetitions` para cada item do snapshot. Sessão interrompida
+recebe somente os pontos do resultado parcial; sessão concluída já precisa
+conter a prescrição completa. Repetição adicional é rejeitada, não pontuada.
 
 Idempotência usa a chave única `(patient_id, client_session_id)`. Mesmo conteúdo retorna o resultado existente; conteúdo divergente retorna `409 idempotency_conflict`. Retry não duplica sessão nem conquista. Apenas dados derivados são aceitos; mídia não é enviada.
 
@@ -130,7 +147,7 @@ Exemplo:
 
 ## Progresso (B08)
 
-`ProgressSummary`: `patient_id`, `period_start`, `period_end`, `completed_sessions`, `interrupted_sessions`, `active_duration_ms`, `prescribed_repetitions`, `performed_repetitions`, `generated_at`.
+`ProgressSummary`: `patient_id`, `period_start`, `period_end`, `completed_sessions`, `interrupted_sessions`, `active_duration_ms`, `prescribed_repetitions`, `performed_repetitions`, `score`, `generated_at`.
 
 Progresso é derivado de sessões persistidas e não representa conclusão de recuperação clínica. Estado vazio retorna zeros coerentes.
 
@@ -140,3 +157,11 @@ Progresso é derivado de sessões persistidas e não representa conclusão de re
 O trio `(patient_id, session_result_id, code)` é único. A regra implementada
 concede `session_goal_reached` somente quando uma sessão `completed` atinge
 exatamente todos os itens do snapshot; sessão interrompida não concede.
+
+## Calibração individual (M06, mobile)
+
+Não existe entidade ou endpoint de calibração no backend do MVP. A calibração é
+uma referência computacional local, vinculada no dispositivo a paciente,
+exercício, item/revisão do treino e `rule_version`. O backend fornece o snapshot
+imutável e rejeita `calibration_result` no payload da sessão. Imagens, vídeos,
+landmarks e referências arbitrárias não são persistidos no servidor.
