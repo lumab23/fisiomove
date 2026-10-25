@@ -1,6 +1,6 @@
 # Catálogo de endpoints implementados
 
-> Estado: as rotas B02–B09 estão implementadas e registradas no OpenAPI.
+> Estado: as rotas do backend do MVP estão implementadas e registradas no OpenAPI.
 
 | Tarefa | Método e rota proposta | Entrada | Saída principal |
 | --- | --- | --- | --- |
@@ -36,6 +36,12 @@
 | B09 | `GET /api/v1/me/achievements` | identidade autenticada | `list[AchievementResponse]` |
 | B09 | `GET /api/v1/patients/{patient_id}/achievements` | UUID de paciente vinculado | `list[AchievementResponse]` |
 
+B10 reutiliza as rotas B07/B08: `SessionResultResponse`, `SessionSummary` e
+`ProgressSummary` incluem `score`. Não há ranking nem endpoint redundante de
+pontuação. B11 não cria rota: calibração e visão computacional permanecem no
+mobile. B12 não cria rota pública de aprovação; as consultas de catálogo
+retornam apenas exercícios ativos com aprovação válida para a `rule_version`.
+
 ## DTOs de autenticação implementados
 
 - `LoginRequest`: `email: string` válido, `password: string` entre 12 e 128 caracteres.
@@ -57,7 +63,8 @@ Tokens e senhas nunca são persistidos ou registrados em texto puro. O comportam
 
 - `WorkoutCreate`/`WorkoutUpdate`: instruções e lista ordenada de itens conforme `domain-contracts.md`.
 - `NoteCreate`/`NoteUpdate`: conteúdo e visibilidade conforme `domain-contracts.md`.
-- `SessionResultCreate`: resultado derivado conforme `domain-contracts.md`, sem imagens, vídeo ou áudio.
+- `SessionResultCreate`: resultado derivado conforme `domain-contracts.md`, sem
+  `score`, calibração, imagens, vídeo ou áudio.
 
 Todos os DTOs de escrita rejeitam campos desconhecidos. O catálogo permanece
 sem registros de produção enquanto não existir exercício clinicamente aprovado.

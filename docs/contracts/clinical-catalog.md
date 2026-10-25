@@ -26,11 +26,25 @@ O backend já preserva `rule_version`, snapshot do exercício e parâmetros em
 cada revisão de treino. Isso não substitui a aprovação clínica nem autoriza o
 backend a inventar ângulos, tolerâncias ou limites.
 
+## Governança técnica
+
+A infraestrutura armazena `approval_status`, versão aprovada, profissional,
+data e referência documental, além de eventos append-only de aprovação e
+revogação. Exercícios migrados recebem `pending`; nenhum dado é aprovado
+automaticamente. O catálogo e novas prescrições aceitam somente estado
+`approved` com versão coincidente.
+
+Não existe endpoint público de aprovação. `ExerciseGovernanceService` é uma
+interface interna para um futuro processo institucional autorizado. Chamá-la
+registra a evidência informada, mas não prova que a avaliação clínica ocorreu;
+a instituição ainda deve definir quem pode autorizar a chamada, quais documentos
+são válidos e como devem ser retidos.
+
 ## Demonstração técnica
 
 Testes podem usar exercício sintético criado no banco descartável. O seed
 fictício `scripts.seed_demo` é recusado em produção, não cria exercício e só
-funciona quando o ambiente não produtivo já contém um exercício ativo com
-contrato vazio. A versão atual não armazena a evidência de aprovação como campo;
-portanto, selecionar somente um exercício aprovado é responsabilidade explícita
-do operador até que o contrato clínico seja definido.
+funciona quando o ambiente não produtivo já contém um exercício ativo, aprovado
+para a mesma `rule_version` e com contrato vazio. Fixtures usam referências
+`test-fixture://...`, são criadas apenas em bancos descartáveis e não constituem
+aprovação clínica.

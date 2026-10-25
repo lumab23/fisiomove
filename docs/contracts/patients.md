@@ -1,6 +1,6 @@
 # Pacientes e vínculo profissional
 
-> Estado: implementado por B03 e integrado aos módulos B04–B09.
+> Estado: implementado por B03 e integrado aos módulos B04–B09 e à pontuação individual.
 
 ## Autorização
 
@@ -81,10 +81,11 @@ A resposta inclui a senha temporária somente nessa chamada. O hash permanece in
 | 409 | `patient_access_already_active` | ativação redundante |
 | 409 | `email_conflict` | e-mail já usado por outra conta |
 
-## Integrações B04–B09
+## Integrações do MVP
 
 Treinos, notas, sessões, progresso e conquistas referenciam `patients.id`,
 preservam registros inativos e reutilizam a autorização por vínculo. Desativar
-o paciente bloqueia novos acessos sem excluir o histórico. A integração técnica
-está implementada; o fluxo clínico continua dependente da aprovação do primeiro
-exercício do catálogo.
+o paciente bloqueia novos acessos sem excluir o histórico. A pontuação é derivada
+das sessões válidas e aparece no progresso, sem criar uma identidade ou vínculo
+paralelo. A integração técnica está implementada; o fluxo clínico continua
+dependente da aprovação do primeiro exercício do catálogo.

@@ -13,6 +13,12 @@ fica vazio até esse cadastro. Contratos de parâmetros não vazios falham com
 409 parameter_contract_pending; parâmetros enviados sem suporte falham com
 422 unsupported_parameters. Isso não é um validador clínico concluído.
 
+`is_active` não equivale a aprovação. O catálogo e `prepare_items` exigem
+`approval_status=approved` e `approved_rule_version == rule_version`. Alterar a
+versão invalida a evidência anterior; revogar bloqueia novas prescrições, mas
+snapshots publicados e sessões históricas permanecem intactos. Não há endpoint
+público para aprovação.
+
 Os routers estão registrados em app/api/router.py e os modelos no registro
 app/db/models.py. As migrações executáveis 20261020_0004 (catálogo/treinos) e
 20261020_0005 (observações) seguem a cadeia B03. Execute `alembic upgrade head`

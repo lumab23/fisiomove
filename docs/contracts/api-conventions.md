@@ -1,6 +1,6 @@
 # Convenções da API
 
-> Estado: convenções implementadas por B01-B03. Os domínios B04-B09 permanecem propostos.
+> Estado: convenções implementadas e utilizadas pelos módulos do backend do MVP.
 
 ## Transporte e versionamento
 
@@ -72,7 +72,7 @@ Classes previstas:
 
 Respostas nunca incluem stack trace, URL do banco, hash de senha ou token interno.
 
-## Perfis e permissões propostas
+## Perfis e permissões implementadas
 
 Perfis: `patient` e `physiotherapist`.
 
@@ -82,4 +82,6 @@ Perfis: `patient` e `physiotherapist`.
 - Cadastro público não pode conceder o perfil `physiotherapist`.
 - Identidade sem permissão recebe `403` ou `404` quando ocultar a existência reduzir exposição de dados.
 
-Autenticação e verificação de vínculo são implementadas por B02/B03. Módulos futuros devem reutilizar essas dependências, sem confiar em IDs profissionais fornecidos pelo cliente.
+Autenticação e verificação de vínculo são implementadas por B02/B03 e
+reutilizadas pelos demais módulos. Nenhuma rota confia em IDs profissionais
+fornecidos pelo cliente.

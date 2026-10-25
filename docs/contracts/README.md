@@ -2,7 +2,7 @@
 
 Estes documentos são a referência versionada para a integração do backend. Devem ser revisados pelas responsáveis antes da implementação dos módulos consumidores.
 
-## Estado do backend após B09
+## Estado do backend após conclusão técnica do MVP
 
 Implementado:
 
@@ -23,7 +23,10 @@ B04–B06 implementam catálogo autenticado, treinos/revisões, publicação, ed
 arquivamento e observações com privacidade. B07 implementa registro idempotente
 de sessões e snapshot histórico; B08 implementa histórico e progresso; B09
 implementa a conquista técnica `session_goal_reached` e um seed fictício,
-recusado em produção. Migrações executáveis até `20261022_0007`.
+recusado em produção. B10 adiciona pontuação individual derivada das sessões.
+B12 adiciona evidência auditável e bloqueio de exercícios sem aprovação. A
+calibração B11 permanece local no mobile por decisão arquitetural documentada.
+Migrações executáveis até `20261024_0009`.
 
 A definição clínica do primeiro exercício e seu contrato de parâmetros seguem
 pendentes de aprovação profissional. Portanto, o catálogo de produção deve
@@ -44,3 +47,5 @@ As tabelas `patients` e `professional_patient_links` pertencem a B03. B04–B06 
 - [`../modules/sessions.md`](../modules/sessions.md): registro e consulta de sessões B07.
 - [`../modules/progress.md`](../modules/progress.md): histórico e agregação de progresso B08.
 - [`../modules/results.md`](../modules/results.md): conquista e seed fictício B09.
+- [`../modules/calibration.md`](../modules/calibration.md): contrato local de calibração e limites do backend.
+- [`../backend-mvp-audit.md`](../backend-mvp-audit.md): rastreabilidade dos requisitos acadêmicos.

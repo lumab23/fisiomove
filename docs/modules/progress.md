@@ -32,6 +32,7 @@ distintas continuam contando como tentativas distintas.
   imutável de cada sessão incluída no período.
 - `performed_repetitions` soma as repetições realizadas informadas nos itens
   persistidos. Uma sessão interrompida contribui com seu resultado parcial.
+- `score` soma a pontuação calculada pelo servidor, sem duplicar retries.
 
 O período seleciona sessões pela data `started_at`; uma sessão iniciada dentro
 dele contribui com toda a sua duração registrada. Períodos sem sessões retornam

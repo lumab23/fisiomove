@@ -49,6 +49,8 @@ fechados até aprovação e implementação de seu validador. Não foram inventa
 exercícios, limites, ângulos ou regras clínicas. Isso impede declarar o catálogo
 clínico completo; não impede executar a API e suas migrações.
 
-Nenhuma integração de routers/modelos/migrações permanece para a Luma aplicar.
-Sessões, progresso, conquistas, mobile e câmera continuam fora deste escopo.
-Ver [workouts.md](workouts.md) para detalhes e roteiro manual.
+Nenhuma integração de routers/modelos/migrações daquela entrega permaneceu para
+a Luma aplicar. Sessões, progresso e conquistas foram implementados depois, nas
+entregas B07-B09; a pontuação individual foi acrescentada na finalização técnica
+do MVP. Mobile, câmera e calibração em tempo real continuam fora do backend.
+Ver [workouts.md](workouts.md) para o estado atual e o roteiro manual.
