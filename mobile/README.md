@@ -1,97 +1,186 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Mobile FisioMove
 
-# Getting Started
+Aplicação React Native CLI com TypeScript estrito. M01 e M02 fornecem acesso,
+navegação, cliente HTTP, contratos da API e sincronização offline. Câmera,
+estimativa de pose, regras de movimento e as telas de negócio não fazem parte
+desta entrega.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Estrutura
 
-## Step 1: Start Metro
-
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
-
-To start the Metro dev server, run the following command from the root of your React Native project:
-
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
+```text
+src/
+├── api/          # cliente HTTP, query strings e erros uniformes
+├── app/          # composição e dependências compartilhadas
+├── auth/         # sessão, autenticação e validações
+├── components/   # componentes acessíveis das telas de acesso
+├── config/       # URL, prefixo e timeout por ambiente
+├── contracts/    # DTOs alinhados ao FastAPI
+├── integration/  # API pública para os módulos da equipe
+├── navigation/   # stacks e parâmetros tipados
+├── screens/      # telas M01 e destinos técnicos temporários
+├── services/     # exercícios, treinos, pacientes, notas e resultados
+├── storage/      # armazenamento criptografado
+├── sync/         # preparação, fila e reenvio de sessões
+└── theme/        # cores e espaçamentos do protótipo
 ```
 
-## Step 2: Build and run your app
+## Preparação
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+Requisitos: Node.js 22.11 ou superior, npm, ambiente React Native e, conforme a
+plataforma, Android Studio/SDK ou Xcode/CocoaPods.
 
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+```bash
+npm install
 ```
 
-### iOS
+No macOS, depois de instalar ou atualizar dependências nativas:
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
+```bash
+cd ios
 bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
 bundle exec pod install
+cd ..
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+Inicie o backend e depois o Metro:
 
-```sh
-# Using npm
+```bash
+npm start
+```
+
+Em outro terminal:
+
+```bash
+npm run android
+# ou
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## Conexão com a API
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+A configuração fica em `src/config/environment.ts` e usa `/api/v1`:
 
-## Step 3: Modify your app
+- Android Emulator: `http://10.0.2.2:8000`;
+- iOS Simulator: `http://127.0.0.1:8000`;
+- dispositivo físico: substitua a origem de desenvolvimento pelo IP da máquina
+  na mesma rede, por exemplo `http://192.168.1.20:8000`;
+- produção: configure `productionApiOrigin` com HTTPS antes do build. O app
+  falha explicitamente se uma origem de produção não estiver definida.
 
-Now that you have successfully run the app, let's make changes!
+Não use `localhost` em um dispositivo físico: ele aponta para o próprio celular.
+A URL não deve conter `/api/v1`, porque o cliente acrescenta o prefixo.
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## Autenticação
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+`AuthProvider` restaura a sessão antes de renderizar conteúdo protegido. Tokens
+são guardados pelo `react-native-keychain` no Keychain do iOS ou Keystore do
+Android; senhas nunca são persistidas. O cliente:
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+- envia o Bearer token automaticamente;
+- realiza uma única rotação de refresh para requisições concorrentes;
+- repete a requisição original somente uma vez;
+- limpa tokens expirados, revogados ou de conta desativada;
+- mantém usuário com senha temporária exclusivamente na tela de troca;
+- seleciona o stack usando o `role` devolvido por `/auth/me`.
 
-## Congratulations! :tada:
+As únicas telas definitivas desta entrega são login, carregamento/restauração e
+troca de senha temporária. Os destinos autenticados mostram explicitamente que
+o conteúdo será implementado por Amanda ou Kaylany.
 
-You've successfully run and modified your React Native App. :partying_face:
+## Serviços para Amanda
 
-### Now what?
+Use a API pública, sem criar outro cliente HTTP:
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+```ts
+import { mobileServices, useAuth } from './src/integration';
 
-# Troubleshooting
+const { user } = useAuth();
+const workouts = await mobileServices.workouts.listMine();
+const patients = await mobileServices.patients.list({ page: 1, page_size: 20 });
+```
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+Estão disponíveis serviços tipados para catálogo, treinos, pacientes, acesso
+temporário, observações, histórico, detalhes de sessão, progresso e conquistas.
+Listas vazias preservam `items: []` e os metadados de paginação. Use
+`resolvedState` e `failureState` para distinguir carregando, sucesso, vazio,
+offline, sessão expirada, acesso negado, validação, conflito e erro inesperado.
 
-# Learn More
+Os parâmetros de navegação estão em `src/navigation/types.ts`. Substitua cada
+destino técnico pelo componente real mantendo o nome e o contrato da rota.
 
-To learn more about React Native, take a look at the following resources:
+## Contratos para Kaylany
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+Antes de iniciar a execução, preserve os identificadores recebidos do treino:
+
+```ts
+const sync = useSessionSync();
+const draft = await sync.prepare(workout.id, workout.current_revision_id);
+```
+
+Ao concluir ou interromper, entregue somente resultados derivados:
+
+```ts
+await sync.finishDraft(draft.client_session_id, {
+  status: 'interrupted',
+  finished_at: new Date().toISOString(),
+  active_duration_ms: 42000,
+  low_confidence_summary: null,
+  feedback_summary: null,
+  items: [],
+});
+await sync.syncNow();
+```
+
+Não envie pontuação, imagens, vídeo, áudio, landmarks ou calibração. O backend
+calcula a pontuação e valida o resultado contra o snapshot histórico da revisão.
+
+## Sincronização offline
+
+Rascunhos e resultados pendentes são criptografados e separados pelo UUID da
+conta. A fila conserva `client_session_id`, revisão e `started_at` após o app ser
+encerrado. Logout remove tokens, mas não destrói resultados pendentes: outra
+conta não consegue lê-los nem enviá-los, e a conta original retoma a fila ao
+entrar novamente.
+
+O hook também expõe `pending`, `syncing` e `loadError`, permitindo que a tela
+mostre falha de leitura local sem descartar ou ocultar os resultados salvos.
+
+Falhas de rede e servidor usam backoff exponencial, limitado a oito tentativas
+automáticas. `401` aguarda nova autenticação. `404`, `409`, `422` e demais erros
+permanentes ficam como `blocked`, com código original preservado; nunca são
+marcados como sincronizados nem reenviados indefinidamente. `retryNow` exige uma
+ação explícita para tentar novamente um item bloqueado ou pausado.
+
+## Endpoints integrados
+
+- autenticação: login, refresh, logout, identidade e troca de senha;
+- exercícios: lista e detalhe;
+- treinos: lista própria, lista profissional, detalhe, criação, edição,
+  publicação e arquivamento;
+- pacientes: lista, detalhe, criação, edição e acesso temporário;
+- observações: lista, criação e edição;
+- sessões: envio idempotente, histórico próprio/profissional e detalhe;
+- progresso e conquistas: consultas próprias e por paciente autorizado.
+
+## Qualidade
+
+```bash
+npm run format:check
+npm run type-check
+npm run lint
+npm test -- --runInBand
+```
+
+Os testes cobrem autenticação válida e inválida, persistência, refresh
+single-flight, revogação, logout, troca de senha, seleção de perfil, lista vazia,
+falha de rede, reinicialização com fila pendente, retry idempotente, conflito e
+isolamento entre contas.
+
+## Limites atuais
+
+- telas de paciente, profissional, preparação, execução, conclusão e progresso
+  continuam sob responsabilidade de Amanda e Kaylany;
+- nenhuma captura de câmera, visão computacional, voz ou regra clínica foi
+  implementada;
+- o catálogo real continuará vazio até existir exercício clinicamente aprovado;
+- a calibração deve permanecer local e seguir `docs/modules/calibration.md`.

@@ -7,7 +7,9 @@ Projeto acadêmico de TCC voltado ao apoio à execução de exercícios fisioter
 > O backend do MVP está implementado tecnicamente, incluindo pontuação individual
 > e governança do catálogo. O catálogo de produção
 > permanece vazio até a aprovação clínica explícita do primeiro exercício; o
-> produto e o mobile continuam em desenvolvimento.
+> produto e as telas de negócio do mobile continuam em desenvolvimento. A base
+> mobile M01/M02 já fornece autenticação, navegação, serviços tipados e
+> sincronização offline.
 
 ## Stack planejada
 
@@ -71,6 +73,9 @@ npm run type-check
 npm test
 npm run format:check
 ```
+
+Consulte [`mobile/README.md`](mobile/README.md) para configuração da API local,
+autenticação, contratos compartilhados e fila offline.
 
 ## Backend
 
