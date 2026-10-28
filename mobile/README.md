@@ -1,9 +1,10 @@
 # Mobile FisioMove
 
 Aplicação React Native CLI com TypeScript estrito. M01 e M02 fornecem acesso,
-navegação, cliente HTTP, contratos da API e sincronização offline. Câmera,
-estimativa de pose, regras de movimento e as telas de negócio não fazem parte
-desta entrega.
+navegação, cliente HTTP, contratos da API e sincronização offline. M05–M08
+acrescentam módulos locais de pose, motor de movimento, execução de sessão e
+documentação técnica; a integração nativa e a validação em aparelhos continuam
+pendentes.
 
 ## Estrutura
 
@@ -16,6 +17,10 @@ src/
 ├── config/       # URL, prefixo e timeout por ambiente
 ├── contracts/    # DTOs alinhados ao FastAPI
 ├── integration/  # API pública para os módulos da equipe
+├── features/
+│   ├── vision/          # contrato do adaptador, landmarks e ciclo de vida
+│   ├── exercise-engine/ # geometria, regras aprovadas e calibração local
+│   └── session/         # execução, feedback e componente de sessão
 ├── navigation/   # stacks e parâmetros tipados
 ├── screens/      # telas M01 e destinos técnicos temporários
 ├── services/     # exercícios, treinos, pacientes, notas e resultados
@@ -151,6 +156,35 @@ permanentes ficam como `blocked`, com código original preservado; nunca são
 marcados como sincronizados nem reenviados indefinidamente. `retryNow` exige uma
 ação explícita para tentar novamente um item bloqueado ou pausado.
 
+## Execução de exercício (M05–M08)
+
+`features/vision` recebe somente resultados derivados do adaptador nativo e
+avalia os landmarks do ombro, cotovelo e punho do lado selecionado. O hook
+solicita permissão, interrompe a captura em segundo plano e retoma quando o app
+volta ao primeiro plano. O bridge `FisioMovePose` é uma interface de integração;
+até a implementação nativa ser entregue, o hook informa que a câmera está
+indisponível. Não há envio de frames ou landmarks ao backend.
+
+`features/exercise-engine` mede ângulos, aplica uma janela de suavização
+informada pelo integrador e conta somente ciclos completos dentro da regra
+recebida. A regra e seus limites precisam chegar aprovados e com a mesma versão;
+o módulo não fornece valores clínicos padrão. A calibração é local, criptografada
+e vinculada ao usuário, exercício, treino, revisão, item e versão da regra.
+
+`features/session` controla séries, descanso, pausa, retomada e interrupção. A
+duração ativa exclui pausas e descansos. `useSessionResult` entrega o resumo a
+`useSessionSync().finishDraft` e encerra a câmera, sem criar uma fila de
+persistência paralela. `SessionExecutionFeature` conecta esse fluxo ao painel,
+expõe um slot para o mascote e encaminha avisos com intervalo configurável para
+um callback de áudio. A navegação compartilhada ainda precisa fornecer os dados
+da sessão e conectar essa composição.
+
+O plano de integração do adaptador nativo e o protocolo de validação estão em
+`docs/validation/pose-poc.md`; o relatório M08 em
+`docs/validation/technical-report.md` permanece sem medições até existir acesso
+a aparelhos e à integração M02/M05–M07. O contrato de resultado está em
+`docs/contracts/session-result.md`.
+
 ## Endpoints integrados
 
 - autenticação: login, refresh, logout, identidade e troca de senha;
@@ -178,9 +212,12 @@ isolamento entre contas.
 
 ## Limites atuais
 
-- telas de paciente, profissional, preparação, execução, conclusão e progresso
-  continuam sob responsabilidade de Amanda e Kaylany;
-- nenhuma captura de câmera, visão computacional, voz ou regra clínica foi
-  implementada;
+- a implementação nativa de câmera/pose, permissões de plataforma e preview
+  ainda precisa ser integrada pela responsável pelos arquivos compartilhados;
+- a execução e o motor estão disponíveis como módulos, mas dependem de
+  composição com a navegação compartilhada e de uma regra aprovada para o
+  exercício selecionado;
+- validação empírica M05/M08 não foi realizada: protocolo e relatório identificam
+  explicitamente os campos ainda pendentes;
 - o catálogo real continuará vazio até existir exercício clinicamente aprovado;
 - a calibração deve permanecer local e seguir `docs/modules/calibration.md`.
