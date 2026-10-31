@@ -10,7 +10,7 @@ from app.modules.sessions.schemas import SessionResultCreate, SessionResultRespo
 from app.modules.sessions.services import SessionService
 
 router = APIRouter(tags=["sessions"])
-DatabaseSession = Annotated[Session, Depends(get_db_session)]
+DatabaseSession = Annotated[Session, Depends(get_db_session, scope="function")]
 PatientUser = Annotated[User, Depends(require_role(UserRole.PATIENT))]
 
 

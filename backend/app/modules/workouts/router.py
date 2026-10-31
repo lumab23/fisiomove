@@ -16,7 +16,7 @@ from app.modules.workouts.schemas import (
 from app.modules.workouts.services import WorkoutService
 
 router = APIRouter(tags=["workouts"])
-DatabaseSession = Annotated[Session, Depends(get_db_session)]
+DatabaseSession = Annotated[Session, Depends(get_db_session, scope="function")]
 Professional = Annotated[User, Depends(require_role(UserRole.PHYSIOTHERAPIST))]
 PatientUser = Annotated[User, Depends(require_role(UserRole.PATIENT))]
 CurrentUser = Annotated[User, Depends(get_current_user)]

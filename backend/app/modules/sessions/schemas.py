@@ -1,8 +1,16 @@
+import json
 from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictBool,
+    field_validator,
+    model_validator,
+)
 
 Positive = Annotated[int, Field(strict=True, gt=0)]
 Nonnegative = Annotated[int, Field(strict=True, ge=0)]
@@ -18,7 +26,7 @@ class SessionItemResultCreate(StrictRequest):
     completed_sets: Nonnegative
     completed_repetitions: Nonnegative
     active_duration_ms: Nonnegative
-    interrupted: bool
+    interrupted: StrictBool
 
 
 class SessionResultCreate(StrictRequest):
@@ -32,6 +40,17 @@ class SessionResultCreate(StrictRequest):
     low_confidence_summary: dict[str, Any] | None = None
     feedback_summary: dict[str, Any] | None = None
     items: list[SessionItemResultCreate]
+
+    @field_validator("low_confidence_summary", "feedback_summary")
+    @classmethod
+    def summaries_are_json_safe(
+        cls, value: dict[str, Any] | None
+    ) -> dict[str, Any] | None:
+        try:
+            json.dumps(value, allow_nan=False)
+        except (ValueError, TypeError) as exc:
+            raise ValueError("Summaries must contain finite JSON values") from exc
+        return value
 
     @field_validator("started_at", "finished_at")
     @classmethod

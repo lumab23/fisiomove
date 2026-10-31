@@ -14,7 +14,7 @@ from app.modules.sessions.schemas import SessionPage, SessionResultResponse
 from app.modules.sessions.services import SessionService
 
 router = APIRouter(tags=["sessions", "progress"])
-DatabaseSession = Annotated[Session, Depends(get_db_session)]
+DatabaseSession = Annotated[Session, Depends(get_db_session, scope="function")]
 PatientUser = Annotated[User, Depends(require_role(UserRole.PATIENT))]
 Professional = Annotated[User, Depends(require_role(UserRole.PHYSIOTHERAPIST))]
 Page = Annotated[int, Query(ge=1)]

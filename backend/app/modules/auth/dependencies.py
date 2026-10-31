@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Annotated
+from typing import Annotated, NoReturn
 
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -20,7 +20,7 @@ def get_authenticated_user(
         HTTPAuthorizationCredentials | None,
         Depends(bearer_scheme),
     ],
-    session: Annotated[Session, Depends(get_db_session)],
+    session: Annotated[Session, Depends(get_db_session, scope="function")],
 ) -> User:
     if credentials is None or credentials.scheme.lower() != "bearer":
         _raise_authentication_error("authentication_required")
@@ -73,7 +73,7 @@ def require_role(*allowed_roles: UserRole) -> Callable[..., User]:
     return dependency
 
 
-def _raise_authentication_error(code: str) -> None:
+def _raise_authentication_error(code: str) -> NoReturn:
     messages = {
         "authentication_required": "Authentication is required.",
         "access_token_expired": "The access token expired.",

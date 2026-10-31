@@ -138,18 +138,18 @@ pytest
 
 Os contratos e estados de implementação estão em `../docs/contracts/`.
 
-O teste PostgreSQL opcional é ativado por `FISIOMOVE_TEST_POSTGRES_URL`, apontando
-para servidor exclusivo de testes com permissão de criar bancos. Ele cria e
-remove seu próprio banco temporário e valida migrações, downgrade/reupgrade,
-transações, API, isolamento e concorrência de treinos e sessões.
-Sem a variável, o teste PostgreSQL é ignorado; SQLite continua sendo executado.
+A variável `FISIOMOVE_TEST_POSTGRES_URL` ativa PostgreSQL real para todas as
+fixtures de negócio (autenticação, pacientes, treinos, sessões, progresso e
+conquistas), além dos testes de concorrência e migrações. Cada teste cria um banco
+descartável e aplica Alembic até o head. Sem a variável, o modo rápido usa SQLite
+e ignora somente os testes que exigem PostgreSQL real.
 
 Exemplo com um servidor PostgreSQL de teste local, sem reutilizar o banco de
 desenvolvimento:
 
 ```bash
 export FISIOMOVE_TEST_POSTGRES_URL='postgresql+psycopg://usuario@127.0.0.1:5432/postgres'
-pytest -q -rs tests/test_postgresql_integration.py
+pytest -q -rs
 ```
 
 A conta informada precisa poder criar bancos. A fixture usa um nome aleatório e
@@ -193,3 +193,11 @@ listados e aceitos em novos treinos. Aprovação e revogação deixam eventos
 imutáveis em `exercise_approval_events`; não existe rota pública para registrar
 essas decisões. A infraestrutura registra evidência, mas não substitui a
 política institucional nem a validação efetiva do fisioterapeuta.
+
+## Hardening, PostgreSQL e Docker
+
+O [guia de produção e validação](../docs/validation/backend-production-hardening.md)
+descreve o Compose, o banco de testes descartável, a fila offline e a injeção da
+origem HTTPS no mobile. Para implantação, prefira `python -m scripts.migrate`
+(advisory lock + upgrade + verificação de drift) antes de iniciar os workers.
+`/health` verifica o processo; `/ready` também verifica banco e revisão Alembic.

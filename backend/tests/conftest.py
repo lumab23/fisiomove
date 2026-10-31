@@ -5,7 +5,6 @@ from uuid import uuid4
 
 import pytest
 from alembic import command
-from alembic.config import Config
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -18,22 +17,48 @@ os.environ.setdefault(
 
 
 @pytest.fixture
-def application(tmp_path) -> Generator[FastAPI, None, None]:
+def postgres_url() -> Generator[str, None, None]:
+    from tests.database import disposable_postgres
+
+    configured = os.getenv("FISIOMOVE_TEST_POSTGRES_URL")
+    if not configured:
+        pytest.skip("Set FISIOMOVE_TEST_POSTGRES_URL to an isolated PostgreSQL server")
+    yield from disposable_postgres(configured)
+
+
+@pytest.fixture
+def database_url(request: pytest.FixtureRequest, tmp_path: Path) -> str:
+    if os.getenv("FISIOMOVE_TEST_POSTGRES_URL"):
+        return request.getfixturevalue("postgres_url")
+    return f"sqlite+pysqlite:///{tmp_path / 'application.db'}"
+
+
+@pytest.fixture
+def migrated_database_url(database_url: str) -> str:
+    from app.db.migrations import migration_config
+
+    config = migration_config()
+    config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
+    command.upgrade(config, "head")
+    return database_url
+
+
+@pytest.fixture
+def application(migrated_database_url: str) -> Generator[FastAPI, None, None]:
     from app.core.config import Environment, Settings
     from app.main import create_app
 
     settings = Settings(
         _env_file=None,
         environment=Environment.TEST,
-        database_url=f"sqlite+pysqlite:///{tmp_path / 'application.db'}",
+        database_url=migrated_database_url,
         auth_secret_key="tests-only-secret-key-with-at-least-32-characters",
     )
     app = create_app(settings)
-    config = Config(str(Path(__file__).resolve().parents[1] / "alembic.ini"))
-    config.set_main_option("sqlalchemy.url", settings.database_url)
-    command.upgrade(config, "head")
-    yield app
-    app.state.database.dispose()
+    try:
+        yield app
+    finally:
+        app.state.database.dispose()
 
 
 @pytest.fixture

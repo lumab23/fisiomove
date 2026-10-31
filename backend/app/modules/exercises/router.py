@@ -12,7 +12,7 @@ from app.modules.exercises.services import ExerciseService
 router = APIRouter(
     prefix="/exercises", tags=["exercises"], dependencies=[Depends(get_current_user)]
 )
-DatabaseSession = Annotated[Session, Depends(get_db_session)]
+DatabaseSession = Annotated[Session, Depends(get_db_session, scope="function")]
 
 
 @router.get("", response_model=ExercisePage)

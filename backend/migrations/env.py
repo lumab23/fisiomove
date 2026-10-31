@@ -1,7 +1,7 @@
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import Connection, engine_from_config, pool
 
 from app.core.config import get_settings
 from app.db import models as registered_models  # noqa: F401
@@ -9,8 +9,10 @@ from app.db.base import Base
 
 config = context.config
 
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+if config.config_file_name is not None and config.attributes.get(
+    "configure_logger", True
+):
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 target_metadata = Base.metadata
 
@@ -36,24 +38,32 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+def migrate_connection(connection: Connection) -> None:
+    context.configure(
+        connection=connection, target_metadata=target_metadata, compare_type=True
+    )
+    with context.begin_transaction():
+        context.run_migrations()
+
+
 def run_migrations_online() -> None:
+    connection = config.attributes.get("connection")
+    if connection is not None:
+        migrate_connection(connection)
+        return
     configuration = config.get_section(config.config_ini_section, {})
     configuration["sqlalchemy.url"] = get_database_url()
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        hide_parameters=True,
     )
-
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            compare_type=True,
-        )
-
-        with context.begin_transaction():
-            context.run_migrations()
+    try:
+        with connectable.connect() as connection:
+            migrate_connection(connection)
+    finally:
+        connectable.dispose()
 
 
 if context.is_offline_mode():

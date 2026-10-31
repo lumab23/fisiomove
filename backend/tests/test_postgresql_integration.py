@@ -1,7 +1,5 @@
 """Opt-in integration against disposable databases on a test PostgreSQL server."""
 
-import os
-from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -14,8 +12,7 @@ from alembic.autogenerate import compare_metadata
 from alembic.config import Config
 from alembic.migration import MigrationContext
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, func, inspect, select
-from sqlalchemy.engine import make_url
+from sqlalchemy import func, inspect, select
 from sqlalchemy.exc import IntegrityError
 
 from app.core.config import Environment, Settings
@@ -35,34 +32,6 @@ from app.modules.workouts.schemas import WorkoutUpdate
 from app.modules.workouts.services import WorkoutService
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
-
-
-@pytest.fixture
-def postgres_url() -> Generator[str, None, None]:
-    configured = os.getenv("FISIOMOVE_TEST_POSTGRES_URL")
-    if not configured:
-        pytest.skip(
-            "Set FISIOMOVE_TEST_POSTGRES_URL to an isolated test PostgreSQL server"
-        )
-    admin_url = make_url(configured)
-    if admin_url.get_backend_name() != "postgresql":
-        pytest.fail("FISIOMOVE_TEST_POSTGRES_URL must use PostgreSQL")
-    database_name = f"fisiomove_test_{uuid4().hex}"
-    admin = create_engine(admin_url, isolation_level="AUTOCOMMIT")
-    try:
-        with admin.connect() as connection:
-            connection.exec_driver_sql(f'CREATE DATABASE "{database_name}"')
-        try:
-            yield admin_url.set(database=database_name).render_as_string(
-                hide_password=False
-            )
-        finally:
-            with admin.connect() as connection:
-                connection.exec_driver_sql(
-                    f'DROP DATABASE "{database_name}" WITH (FORCE)'
-                )
-    finally:
-        admin.dispose()
 
 
 def migration_config(url: str) -> Config:

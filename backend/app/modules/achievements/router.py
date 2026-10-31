@@ -11,7 +11,7 @@ from app.modules.auth.dependencies import require_role
 from app.modules.auth.models import User, UserRole
 
 router = APIRouter(tags=["achievements"])
-DatabaseSession = Annotated[Session, Depends(get_db_session)]
+DatabaseSession = Annotated[Session, Depends(get_db_session, scope="function")]
 PatientUser = Annotated[User, Depends(require_role(UserRole.PATIENT))]
 Professional = Annotated[User, Depends(require_role(UserRole.PHYSIOTHERAPIST))]
 

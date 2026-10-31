@@ -35,7 +35,7 @@ def token_response(pair: IssuedTokenPair) -> TokenPairResponse:
 def login(
     payload: LoginRequest,
     request: Request,
-    session: Annotated[Session, Depends(get_db_session)],
+    session: Annotated[Session, Depends(get_db_session, scope="function")],
 ) -> TokenPairResponse:
     pair = service(request, session).login(
         str(payload.email),
@@ -48,7 +48,7 @@ def login(
 def refresh(
     payload: RefreshRequest,
     request: Request,
-    session: Annotated[Session, Depends(get_db_session)],
+    session: Annotated[Session, Depends(get_db_session, scope="function")],
 ) -> TokenPairResponse:
     pair = service(request, session).refresh(payload.refresh_token.get_secret_value())
     return token_response(pair)
@@ -58,7 +58,7 @@ def refresh(
 def logout(
     payload: LogoutRequest,
     request: Request,
-    session: Annotated[Session, Depends(get_db_session)],
+    session: Annotated[Session, Depends(get_db_session, scope="function")],
 ) -> Response:
     service(request, session).logout(payload.refresh_token.get_secret_value())
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -76,7 +76,7 @@ def change_password(
     payload: ChangePasswordRequest,
     request: Request,
     user: Annotated[User, Depends(get_authenticated_user)],
-    session: Annotated[Session, Depends(get_db_session)],
+    session: Annotated[Session, Depends(get_db_session, scope="function")],
 ) -> Response:
     service(request, session).change_password(
         user,

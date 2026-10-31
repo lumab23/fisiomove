@@ -11,7 +11,7 @@ from app.modules.notes.schemas import NoteCreate, NotePage, NoteResponse, NoteUp
 from app.modules.notes.services import NoteService
 
 router = APIRouter(tags=["notes"])
-DatabaseSession = Annotated[Session, Depends(get_db_session)]
+DatabaseSession = Annotated[Session, Depends(get_db_session, scope="function")]
 Professional = Annotated[User, Depends(require_role(UserRole.PHYSIOTHERAPIST))]
 CurrentUser = Annotated[User, Depends(get_current_user)]
 

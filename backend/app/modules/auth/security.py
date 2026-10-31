@@ -1,7 +1,9 @@
 import hashlib
+import math
 import secrets
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from functools import lru_cache
 from uuid import UUID, uuid4
 
 import jwt
@@ -18,6 +20,11 @@ MAX_PASSWORD_LENGTH = 128
 class PasswordManager:
     def __init__(self) -> None:
         self._password_hash = PasswordHash.recommended()
+
+    @staticmethod
+    @lru_cache(maxsize=1)
+    def dummy_hash() -> str:
+        return PasswordHash.recommended().hash("unassigned-account-password-probe")
 
     def hash(self, password: str) -> str:
         validate_password(password)
@@ -94,6 +101,7 @@ class TokenService:
                 issuer=self._issuer,
                 audience=self._audience,
                 options={
+                    "strict_aud": True,
                     "require": [
                         "sub",
                         "role",
@@ -104,24 +112,34 @@ class TokenService:
                         "exp",
                         "iss",
                         "aud",
-                    ]
+                    ],
                 },
             )
         except ExpiredSignatureError as exc:
             raise AccessTokenError("access_token_expired") from exc
-        except InvalidTokenError as exc:
+        except (InvalidTokenError, ValueError, TypeError, OverflowError) as exc:
             raise AccessTokenError("invalid_access_token") from exc
 
         try:
+            version = payload["auth_version"]
+            if type(version) is not int or version < 1:
+                raise ValueError("Invalid auth version")
+            UUID(payload["jti"])
+            for field in ("iat", "exp"):
+                value = payload[field]
+                if type(value) not in (int, float) or not math.isfinite(value):
+                    raise ValueError("Invalid token timestamp")
+            if payload["exp"] <= payload["iat"]:
+                raise ValueError("Invalid token lifetime")
             if payload["type"] != "access":
                 raise ValueError("Unexpected token type")
             return AccessTokenClaims(
                 user_id=UUID(payload["sub"]),
                 role=UserRole(payload["role"]),
-                auth_version=int(payload["auth_version"]),
+                auth_version=version,
                 expires_at=datetime.fromtimestamp(payload["exp"], tz=UTC),
             )
-        except (KeyError, TypeError, ValueError) as exc:
+        except (KeyError, TypeError, ValueError, OverflowError) as exc:
             raise AccessTokenError("invalid_access_token") from exc
 
     def new_refresh_token(self) -> tuple[str, str, datetime]:

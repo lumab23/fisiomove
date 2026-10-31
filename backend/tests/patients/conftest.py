@@ -5,7 +5,6 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.core.config import Environment, Settings
-from app.db.base import Base
 from app.main import create_app
 from app.modules.auth.models import User, UserRole
 from app.modules.auth.security import PasswordManager
@@ -15,11 +14,11 @@ DEFAULT_PASSWORD = "SecurePassword123!"
 
 
 @pytest.fixture
-def settings(tmp_path) -> Settings:
+def settings(migrated_database_url: str) -> Settings:
     return Settings(
         _env_file=None,
         environment=Environment.TEST,
-        database_url=f"sqlite+pysqlite:///{tmp_path / 'patients.db'}",
+        database_url=migrated_database_url,
         auth_secret_key=TEST_SECRET,
         auth_access_token_minutes=15,
         auth_refresh_token_days=30,
@@ -29,7 +28,6 @@ def settings(tmp_path) -> Settings:
 @pytest.fixture
 def patients_app(settings: Settings) -> Generator[FastAPI, None, None]:
     application = create_app(settings)
-    Base.metadata.create_all(application.state.database.engine)
     try:
         yield application
     finally:

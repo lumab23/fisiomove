@@ -19,7 +19,7 @@ from app.modules.patients.services import PatientService
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 Physiotherapist = Annotated[User, Depends(require_role(UserRole.PHYSIOTHERAPIST))]
-DatabaseSession = Annotated[Session, Depends(get_db_session)]
+DatabaseSession = Annotated[Session, Depends(get_db_session, scope="function")]
 
 
 @router.post("", response_model=PatientResponse, status_code=status.HTTP_201_CREATED)

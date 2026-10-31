@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -5,6 +6,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import TimeoutError as DatabaseTimeoutError
 
 
 class ErrorResponse(BaseModel):
@@ -85,16 +88,46 @@ async def http_error_handler(_: Request, exc: HTTPException) -> JSONResponse:
             message=message,
             details=details,
         ),
+        exc.headers,
     )
 
 
-async def unexpected_error_handler(_: Request, __: Exception) -> JSONResponse:
-    return _response(
+async def unexpected_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    logging.getLogger("fisiomove.errors").error(
+        "unhandled_exception",
+        extra={
+            "request_id": getattr(request.state, "request_id", None),
+            "error_type": type(exc).__name__,
+        },
+    )
+    response = _response(
         500,
         ErrorResponse(
             code="internal_error",
             message="An unexpected error occurred.",
         ),
+    )
+    response.headers["X-Request-ID"] = getattr(request.state, "request_id", "unknown")
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+async def database_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    logging.getLogger("fisiomove.errors").warning(
+        "database_unavailable",
+        extra={
+            "request_id": getattr(request.state, "request_id", None),
+            "error_type": type(exc).__name__,
+        },
+    )
+    return _response(
+        503,
+        ErrorResponse(
+            code="database_unavailable",
+            message="The database is temporarily unavailable. Retry the same request.",
+        ),
+        {"Retry-After": "1"},
     )
 
 
@@ -102,4 +135,6 @@ def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(ApiError, api_error_handler)  # type: ignore[arg-type]
     app.add_exception_handler(RequestValidationError, validation_error_handler)  # type: ignore[arg-type]
     app.add_exception_handler(HTTPException, http_error_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(OperationalError, database_error_handler)
+    app.add_exception_handler(DatabaseTimeoutError, database_error_handler)
     app.add_exception_handler(Exception, unexpected_error_handler)

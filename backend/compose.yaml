@@ -1,0 +1,71 @@
+name: fisiomove
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fisiomove}
+      POSTGRES_USER: ${POSTGRES_USER:-fisiomove}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+  migrate:
+    build: .
+    image: fisiomove-api:local
+    env_file: .env
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      DB_ECHO: "false"
+      DATABASE_URL: ${DOCKER_DATABASE_URL:?Set DOCKER_DATABASE_URL using host db}
+    command: [python, -m, scripts.migrate]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+  api:
+    build: .
+    image: fisiomove-api:local
+    env_file: .env
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      DB_ECHO: "false"
+      DATABASE_URL: ${DOCKER_DATABASE_URL:?Set DOCKER_DATABASE_URL using host db}
+    command:
+      [
+        uvicorn,
+        app.main:app,
+        --host,
+        0.0.0.0,
+        --port,
+        "8000",
+        --no-access-log,
+        --proxy-headers,
+        --forwarded-allow-ips,
+        "${FORWARDED_ALLOW_IPS:-127.0.0.1}",
+      ]
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          CMD,
+          python,
+          -c,
+          'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/ready", timeout=3)',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+volumes:
+  postgres_data:

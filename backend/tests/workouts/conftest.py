@@ -1,10 +1,7 @@
 from collections.abc import Generator
-from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from alembic import command
-from alembic.config import Config
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -23,17 +20,14 @@ from app.modules.workouts.models import (  # noqa: F401
 
 
 @pytest.fixture
-def application(tmp_path) -> Generator[FastAPI, None, None]:
+def application(migrated_database_url: str) -> Generator[FastAPI, None, None]:
     settings = Settings(
         _env_file=None,
         environment=Environment.TEST,
-        database_url=f"sqlite+pysqlite:///{tmp_path / 'workouts.db'}",
+        database_url=migrated_database_url,
         auth_secret_key="tests-only-secret-key-with-at-least-32-characters",
     )
     app = create_app(settings)
-    config = Config(str(Path(__file__).resolve().parents[2] / "alembic.ini"))
-    config.set_main_option("sqlalchemy.url", settings.database_url)
-    command.upgrade(config, "head")
     yield app
     app.state.database.dispose()
 

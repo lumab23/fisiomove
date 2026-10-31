@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import hashlib
 import json
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, NoReturn
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -25,7 +27,7 @@ from app.modules.sessions.scoring import calculate_session_score
 from app.modules.workouts.services import WorkoutService
 
 
-def _idempotency_conflict() -> None:
+def _idempotency_conflict() -> NoReturn:
     raise ApiError(
         status_code=409,
         code="idempotency_conflict",
@@ -34,7 +36,7 @@ def _idempotency_conflict() -> None:
     )
 
 
-def _session_not_found() -> None:
+def _session_not_found() -> NoReturn:
     raise ApiError(
         status_code=404,
         code="session_not_found",

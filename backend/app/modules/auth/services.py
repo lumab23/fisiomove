@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import NoReturn
 from uuid import UUID, uuid4
 
 from pydantic import EmailStr, TypeAdapter
@@ -53,8 +54,12 @@ class AuthenticationService:
         self._tokens = TokenService(settings)
 
     def login(self, email: str, password: str) -> IssuedTokenPair:
-        user = self._users.get_by_email(normalize_email(email))
-        if user is None or not self._passwords.verify(password, user.password_hash):
+        user = self._users.get_by_email_for_update(normalize_email(email))
+        # Verify a dummy hash too, so unknown accounts do not skip Argon2 work.
+        valid_password = self._passwords.verify(
+            password, user.password_hash if user else self._passwords.dummy_hash()
+        )
+        if user is None or not valid_password:
             raise ApiError(
                 status_code=401,
                 code="invalid_credentials",
@@ -71,6 +76,11 @@ class AuthenticationService:
 
     def refresh(self, raw_token: str) -> IssuedTokenPair:
         token_hash = self._tokens.hash_refresh_token(raw_token)
+        candidate = self._refresh_tokens.get_by_hash(token_hash)
+        if candidate is None:
+            self._raise_refresh_error("invalid_refresh_token")
+        # Lock order is always account -> refresh tokens, including resets/login.
+        user = self._users.get_by_id_for_update(candidate.user_id)
         stored_token = self._refresh_tokens.get_by_hash_for_update(token_hash)
         if stored_token is None:
             self._raise_refresh_error("invalid_refresh_token")
@@ -79,7 +89,6 @@ class AuthenticationService:
         if ensure_utc(stored_token.expires_at) <= datetime.now(UTC):
             self._raise_refresh_error("refresh_token_expired")
 
-        user = self._users.get_by_id(stored_token.user_id)
         if user is None or not user.is_active:
             raise ApiError(
                 status_code=403,
@@ -110,6 +119,14 @@ class AuthenticationService:
         current_password: str,
         new_password: str,
     ) -> None:
+        locked_user = self._users.get_by_id_for_update(user.id)
+        if locked_user is None or not locked_user.is_active:
+            raise ApiError(
+                status_code=403,
+                code="account_inactive",
+                message="This account is inactive.",
+            )
+        user = locked_user
         validate_password(new_password)
         if not self._passwords.verify(current_password, user.password_hash):
             raise ApiError(
@@ -152,7 +169,7 @@ class AuthenticationService:
             expires_in=self._tokens.access_token_seconds,
         )
 
-    def _raise_refresh_error(self, code: str) -> None:
+    def _raise_refresh_error(self, code: str) -> NoReturn:
         messages = {
             "invalid_refresh_token": "The refresh token is invalid.",
             "refresh_token_revoked": "The refresh token was revoked.",
@@ -271,7 +288,7 @@ class PatientAccountService:
         return user
 
     def _get_patient(self, user_id: UUID) -> User:
-        user = self._users.get_by_id(user_id)
+        user = self._users.get_by_id_for_update(user_id)
         if user is None:
             raise ApiError(
                 status_code=404,

@@ -10,6 +10,10 @@ from app.modules.auth.models import RefreshToken, User, UserRole
 
 
 class UserRepository(Protocol):
+    def get_by_id_for_update(self, user_id: UUID) -> User | None: ...
+
+    def get_by_email_for_update(self, email: str) -> User | None: ...
+
     def get_by_id(self, user_id: UUID) -> User | None: ...
 
     def get_by_email(self, email: str) -> User | None: ...
@@ -20,6 +24,8 @@ class UserRepository(Protocol):
 
 
 class RefreshTokenRepository(Protocol):
+    def get_by_hash(self, token_hash: str) -> RefreshToken | None: ...
+
     def get_by_hash_for_update(self, token_hash: str) -> RefreshToken | None: ...
 
     def add(self, token: RefreshToken) -> RefreshToken: ...
@@ -33,6 +39,22 @@ class SqlAlchemyUserRepository:
 
     def get_by_id(self, user_id: UUID) -> User | None:
         return self._session.get(User, user_id)
+
+    def get_by_id_for_update(self, user_id: UUID) -> User | None:
+        return self._session.scalar(
+            select(User)
+            .where(User.id == user_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+
+    def get_by_email_for_update(self, email: str) -> User | None:
+        return self._session.scalar(
+            select(User)
+            .where(User.email == email)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
 
     def get_by_email(self, email: str) -> User | None:
         return self._session.scalar(select(User).where(User.email == email))
@@ -51,11 +73,17 @@ class SqlAlchemyRefreshTokenRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
+    def get_by_hash(self, token_hash: str) -> RefreshToken | None:
+        return self._session.scalar(
+            select(RefreshToken).where(RefreshToken.token_hash == token_hash)
+        )
+
     def get_by_hash_for_update(self, token_hash: str) -> RefreshToken | None:
         statement = (
             select(RefreshToken)
             .where(RefreshToken.token_hash == token_hash)
             .with_for_update()
+            .execution_options(populate_existing=True)
         )
         return self._session.scalar(statement)
 

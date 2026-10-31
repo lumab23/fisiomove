@@ -253,3 +253,25 @@ def test_old_revision_is_rejected_for_session_started_after_edit(
     )
     assert response.status_code == 409
     assert response.json()["code"] == "session_revision_not_active_at_start"
+
+
+def test_nonfinite_summary_is_rejected_before_database_write(
+    client, data, headers, session_payload
+) -> None:
+    # Direct Pydantic validation also covers JSON parsers that accept NaN/Infinity.
+    import pytest
+    from pydantic import ValidationError
+
+    from app.modules.sessions.schemas import SessionResultCreate
+
+    payload = {**session_payload, "feedback_summary": {"nested": [float("nan")]}}
+    with pytest.raises(ValidationError, match="finite JSON"):
+        SessionResultCreate.model_validate(payload)
+    payload = {
+        **session_payload,
+        "items": [{**session_payload["items"][0], "interrupted": "false"}],
+    }
+    response = client.post(
+        "/api/v1/me/sessions", headers=headers(data["patient_user"]), json=payload
+    )
+    assert response.status_code == 422
