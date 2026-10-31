@@ -201,3 +201,24 @@ descreve o Compose, o banco de testes descartável, a fila offline e a injeção
 origem HTTPS no mobile. Para implantação, prefira `python -m scripts.migrate`
 (advisory lock + upgrade + verificação de drift) antes de iniciar os workers.
 `/health` verifica o processo; `/ready` também verifica banco e revisão Alembic.
+
+## Desenvolvimento na rede local (iPhone físico)
+
+Com PostgreSQL e migrações prontos, execute no ambiente virtual de `backend/`:
+
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0
+```
+
+Use `http://IP_DO_MAC:8000/health` no Safari do iPhone na mesma rede e configure
+`FISIOMOVE_DEV_API_ORIGIN=http://IP_DO_MAC:8000` em `mobile/.env` (sem `/api/v1`).
+Descubra o IP com `ipconfig getifaddr en0`. O firewall deve permitir a conexão;
+redes com isolamento de clientes ou VPN podem impedir o acesso.
+
+A aplicação atual não instala `TrustedHostMiddleware` nem `CORSMiddleware`,
+portanto não há allowlist de hosts bloqueando o IP da LAN. O cliente HTTP nativo
+React Native não depende de CORS do navegador; não é necessário liberar `*`.
+Autenticação JWT e autorização continuam obrigatórias nas rotas protegidas.
+Use essa escuta com `--reload` somente no desenvolvimento em rede de confiança.
+Os passos de assinatura e execução estão em
+[Rodar no iPhone físico](../mobile/README.md#rodar-no-iphone-físico).
