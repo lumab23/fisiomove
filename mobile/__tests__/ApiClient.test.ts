@@ -54,3 +54,30 @@ test('classifica falha de rede sem expor detalhes técnicos', async () => {
     message: 'Não foi possível acessar o servidor.',
   });
 });
+
+test('não renova nem repete uma requisição cancelada durante troca de conta', async () => {
+  const fetcher = jest.fn().mockImplementation(async (_url, options) => {
+    (options?.signal as AbortSignal | undefined)?.throwIfAborted();
+    return response(401, { code: 'access_token_expired' });
+  });
+  const session = new AuthenticationSession(config, memoryStorage(), fetcher);
+  await session.save({
+    access_token: 'access',
+    refresh_token: 'refresh-token-with-more-than-thirty-two-characters',
+    token_type: 'bearer',
+    expires_in: 1,
+  });
+  const refresh = jest.spyOn(session, 'refresh');
+  const controller = new AbortController();
+  controller.abort();
+
+  await expect(
+    new ApiClient(config, session, fetcher).post(
+      '/me/sessions',
+      { result: 'private' },
+      { signal: controller.signal },
+    ),
+  ).rejects.toMatchObject({ message: 'A requisição foi cancelada.' });
+  expect(refresh).not.toHaveBeenCalled();
+  expect(fetcher).toHaveBeenCalledTimes(1);
+});

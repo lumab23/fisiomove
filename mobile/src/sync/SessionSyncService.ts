@@ -16,8 +16,13 @@ import { sanitizeSessionResult } from './validation';
 const MAX_AUTOMATIC_ATTEMPTS = 8;
 const MAX_BACKOFF_MS = 30 * 60 * 1000;
 
+interface RunningSync {
+  promise: Promise<SyncReport>;
+  controller: AbortController;
+}
+
 export class SessionSyncService {
-  private readonly running = new Map<UUID, Promise<SyncReport>>();
+  private readonly running = new Map<UUID, RunningSync>();
 
   constructor(
     private readonly sessions: SessionService,
@@ -90,16 +95,37 @@ export class SessionSyncService {
     return (await this.store.load(ownerUserId)).pending;
   }
 
+  async getDraft(
+    ownerUserId: UUID,
+    clientSessionId: UUID,
+  ): Promise<SessionDraft | null> {
+    const state = await this.store.load(ownerUserId);
+    return (
+      state.drafts.find(draft => draft.client_session_id === clientSessionId) ??
+      null
+    );
+  }
+
   sync(ownerUserId: UUID): Promise<SyncReport> {
     const current = this.running.get(ownerUserId);
     if (current) {
-      return current;
+      return current.promise;
     }
-    const run = this.performSync(ownerUserId).finally(() => {
-      this.running.delete(ownerUserId);
-    });
-    this.running.set(ownerUserId, run);
-    return run;
+    const controller = new AbortController();
+    const promise = this.performSync(ownerUserId, controller.signal).finally(
+      () => {
+        const active = this.running.get(ownerUserId);
+        if (active?.promise === promise) {
+          this.running.delete(ownerUserId);
+        }
+      },
+    );
+    this.running.set(ownerUserId, { promise, controller });
+    return promise;
+  }
+
+  cancel(ownerUserId: UUID): void {
+    this.running.get(ownerUserId)?.controller.abort();
   }
 
   async retryNow(
@@ -117,6 +143,53 @@ export class SessionSyncService {
       await this.store.save(state);
     }
     return this.sync(ownerUserId);
+  }
+
+  private async performSync(
+    ownerUserId: UUID,
+    signal: AbortSignal,
+  ): Promise<SyncReport> {
+    const state = await this.store.load(ownerUserId);
+    let sent = 0;
+    const sentClientSessionIds: UUID[] = [];
+    for (const pending of [...state.pending]) {
+      if (signal.aborted || !this.canAttempt(pending)) {
+        continue;
+      }
+      pending.state = 'syncing';
+      pending.updated_at = this.now().toISOString();
+      await this.store.save(state);
+      try {
+        await this.sessions.create(pending.payload, { signal });
+        state.pending = state.pending.filter(
+          item =>
+            item.payload.client_session_id !==
+            pending.payload.client_session_id,
+        );
+        sent += 1;
+        sentClientSessionIds.push(pending.payload.client_session_id);
+        await this.store.save(state);
+      } catch (error) {
+        if (signal.aborted) {
+          pending.state = 'pending';
+          pending.next_attempt_at = null;
+          pending.updated_at = this.now().toISOString();
+          await this.store.save(state);
+          break;
+        }
+        this.recordFailure(pending, error);
+        await this.store.save(state);
+        if (error instanceof ApiError && error.kind === 'session_expired') {
+          break;
+        }
+      }
+    }
+    return {
+      sent,
+      remaining: state.pending.length,
+      blocked: state.pending.filter(item => item.state === 'blocked').length,
+      sent_client_session_ids: sentClientSessionIds,
+    };
   }
 
   private addPending(
@@ -153,40 +226,6 @@ export class SessionSyncService {
     };
     state.pending.push(pending);
     return pending;
-  }
-
-  private async performSync(ownerUserId: UUID): Promise<SyncReport> {
-    const state = await this.store.load(ownerUserId);
-    let sent = 0;
-    for (const pending of [...state.pending]) {
-      if (!this.canAttempt(pending)) {
-        continue;
-      }
-      pending.state = 'syncing';
-      pending.updated_at = this.now().toISOString();
-      await this.store.save(state);
-      try {
-        await this.sessions.create(pending.payload);
-        state.pending = state.pending.filter(
-          item =>
-            item.payload.client_session_id !==
-            pending.payload.client_session_id,
-        );
-        sent += 1;
-        await this.store.save(state);
-      } catch (error) {
-        this.recordFailure(pending, error);
-        await this.store.save(state);
-        if (error instanceof ApiError && error.kind === 'session_expired') {
-          break;
-        }
-      }
-    }
-    return {
-      sent,
-      remaining: state.pending.length,
-      blocked: state.pending.filter(item => item.state === 'blocked').length,
-    };
   }
 
   private canAttempt(pending: PendingSession): boolean {

@@ -69,11 +69,19 @@ A configuração fica em `src/config/environment.ts` e usa `/api/v1`:
 - iOS Simulator: `http://127.0.0.1:8000`;
 - dispositivo físico: substitua a origem de desenvolvimento pelo IP da máquina
   na mesma rede, por exemplo `http://192.168.1.20:8000`;
-- produção: configure `productionApiOrigin` com HTTPS antes do build. O app
-  falha explicitamente se uma origem de produção não estiver definida.
+- produção/homologação: a composição do build deve fornecer
+  `FISIOMOVE_API_ORIGIN` ao adaptador `createReleaseAppConfig`. Nenhum domínio é
+  inventado ou versionado neste repositório. O app falha explicitamente se a
+  origem não estiver definida ou não usar HTTPS.
 
 Não use `localhost` em um dispositivo físico: ele aponta para o próprio celular.
 A URL não deve conter `/api/v1`, porque o cliente acrescenta o prefixo.
+Origens com credenciais, query string ou fragmento são rejeitadas para evitar
+que tokens ou configuração sensível sejam incorporados à URL. A implantação
+precisa ligar sua ferramenta de build à variável `FISIOMOVE_API_ORIGIN` antes do
+release; até isso ocorrer, o comportamento de produção permanece
+deliberadamente fail-closed. A variável é configuração pública de endpoint, não
+um local para credenciais ou tokens.
 
 ## Autenticação
 
@@ -122,6 +130,16 @@ const sync = useSessionSync();
 const draft = await sync.prepare(workout.id, workout.current_revision_id);
 ```
 
+A futura tela de execução recebe `clientSessionId` pela navegação e recupera o
+rascunho protegido sem duplicar os demais dados na rota:
+
+```ts
+const draft = await sync.getDraft(route.params.clientSessionId);
+if (!draft) {
+  // Tratar sessão local ausente; não gerar outro UUID silenciosamente.
+}
+```
+
 Ao concluir ou interromper, entregue somente resultados derivados:
 
 ```ts
@@ -155,6 +173,18 @@ automáticas. `401` aguarda nova autenticação. `404`, `409`, `422` e demais er
 permanentes ficam como `blocked`, com código original preservado; nunca são
 marcados como sincronizados nem reenviados indefinidamente. `retryNow` exige uma
 ação explícita para tentar novamente um item bloqueado ou pausado.
+
+Ao finalizar um rascunho, o resultado é salvo antes da rede e uma tentativa de
+sincronização é iniciada em segundo plano. A troca de conta cancela a requisição
+da identidade anterior; cancelamento não consome retry nem transforma a
+pendência em erro permanente. Dois gatilhos simultâneos para a mesma conta
+compartilham a mesma execução.
+
+Para apresentar o estado sem depender dos detalhes internos, use
+`selectSessionSyncStatus(clientSessionId, pendingItem, lastReport)`. O seletor
+retorna `pending`, `syncing`, `synced`, `retryable_error` ou `permanent_error`;
+retorna `null` quando não existe fila nem confirmação de envio para aquele UUID.
+`synced` só é produzido quando o último `SyncReport` confirma o identificador.
 
 ## Execução de exercício (M05–M08)
 
