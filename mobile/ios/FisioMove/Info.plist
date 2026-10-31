@@ -31,7 +31,7 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 		<key>NSAllowsLocalNetworking</key>
-		<true/>
+		<false/>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>

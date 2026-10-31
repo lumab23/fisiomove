@@ -43,8 +43,8 @@ export function createCalibration(
   if (maximum - minimum > policy.maximum_sample_spread_degrees) {
     throw new Error('A posição variou além do limite de calibração aprovado.');
   }
-  const reference = angleSamples.reduce((sum, value) => sum + value, 0) /
-    angleSamples.length;
+  const reference =
+    angleSamples.reduce((sum, value) => sum + value, 0) / angleSamples.length;
   if (
     reference < policy.allowed_reference_degrees[0] ||
     reference > policy.allowed_reference_degrees[1]

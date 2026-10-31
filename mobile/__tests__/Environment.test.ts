@@ -48,3 +48,12 @@ test('adapta a variável de build sem definir domínio padrão inseguro', () => 
     }).apiOrigin,
   ).toBe('https://api.example.test');
 });
+
+test.each([
+  'https://api.example.test/api/v1',
+  'https://api.example.test/private',
+])('rejeita caminho na origem: %s', apiOrigin => {
+  expect(() =>
+    createAppConfig({ environment: 'production', apiOrigin }),
+  ).toThrow('caminho');
+});

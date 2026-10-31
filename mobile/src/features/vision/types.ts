@@ -9,10 +9,7 @@ export type PoseLandmarkId =
   | 'right_wrist';
 
 export type FrameOrientation =
-  | 'portrait'
-  | 'portrait-upside-down'
-  | 'landscape-left'
-  | 'landscape-right';
+  'portrait' | 'portrait-upside-down' | 'landscape-left' | 'landscape-right';
 
 export interface PoseLandmark {
   x: number;

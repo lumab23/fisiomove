@@ -1,17 +1,14 @@
 import type { SecureJsonStorage } from '../../storage/secureJsonStorage';
-import type {
-  CalibrationContext,
-  MovementCalibration,
-} from './types';
+import type { CalibrationContext, MovementCalibration } from './types';
 import { calibrationMatches } from './calibration';
 
 export class CalibrationStore {
   constructor(private readonly storage: SecureJsonStorage) {}
 
-  async get(
-    context: CalibrationContext,
-  ): Promise<MovementCalibration | null> {
-    const value = await this.storage.get<MovementCalibration>(serviceKey(context));
+  async get(context: CalibrationContext): Promise<MovementCalibration | null> {
+    const value = await this.storage.get<MovementCalibration>(
+      serviceKey(context),
+    );
     return value && calibrationMatches(value, context) ? value : null;
   }
 

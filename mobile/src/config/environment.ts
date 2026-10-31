@@ -19,15 +19,25 @@ export const developmentApiOrigins = {
   default: 'http://127.0.0.1:8000',
 } as const;
 
-// Configure o domínio HTTPS antes de gerar uma versão de produção.
-export const productionApiOrigin: string | null = null;
+// Babel injects only these public values from mobile/.env or the build environment.
+// React Native does not read the server environment after the bundle is built.
+declare const __FISIOMOVE_API_ORIGIN__: string | undefined;
+declare const __FISIOMOVE_DEV_API_ORIGIN__: string | undefined;
+const developmentApiOrigin =
+  typeof __FISIOMOVE_DEV_API_ORIGIN__ === 'string'
+    ? __FISIOMOVE_DEV_API_ORIGIN__
+    : undefined;
+export const productionApiOrigin: string | null =
+  typeof __FISIOMOVE_API_ORIGIN__ === 'string'
+    ? __FISIOMOVE_API_ORIGIN__
+    : null;
 
 export function createAppConfig(overrides: Partial<AppConfig> = {}): AppConfig {
   const environment: AppEnvironment =
     overrides.environment ?? (__DEV__ ? 'development' : 'production');
   const defaultOrigin =
     environment === 'development'
-      ? Platform.select(developmentApiOrigins)
+      ? (developmentApiOrigin ?? Platform.select(developmentApiOrigins))
       : productionApiOrigin;
   const apiOrigin = overrides.apiOrigin ?? defaultOrigin;
 
@@ -49,6 +59,9 @@ export function createAppConfig(overrides: Partial<AppConfig> = {}): AppConfig {
 export function createReleaseAppConfig(
   variables: ReleaseEnvironmentVariables,
 ): AppConfig {
+  if (!variables.FISIOMOVE_API_ORIGIN) {
+    throw new Error('A origem da API precisa ser configurada.');
+  }
   return createAppConfig({
     environment: 'production',
     apiOrigin: variables.FISIOMOVE_API_ORIGIN,
@@ -68,6 +81,9 @@ function validateApiOrigin(
   if (parsed.username || parsed.password) {
     throw new Error('A origem da API não pode conter credenciais.');
   }
+  if (!/^\/*$/.test(parsed.pathname)) {
+    throw new Error('A origem da API não pode conter um caminho.');
+  }
   if (parsed.search || parsed.hash) {
     throw new Error('A origem da API não pode conter query ou fragmento.');
   }
@@ -77,7 +93,7 @@ function validateApiOrigin(
   if (!['http:', 'https:'].includes(parsed.protocol)) {
     throw new Error('A origem da API precisa usar HTTP ou HTTPS.');
   }
-  return apiOrigin.replace(/\/+$/, '');
+  return parsed.origin;
 }
 
 export const appConfig = createAppConfig();

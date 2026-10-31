@@ -67,8 +67,8 @@ A configuração fica em `src/config/environment.ts` e usa `/api/v1`:
 
 - Android Emulator: `http://10.0.2.2:8000`;
 - iOS Simulator: `http://127.0.0.1:8000`;
-- dispositivo físico: substitua a origem de desenvolvimento pelo IP da máquina
-  na mesma rede, por exemplo `http://192.168.1.20:8000`;
+- dispositivo físico: configure `FISIOMOVE_DEV_API_ORIGIN` em `mobile/.env`
+  com o IP do Mac, por exemplo `http://192.168.1.20:8000` (passo a passo abaixo);
 - produção/homologação: a composição do build deve fornecer
   `FISIOMOVE_API_ORIGIN` ao adaptador `createReleaseAppConfig`. Nenhum domínio é
   inventado ou versionado neste repositório. O app falha explicitamente se a
@@ -258,3 +258,86 @@ A demonstração visual abre sem backend e cobre os fluxos do paciente e do
 fisioterapeuta. Consulte `../docs/mobile/pdf-screen-audit.md` para a auditoria e
 `../docs/mobile/frontend-guide.md` para executar e testar. O login integrado
 continua disponível pela opção de acesso à conta na demonstração.
+
+## Origem HTTPS de release
+
+Configure `FISIOMOVE_API_ORIGIN` em `mobile/.env` ou no ambiente do build. Use apenas
+`https://host[:porta]`, sem `/api/v1`; nenhuma chave privada pertence ao bundle.
+Reinicie Metro com `npm start -- --reset-cache` e reconstrua o aplicativo. Consulte o
+[guia de configuração e validação](../docs/validation/backend-production-hardening.md).
+
+## Rodar no iPhone físico
+
+1. Conecte Mac e iPhone à mesma rede Wi-Fi. Descubra o IP do Mac:
+
+   ```bash
+   ipconfig getifaddr en0
+   ```
+
+   Se não retornar endereço, consulte Ajustes do Sistema > Wi-Fi > Detalhes >
+   TCP/IP; a interface ativa pode ser outra. O IP pode mudar ao reconectar.
+
+2. Em `backend/`, com o ambiente virtual ativado, PostgreSQL configurado e
+   migrações aplicadas, inicie:
+
+   ```bash
+   uvicorn app.main:app --reload --host 0.0.0.0
+   ```
+
+   No Safari do iPhone, abra `http://IP_DO_MAC:8000/health`. Se não responder,
+   confira firewall do Mac, VPN e isolamento de dispositivos no roteador.
+   `0.0.0.0` é o endereço de escuta; use o IP real na URL do celular.
+
+3. Crie ou edite `mobile/.env`, preservando configurações existentes:
+
+   ```dotenv
+   FISIOMOVE_DEV_API_ORIGIN=http://192.168.1.20:8000
+   ```
+
+   Substitua pelo IP do Mac, sem `/api/v1`. A variável pública vale somente em
+   desenvolvimento e passa pela validação de URL existente. Sem ela, continuam
+   os padrões do simulador iOS (`127.0.0.1`) e emulador Android (`10.0.2.2`).
+   O ambiente do processo tem precedência sobre `.env`. Release usa exclusivamente
+   `FISIOMOVE_API_ORIGIN` e exige HTTPS. Nunca coloque segredos nesses valores.
+
+4. Abra `mobile/ios/FisioMove.xcworkspace` no Xcode. Conecte o iPhone inicialmente
+   por USB, desbloqueie e confirme **Confiar neste computador**. Em Settings >
+   Accounts do Xcode, adicione seu Apple ID. No target FisioMove > **Signing &
+   Capabilities**, habilite assinatura automática, escolha **Team = seu Apple ID
+   pessoal (Personal Team)** e configure manualmente um **bundle id único**.
+   Selecione o iPhone como destino e a configuração **Debug**. Este ajuste não
+   modifica Team nem bundle id; faça a assinatura manualmente no Xcode.
+
+5. No iPhone, ative **Ajustes > Privacidade e Segurança > Modo de Desenvolvedor**,
+   reinicie e confirme quando solicitado. Se aparecer desenvolvedor não confiável,
+   acesse **Ajustes > Geral > VPN e Gerenciamento de Dispositivos**, selecione o
+   perfil do seu Apple ID e toque em **Confiar**. O perfil aparece após instalar
+   o app assinado. Para dispensar o cabo depois do pareamento, habilite **Connect
+   via network** no Xcode > Window > Devices and Simulators, quando disponível.
+
+6. Em `mobile/`, reinicie Metro após alterar `.env` e deixe o terminal aberto:
+
+   ```bash
+   npm start -- --reset-cache
+   ```
+
+   Em outro terminal, também em `mobile/`:
+
+   ```bash
+   npm run ios -- --device
+   # Se houver mais de um aparelho:
+   npm run ios -- --device "Nome do iPhone"
+   ```
+
+   Permita acesso à **Rede Local** quando solicitado. Se negado, habilite em
+   Ajustes > Privacidade e Segurança > Rede Local > FisioMove. API (porta 8000)
+   e Metro (porta 8081) precisam estar acessíveis no Mac. Mantenha Metro aberto
+   durante o debug e reconstrua o app para aplicar mudanças nativas de plist.
+
+Debug usa `ios/FisioMove/Info-Debug.plist`, com descrição de uso em português e
+`NSAllowsLocalNetworking=true`. Release usa `Info.plist`, com essa exceção
+desabilitada; ambos mantêm `NSAllowsArbitraryLoads=false`. Ao adicionar chaves
+compartilhadas, mantenha os dois plists alinhados. Consulte a
+[documentação de ATS da Apple](https://developer.apple.com/documentation/bundleresources/information-property-list/nsapptransportsecurity/nsallowslocalnetworking).
+Teste a API pela opção de acesso à conta; a demonstração visual continua local.
+Imagens da câmera permanecem no aparelho.
