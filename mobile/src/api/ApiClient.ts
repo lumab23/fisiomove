@@ -45,7 +45,11 @@ export class ApiClient {
     const retryAuthentication = options.retryAuthentication ?? true;
     const controller = new AbortController();
     const onAbort = () => controller.abort();
-    options.signal?.addEventListener('abort', onAbort);
+    if (options.signal?.aborted) {
+      controller.abort();
+    } else {
+      options.signal?.addEventListener('abort', onAbort);
+    }
     const timeout = setTimeout(
       () => controller.abort(),
       this.config.requestTimeoutMs,
@@ -74,7 +78,13 @@ export class ApiClient {
       );
 
       if (response.status === 401 && authenticated && retryAuthentication) {
+        if (controller.signal.aborted) {
+          throw new ApiError('unexpected', 'A requisição foi cancelada.');
+        }
         await this.authentication.refresh();
+        if (controller.signal.aborted) {
+          throw new ApiError('unexpected', 'A requisição foi cancelada.');
+        }
         return this.request<T>(path, {
           ...options,
           retryAuthentication: false,

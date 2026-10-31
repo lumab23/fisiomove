@@ -11,10 +11,12 @@ export type {
 export { useSessionSync } from '../sync/SessionSyncContext';
 export type {
   PendingSession,
+  PublicSessionSyncStatus,
   SessionCompletion,
   SessionDraft,
   SyncReport,
 } from '../sync/types';
+export { selectSessionSyncStatus } from '../sync/status';
 export { failureState, resolvedState } from './asyncState';
 export type { AsyncState } from './asyncState';
 

@@ -49,4 +49,8 @@ export interface SyncReport {
   sent: number;
   remaining: number;
   blocked: number;
+  sent_client_session_ids: UUID[];
 }
+
+export type PublicSessionSyncStatus =
+  'pending' | 'syncing' | 'synced' | 'retryable_error' | 'permanent_error';

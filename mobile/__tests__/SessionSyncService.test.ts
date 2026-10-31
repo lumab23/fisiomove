@@ -77,6 +77,14 @@ test('preserva identificadores antes da execução e monta o resultado sem subst
   expect(pending.payload.started_at).toBe(draft.started_at);
 });
 
+test('recupera o rascunho somente no namespace do proprietário', async () => {
+  const { service } = setup();
+  const draft = await service.prepare(OWNER, WORKOUT, REVISION);
+
+  await expect(service.getDraft(OWNER, CLIENT)).resolves.toEqual(draft);
+  await expect(service.getDraft(OTHER_OWNER, CLIENT)).resolves.toBeNull();
+});
+
 test('mantém resultado offline e reenvia o mesmo conteúdo após reinicialização', async () => {
   const { api, store, service, advance } = setup();
   api.create.mockRejectedValueOnce(new ApiError('network', 'offline'));
@@ -99,8 +107,12 @@ test('mantém resultado offline e reenvia o mesmo conteúdo após reinicializaç
     sent: 1,
     remaining: 0,
   });
-  expect(api.create).toHaveBeenNthCalledWith(1, payload);
-  expect(api.create).toHaveBeenNthCalledWith(2, payload);
+  expect(api.create).toHaveBeenNthCalledWith(1, payload, {
+    signal: expect.any(AbortSignal),
+  });
+  expect(api.create).toHaveBeenNthCalledWith(2, payload, {
+    signal: expect.any(AbortSignal),
+  });
 });
 
 test('retry idêntico não duplica e conteúdo divergente gera conflito local', async () => {
@@ -141,6 +153,54 @@ test('isola filas por usuário e nunca sincroniza com outra identidade', async (
   expect(await service.list(OWNER)).toHaveLength(1);
 });
 
+test('coordena gatilhos simultâneos em uma única sincronização', async () => {
+  const { api, service } = setup();
+  let release!: () => void;
+  api.create.mockImplementationOnce(
+    () =>
+      new Promise(resolve => {
+        release = () => resolve({ id: 'result' });
+      }),
+  );
+  await service.enqueue(OWNER, payload);
+
+  const first = service.sync(OWNER);
+  const second = service.sync(OWNER);
+  await new Promise<void>(resolve => setTimeout(resolve, 0));
+  expect(api.create).toHaveBeenCalledTimes(1);
+  release();
+
+  await expect(Promise.all([first, second])).resolves.toEqual([
+    expect.objectContaining({ sent: 1 }),
+    expect.objectContaining({ sent: 1 }),
+  ]);
+  expect(api.create).toHaveBeenCalledTimes(1);
+});
+
+test('cancelamento por troca de identidade preserva a pendência sem consumir retry', async () => {
+  const { api, service } = setup();
+  api.create.mockImplementationOnce(
+    (_payload, options: { signal?: AbortSignal } = {}) =>
+      new Promise((_resolve, reject) => {
+        options.signal?.addEventListener('abort', () => {
+          reject(new Error('request aborted'));
+        });
+      }),
+  );
+  await service.enqueue(OWNER, payload);
+
+  const syncing = service.sync(OWNER);
+  await Promise.resolve();
+  service.cancel(OWNER);
+
+  await expect(syncing).resolves.toMatchObject({ sent: 0, remaining: 1 });
+  expect((await service.list(OWNER))[0]).toMatchObject({
+    state: 'pending',
+    attempts: 0,
+    last_error: null,
+  });
+});
+
 test('remove campos extras e rejeita durações incompatíveis antes da fila', async () => {
   const { service } = setup();
   const unsafe = { ...payload, video: 'not-allowed' } as SessionResultInput;
@@ -156,5 +216,34 @@ test('remove campos extras e rejeita durações incompatíveis antes da fila', a
   ).rejects.toMatchObject({
     kind: 'validation',
     code: 'item_duration_exceeds_session',
+  });
+});
+
+test.each([
+  new ApiError('access_denied', 'forbidden', 403, 'account_inactive'),
+  new ApiError('not_found', 'missing', 404, 'revision_not_found'),
+  new ApiError('validation', 'invalid', 422, 'validation_error'),
+])('bloqueia erro permanente sem novo envio automático', async error => {
+  const { api, service } = setup();
+  api.create.mockRejectedValue(error);
+  await service.enqueue(OWNER, payload);
+
+  await service.sync(OWNER);
+  await service.sync(OWNER);
+
+  expect(api.create).toHaveBeenCalledTimes(1);
+  expect((await service.list(OWNER))[0]).toMatchObject({ state: 'blocked' });
+});
+
+test('mantém erro 5xx como retryable com backoff', async () => {
+  const { api, service } = setup();
+  api.create.mockRejectedValue(new ApiError('server', 'unavailable', 503));
+  await service.enqueue(OWNER, payload);
+
+  await service.sync(OWNER);
+
+  expect((await service.list(OWNER))[0]).toMatchObject({
+    state: 'pending',
+    attempts: 1,
   });
 });

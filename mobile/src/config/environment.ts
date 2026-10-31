@@ -9,6 +9,10 @@ export interface AppConfig {
   requestTimeoutMs: number;
 }
 
+export interface ReleaseEnvironmentVariables {
+  FISIOMOVE_API_ORIGIN?: string;
+}
+
 export const developmentApiOrigins = {
   android: 'http://10.0.2.2:8000',
   ios: 'http://127.0.0.1:8000',
@@ -19,23 +23,61 @@ export const developmentApiOrigins = {
 export const productionApiOrigin: string | null = null;
 
 export function createAppConfig(overrides: Partial<AppConfig> = {}): AppConfig {
-  const environment: AppEnvironment = __DEV__ ? 'development' : 'production';
-  const defaultOrigin = __DEV__
-    ? Platform.select(developmentApiOrigins)
-    : productionApiOrigin;
+  const environment: AppEnvironment =
+    overrides.environment ?? (__DEV__ ? 'development' : 'production');
+  const defaultOrigin =
+    environment === 'development'
+      ? Platform.select(developmentApiOrigins)
+      : productionApiOrigin;
   const apiOrigin = overrides.apiOrigin ?? defaultOrigin;
 
   if (!apiOrigin) {
     throw new Error('A origem da API precisa ser configurada.');
   }
 
+  const normalizedOrigin = validateApiOrigin(apiOrigin, environment);
+
   return {
     ...overrides,
-    apiOrigin: apiOrigin.replace(/\/$/, ''),
+    apiOrigin: normalizedOrigin,
     apiPrefix: overrides.apiPrefix ?? '/api/v1',
     environment: overrides.environment ?? environment,
     requestTimeoutMs: overrides.requestTimeoutMs ?? 15_000,
   };
+}
+
+export function createReleaseAppConfig(
+  variables: ReleaseEnvironmentVariables,
+): AppConfig {
+  return createAppConfig({
+    environment: 'production',
+    apiOrigin: variables.FISIOMOVE_API_ORIGIN,
+  });
+}
+
+function validateApiOrigin(
+  apiOrigin: string,
+  environment: AppEnvironment,
+): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(apiOrigin);
+  } catch {
+    throw new Error('A origem da API precisa ser uma URL válida.');
+  }
+  if (parsed.username || parsed.password) {
+    throw new Error('A origem da API não pode conter credenciais.');
+  }
+  if (parsed.search || parsed.hash) {
+    throw new Error('A origem da API não pode conter query ou fragmento.');
+  }
+  if (environment === 'production' && parsed.protocol !== 'https:') {
+    throw new Error('A origem da API em produção precisa usar HTTPS.');
+  }
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error('A origem da API precisa usar HTTP ou HTTPS.');
+  }
+  return apiOrigin.replace(/\/+$/, '');
 }
 
 export const appConfig = createAppConfig();

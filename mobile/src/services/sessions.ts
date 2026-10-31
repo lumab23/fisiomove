@@ -11,8 +11,11 @@ import type {
 export class SessionService {
   constructor(private readonly api: ApiClient) {}
 
-  create(payload: SessionResultInput): Promise<SessionResult> {
-    return this.api.post('/me/sessions', payload);
+  create(
+    payload: SessionResultInput,
+    options: { signal?: AbortSignal } = {},
+  ): Promise<SessionResult> {
+    return this.api.post('/me/sessions', payload, options);
   }
 
   listMine(params: SessionListParams = {}): Promise<SessionPage> {

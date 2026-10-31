@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type PropsWithChildren,
 } from 'react';
@@ -24,9 +25,11 @@ interface SessionSyncContextValue {
   pending: PendingSession[];
   syncing: boolean;
   loadError: unknown;
+  lastReport: SyncReport | null;
   refresh(): Promise<void>;
   syncNow(): Promise<SyncReport>;
   prepare(workoutId: UUID, workoutRevisionId: UUID): Promise<SessionDraft>;
+  getDraft(clientSessionId: UUID): Promise<SessionDraft | null>;
   finishDraft(
     clientSessionId: UUID,
     completion: SessionCompletion,
@@ -42,7 +45,10 @@ export function SessionSyncProvider({ children }: PropsWithChildren) {
   const [pending, setPending] = useState<PendingSession[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [loadError, setLoadError] = useState<unknown>(null);
+  const [lastReport, setLastReport] = useState<SyncReport | null>(null);
   const ownerId = user?.role === 'patient' ? user.id : null;
+  const ownerIdRef = useRef<UUID | null>(ownerId);
+  ownerIdRef.current = ownerId;
 
   const requireOwner = useCallback((): UUID => {
     if (!ownerId) {
@@ -54,29 +60,51 @@ export function SessionSyncProvider({ children }: PropsWithChildren) {
   }, [ownerId]);
 
   const refresh = useCallback(async () => {
+    const requestedOwner = ownerId;
     try {
-      setPending(
-        ownerId ? await appDependencies.sessionSync.list(ownerId) : [],
-      );
-      setLoadError(null);
+      const currentPending = requestedOwner
+        ? await appDependencies.sessionSync.list(requestedOwner)
+        : [];
+      if (ownerIdRef.current === requestedOwner) {
+        setPending(currentPending);
+        setLoadError(null);
+      }
     } catch (error) {
-      setLoadError(error);
+      if (ownerIdRef.current === requestedOwner) {
+        setLoadError(error);
+      }
       throw error;
     }
   }, [ownerId]);
 
-  const syncNow = useCallback(async () => {
-    const currentOwner = requireOwner();
-    setSyncing(true);
-    try {
-      return await appDependencies.sessionSync.sync(currentOwner);
-    } finally {
-      setSyncing(false);
-      setPending(await appDependencies.sessionSync.list(currentOwner));
+  const syncOwner = useCallback(async (currentOwner: UUID) => {
+    if (ownerIdRef.current === currentOwner) {
+      setSyncing(true);
     }
-  }, [requireOwner]);
+    try {
+      const report = await appDependencies.sessionSync.sync(currentOwner);
+      if (ownerIdRef.current === currentOwner) {
+        setLastReport(report);
+      }
+      return report;
+    } finally {
+      const currentPending =
+        await appDependencies.sessionSync.list(currentOwner);
+      if (ownerIdRef.current === currentOwner) {
+        setSyncing(false);
+        setPending(currentPending);
+      }
+    }
+  }, []);
+
+  const syncNow = useCallback(
+    () => syncOwner(requireOwner()),
+    [requireOwner, syncOwner],
+  );
 
   useEffect(() => {
+    setSyncing(false);
+    setLastReport(null);
     refresh().catch(() => undefined);
     if (!ownerId) {
       return;
@@ -86,7 +114,10 @@ export function SessionSyncProvider({ children }: PropsWithChildren) {
         syncNow().catch(() => undefined);
       }
     });
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      appDependencies.sessionSync.cancel(ownerId);
+    };
   }, [ownerId, refresh, syncNow]);
 
   const value = useMemo<SessionSyncContextValue>(
@@ -94,6 +125,7 @@ export function SessionSyncProvider({ children }: PropsWithChildren) {
       pending,
       syncing,
       loadError,
+      lastReport,
       refresh,
       syncNow,
       async prepare(workoutId, workoutRevisionId) {
@@ -105,13 +137,21 @@ export function SessionSyncProvider({ children }: PropsWithChildren) {
         await refresh();
         return draft;
       },
-      async finishDraft(clientSessionId, completion) {
-        const result = await appDependencies.sessionSync.finishDraft(
+      getDraft(clientSessionId) {
+        return appDependencies.sessionSync.getDraft(
           requireOwner(),
+          clientSessionId,
+        );
+      },
+      async finishDraft(clientSessionId, completion) {
+        const currentOwner = requireOwner();
+        const result = await appDependencies.sessionSync.finishDraft(
+          currentOwner,
           clientSessionId,
           completion,
         );
         await refresh();
+        syncOwner(currentOwner).catch(() => undefined);
         return result;
       },
       async enqueue(payload) {
@@ -131,7 +171,16 @@ export function SessionSyncProvider({ children }: PropsWithChildren) {
         return result;
       },
     }),
-    [pending, syncing, loadError, refresh, syncNow, requireOwner],
+    [
+      pending,
+      syncing,
+      loadError,
+      lastReport,
+      refresh,
+      syncNow,
+      syncOwner,
+      requireOwner,
+    ],
   );
 
   return (
