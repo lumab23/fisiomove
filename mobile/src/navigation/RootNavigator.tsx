@@ -26,7 +26,9 @@ export function RootNavigator() {
   if (status === 'unauthenticated' || !user) {
     return (
       <NavigationContainer theme={theme}>
-        <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+        <AuthStack.Navigator
+          screenOptions={{ headerShown: false, animation: 'slide_from_right' }}
+        >
           <AuthStack.Screen name="Login" component={LoginScreen} />
         </AuthStack.Navigator>
       </NavigationContainer>
@@ -36,7 +38,9 @@ export function RootNavigator() {
   if (flow === 'change-password') {
     return (
       <NavigationContainer theme={theme}>
-        <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+        <AuthStack.Navigator
+          screenOptions={{ headerShown: false, animation: 'slide_from_right' }}
+        >
           <AuthStack.Screen
             name="ChangePassword"
             component={ChangePasswordScreen}

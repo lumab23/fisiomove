@@ -5,12 +5,19 @@ import {
   useIsFocused,
   usePreventRemove,
 } from '@react-navigation/native';
-import { CameraPreview } from '../../components/CameraPreview';
 import { Screen, s } from '../../components/Screen';
 import { Body, Button, styles } from '../../ui';
 import { useDemo } from '../../demo/DemoContext';
 import { useFrontendNavigation } from '../../navigation/frontendTypes';
-import { colors, fonts } from '../../theme/theme';
+import {
+  colors,
+  fonts,
+  layout,
+  radii,
+  spacing,
+  typography,
+} from '../../theme/theme';
+import { LocalPoseCamera } from '../../features/vision/LocalPoseCamera';
 export function PatientExerciseScreen() {
   const navigation = useFrontendNavigation();
   const { state, dispatch } = useDemo();
@@ -43,6 +50,7 @@ export function PatientExerciseScreen() {
   };
   return (
     <Screen
+      title="Exercício em andamento"
       footer={
         <>
           <Pressable
@@ -90,7 +98,9 @@ export function PatientExerciseScreen() {
           <Text style={exercise.counterHint}>Contar +1</Text>
         </Pressable>
       </View>
-      <CameraPreview compact>
+      <View style={exercise.cameraPanel}>
+        <Text style={exercise.cameraLabel}>CÂMERA E POSE AO VIVO</Text>
+        <LocalPoseCamera side="right" active={focused} />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Ver orientação"
@@ -118,62 +128,79 @@ export function PatientExerciseScreen() {
             />
           </View>
         </View>
-      </CameraPreview>
+      </View>
     </Screen>
   );
 }
 const exercise = StyleSheet.create({
   feedback: {
     alignSelf: 'center',
-    minHeight: 48,
-    borderRadius: 24,
+    minHeight: layout.compactControlHeight,
+    borderRadius: radii.xl,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  cameraPanel: {
+    padding: spacing.lg,
+    gap: spacing.lg,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  cameraLabel: {
+    color: colors.primary,
+    fontFamily: fonts.bold,
+    ...typography.caption,
+    textAlign: 'center',
   },
   feedbackDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#FA805F',
+    width: spacing.md,
+    height: spacing.md,
+    borderRadius: radii.pill,
+    backgroundColor: colors.warning,
   },
-  feedbackText: { color: colors.text, fontFamily: fonts.bold, fontSize: 16 },
+  feedbackText: {
+    color: colors.text,
+    fontFamily: fonts.bold,
+    ...typography.bodySmall,
+  },
   counterHint: {
     color: colors.primary,
     fontFamily: fonts.regular,
-    fontSize: 12,
+    ...typography.label,
     textAlign: 'center',
   },
   control: { flex: 1, minWidth: 96 },
   counter: {
     backgroundColor: colors.surfaceMuted,
-    padding: 12,
-    borderRadius: 20,
-    gap: 4,
+    padding: spacing.md,
+    borderRadius: radii.xl,
+    gap: spacing.xs,
     minWidth: 96,
   },
   count: {
     color: colors.text,
-    fontSize: 32,
+    ...typography.display,
     fontFamily: fonts.bold,
     textAlign: 'center',
   },
   action: {
     backgroundColor: colors.accent,
-    minHeight: 64,
-    padding: 16,
-    borderRadius: 20,
+    minHeight: layout.controlHeight,
+    padding: spacing.lg,
+    borderRadius: radii.lg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   actionText: {
     color: colors.text,
-    fontSize: 20,
-    lineHeight: 28,
+    ...typography.body,
     textAlign: 'center',
     fontFamily: fonts.bold,
   },

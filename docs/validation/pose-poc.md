@@ -1,65 +1,85 @@
-# M05 — prova de conceito de câmera e pose local
+# M05 — câmera e estimativa local de pose
 
-## Decisão técnica para integração
+## Implementação na branch `develop`
 
-O mobile usa React Native 0.87.1. A proposta é usar `react-native-vision-camera`
-5.2.3 para preview e saída de frames, com `react-native-vision-camera-worklets`
-5.2.3 e `react-native-worklets` para processar frames fora da thread de UI. O
-VisionCamera 5 usa AVFoundation no iOS, CameraX no Android e oferece `CameraFrameOutput`.
-O fluxo de pose deve usar o plugin nativo da câmera para chamar o MediaPipe Tasks
-Pose Landmarker localmente, sem atravessar frames pelo bridge JS ou rede.
+O aplicativo usa React Native 0.87.1 e a implementação mantida do VisionCamera
+5.2.4 para preview e captura de quadros. O pipeline redimensiona localmente cada
+quadro e executa o modelo YOLO26 Pose 384 do React Native ExecuTorch 0.11.0 no
+runtime local do aparelho. O modelo estima 17 pontos COCO; o aplicativo expõe
+ombro, cotovelo e punho de cada lado. Somente coordenadas, confiança do ponto,
+orientação, espelhamento e tempo de inferência saem do pipeline de câmera para a
+interface. Imagens e buffers não são persistidos nem enviados à API.
 
-Dependências nativas propostas:
+O código descarta os quadros e buffers de GPU após cada inferência, descarta
+quadros quando o processamento está ocupado, encerra a captura quando a tela
+perde foco ou o app vai para segundo plano e libera o redimensionador ao
+desmontar o componente. A orientação e o espelhamento fornecidos pelo
+VisionCamera são preservados; a transformação de letterbox é desfeita ao
+normalizar coordenadas. A pré-visualização exibe os pontos da pose e a duração
+medida da inferência. O evento de download anônimo de modelo do ExecuTorch foi
+desativado.
 
-- Android: `com.google.mediapipe:tasks-vision:1.1.1`;
-- iOS: pacote Swift `google-ai-edge/mediapipe`, produto `MediaPipeTasksVision`,
-  release 1.1.1 (iOS 15 ou superior).
+O mesmo componente de captura local é utilizado na calibração, durante a
+execução do exercício e nas telas de ajuste da câmera e orientação. A captura
+usa a câmera frontal, de modo que a pessoa possa olhar para a tela enquanto o
+celular permanece voltado para ela. A câmera é
+ativada somente quando a respectiva tela está em foco; a tela de pausa não a
+mantém aberta. A contagem apresentada na demonstração continua manual e
+ilustrativa, pois ainda não há regra de movimento aprovada nem contrato de
+confiança validado para ligar os landmarks ao motor M06.
 
-O MediaPipe informa que inferência e imagens permanecem no dispositivo, mas a
-biblioteca também envia métricas de desempenho/uso ao Google. A integração deve
-revisar o aviso de privacidade e consentimento aplicável antes da distribuição.
+## Contrato do modelo e dependência clínica
 
-No Android, a documentação do MediaPipe informa SDK 24 ou superior. A compatibilidade
-do plugin Nitro, da toolchain Gradle e dos targets deste aplicativo precisa ser
-confirmada pela integração do projeto antes de escolher a versão final das
-dependências. Estas bibliotecas ainda não estão instaladas neste app.
+O YOLO26 Pose fornece uma confiança única por ponto e profundidade relativa
+opcional. O contrato anterior do motor M06 espera `visibility` e `presence`
+distintas. Esses valores não são equivalentes e o adaptador não os inventa. Por
+isso, o resultado bruto usa um contrato próprio (`RawPoseObservation`) e ainda
+não alimenta o motor de contagem.
 
-## Handoff para integração nativa
+O catálogo atual não possui exercício nem desvio observável aprovados por
+fisioterapeuta. A calibração clínica, os parâmetros do movimento, a conexão ao
+M06 e a validação de contagem física ficam bloqueadas até que essa especificação
+seja fornecida e versionada. Os dados do app de demonstração não são prescrições
+clínicas.
 
-O plano reserva para Luma as alterações em `package.json`, lockfile, Gradle,
-Podfile, permissões e composição compartilhada. Este módulo define o contrato
-TypeScript esperado em `PoseCameraAdapter.ts`: `FisioMovePose` solicita permissão,
-inicia/para o stream e emite somente landmarks normalizados, orientação, estado de
-espelhamento e duração de inferência. O adaptador retorna um erro explícito quando
-o módulo nativo ainda não está no build.
+## Dependências e configuração nativa
 
-Permissão proposta: câmera. A POC não grava áudio e não pede permissão de microfone.
-O plugin deve descartar o frame após processá-lo, descartar frames enquanto estiver
-ocupado, reportar perdas e nunca persistir imagem, vídeo ou buffer.
+Dependências fixadas em `mobile/package.json`: `react-native-vision-camera`
+5.2.4, `react-native-vision-camera-resizer` 5.2.3,
+`react-native-vision-camera-worklets` 5.2.4, `react-native-worklets` 0.13.1,
+`react-native-executorch` 0.11.0, `react-native-nitro-modules` 0.37.1 e
+`react-native-blob-util` 0.24.11. O app requer a Nova Arquitetura, câmera
+autorizada, Android `minSdkVersion` 26 e iOS 17.0. O modelo é baixado na
+primeira utilização e executado localmente depois disso.
 
-## Tratamento local de pose
+## Validação realizada e pendente
 
-`poseAssessment.ts` seleciona ombro, cotovelo e punho conforme o lado prescrito,
-distingue landmark ausente de baixa confiança e transforma coordenadas para o
-preview considerando orientação e espelhamento. A taxa de inferência é calculada
-por timestamps observados; não há número de desempenho presumido no código.
+O código nativo iOS foi compilado, assinado para desenvolvimento e instalado em
+um iPhone 15 Pro Max com iOS 27.0.1. O app abriu após a migração para o ciclo de
+vida de cenas exigido pelo iOS 27. O fluxo percorreu preparação, autorização da
+câmera, calibração e execução; na tela de execução, a prévia deixou de ser a
+ilustração estática e passou a renderizar `LocalPoseCamera`. TypeScript,
+ESLint e Prettier foram verificados nos dois arquivos de tela alterados nesta
+integração. A suíte Jest não foi executada novamente após esta alteração.
 
-O motor recebe landmarks somente em memória. `PoseCameraAdapter` não conhece
-`ApiClient`, sessão sincronizada nem armazenamento persistente.
+Durante a inspeção pelo Espelhamento do iPhone, o sistema informou que a câmera
+do iPhone não está disponível pelo Mac e a região de vídeo apareceu preta. A
+tela reportou momentaneamente 5 ms de inferência, 0 quadros descartados e 0/3
+pontos do braço; esses números são uma leitura pontual da interface, não uma
+medição controlada. Ainda não foi confirmado visualmente no aparelho que um
+frame real mostre o paciente nem que landmarks válidos sejam produzidos. A
+captura precisa ser conferida olhando diretamente para a tela física do iPhone,
+sem depender do Espelhamento do iPhone.
 
-## Validação física pendente
-
-O critério M05 exige câmera e landmarks em celular físico, coordenadas alinhadas à
-imagem, perda de ponto e medições de dispositivo/sistema. Este ambiente de trabalho
-não dispõe de Xcode, simulador iOS ou dispositivo físico conectado; por isso, não há
-resultado de câmera ou medição a registrar como concluído. Preencher a tabela em
-`technical-report.md` depois da integração nativa e da execução no aparelho.
+Foram anteriormente concluídas as verificações `npm run type-check`, lint,
+`npm run format:check` e 20 suítes Jest com 83 testes. O teste
+`RawPoseObservation.test.ts` cobre normalização e letterbox com dados
+controlados; não valida câmera ou inferência nativa. Também houve builds Android
+e iOS, mas a compilação isoladamente não comprova funcionamento em dispositivo.
 
 ## Referências oficiais
 
-- [VisionCamera — Frame Output](https://visioncamera.margelo.com/docs/frame-output):
-  uso de `CameraFrameOutput`, descarte dos frames e dependências Worklets;
-- [MediaPipe — Pose Landmarker](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker):
-  execução de imagem/vídeo/live stream e landmarks normalizados;
-- [MediaPipe — guia iOS](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/ios):
-  requisitos do listener para processamento em live stream.
+- [VisionCamera — documentação e configuração](https://visioncamera.margelo.com/docs)
+- [VisionCamera — processamento de frames](https://visioncamera.margelo.com/docs/frame-output)
+- [React Native ExecuTorch — pose e keypoints](https://docs.swmansion.com/react-native-executorch/docs/extensions/pose-and-keypoints)
+- [React Native ExecuTorch — configuração](https://docs.swmansion.com/react-native-executorch/docs/fundamentals/getting-started)

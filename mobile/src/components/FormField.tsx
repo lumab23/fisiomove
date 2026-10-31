@@ -6,7 +6,14 @@ import {
   type TextInputProps,
 } from 'react-native';
 
-import { colors, fonts } from '../theme/theme';
+import {
+  colors,
+  fonts,
+  layout,
+  radii,
+  spacing,
+  typography,
+} from '../theme/theme';
 
 interface FormFieldProps extends TextInputProps {
   label: string;
@@ -40,20 +47,28 @@ export function FormField({ label, error, ...input }: FormFieldProps) {
 }
 
 const styles = StyleSheet.create({
-  group: { gap: 8 },
-  label: { color: colors.primary, fontSize: 16, fontFamily: fonts.bold },
+  group: { gap: spacing.sm },
+  label: {
+    color: colors.primary,
+    ...typography.bodySmall,
+    fontFamily: fonts.bold,
+  },
   input: {
     fontFamily: fonts.regular,
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: radii.md,
     borderWidth: 1,
     color: colors.text,
-    fontSize: 18,
-    minHeight: 56,
-    paddingHorizontal: 16,
+    ...typography.body,
+    minHeight: layout.controlHeight,
+    paddingHorizontal: spacing.md,
   },
-  multiline: { minHeight: 160, paddingVertical: 16, textAlignVertical: 'top' },
+  multiline: {
+    minHeight: 160,
+    paddingVertical: spacing.md,
+    textAlignVertical: 'top',
+  },
   inputError: { borderColor: colors.error, borderWidth: 2 },
-  error: { color: colors.error, fontSize: 14 },
+  error: { color: colors.error, ...typography.caption },
 });

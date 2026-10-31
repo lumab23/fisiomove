@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, Text } from 'react-native';
 import { Screen, Notice } from '../../components/Screen';
+import { EmptyState } from '../../components/ScreenStates';
 import { FormField } from '../../components/FormField';
 import { Body, Button, Card, Link, styles } from '../../ui';
 import { useDemo } from '../../demo/DemoContext';
@@ -66,10 +67,12 @@ export function PatientListScreen() {
           </Pressable>
         ))
       ) : (
-        <Card title="Nenhum paciente encontrado">
-          <Body>Tente outro nome ou cadastre um novo paciente.</Body>
-          <Link label="Limpar busca" onPress={() => setSearch('')} />
-        </Card>
+        <EmptyState
+          title="Nenhum paciente encontrado"
+          message="Tente outro nome ou cadastre um novo paciente."
+          actionLabel="Limpar busca"
+          onAction={() => setSearch('')}
+        />
       )}
     </Screen>
   );

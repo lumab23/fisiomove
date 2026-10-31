@@ -11,6 +11,7 @@ module.exports = function (api) {
         apiOriginPlugin,
         { origin: readApiOrigin(), devOrigin: readDevOrigin() },
       ],
+      'react-native-worklets/plugin',
     ],
   };
 };

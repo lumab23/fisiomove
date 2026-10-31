@@ -13,10 +13,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { friendlyErrorMessage } from '../../api/errors';
 import { useAuth } from '../../auth/AuthContext';
 import { validatePassword } from '../../auth/validation';
-import { BrandHeader } from '../../components/BrandHeader';
+import { AppHeader } from '../../components/AppHeader';
 import { FormField } from '../../components/FormField';
 import { PrimaryButton } from '../../components/PrimaryButton';
-import { colors, spacing } from '../../theme/theme';
+import { InlineError } from '../../components/ScreenStates';
+import {
+  colors,
+  fonts,
+  layout,
+  radii,
+  spacing,
+  typography,
+} from '../../theme/theme';
 
 export function ChangePasswordScreen() {
   const { changePassword, busy, logout } = useAuth();
@@ -61,15 +69,12 @@ export function ChangePasswordScreen() {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        <AppHeader title="Crie uma nova senha" />
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <BrandHeader />
           <View style={styles.intro}>
-            <Text style={styles.title} accessibilityRole="header">
-              Crie uma nova senha
-            </Text>
             <Text style={styles.subtitle}>
               Por segurança, troque a senha temporária antes de continuar.
             </Text>
@@ -102,11 +107,7 @@ export function ChangePasswordScreen() {
               editable={!busy}
             />
             <Text style={styles.hint}>Use entre 12 e 128 caracteres.</Text>
-            {error ? (
-              <Text style={styles.error} accessibilityRole="alert">
-                {error}
-              </Text>
-            ) : null}
+            {error ? <InlineError message={error} /> : null}
             <PrimaryButton
               label="Salvar nova senha"
               loading={busy}
@@ -127,36 +128,28 @@ const styles = StyleSheet.create({
   safeArea: { backgroundColor: colors.background, flex: 1 },
   content: {
     flexGrow: 1,
-    gap: spacing.lg,
+    gap: spacing.xl,
     justifyContent: 'center',
-    padding: spacing.lg,
+    paddingHorizontal: layout.pageGutter,
+    paddingVertical: spacing.xl,
   },
   intro: { gap: spacing.sm },
-  title: {
-    color: colors.text,
-    fontSize: 30,
-    fontWeight: '800',
-    lineHeight: 38,
+  subtitle: {
+    color: colors.textMuted,
+    ...typography.body,
+    fontFamily: fonts.regular,
   },
-  subtitle: { color: colors.textMuted, fontSize: 18, lineHeight: 27 },
   card: {
     backgroundColor: colors.surfaceMuted,
-    borderRadius: 24,
-    gap: spacing.md,
-    padding: spacing.lg,
+    borderRadius: radii.xl,
+    gap: spacing.lg,
+    padding: spacing.xl,
   },
-  hint: { color: colors.textMuted, fontSize: 14 },
-  error: {
-    backgroundColor: colors.errorBackground,
-    borderRadius: 12,
-    color: colors.error,
-    fontSize: 16,
-    padding: spacing.md,
-  },
+  hint: { color: colors.textMuted, ...typography.caption },
   exit: {
     color: colors.primary,
-    fontSize: 16,
-    fontWeight: '700',
+    ...typography.bodySmall,
+    fontFamily: fonts.bold,
     padding: spacing.md,
     textAlign: 'center',
   },

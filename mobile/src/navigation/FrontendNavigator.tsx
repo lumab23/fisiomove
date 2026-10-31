@@ -92,8 +92,10 @@ export function FrontendNavigator({
           initialRouteName={initialRouteName}
           screenOptions={{
             headerShown: false,
-            animation: 'fade',
-            gestureEnabled: false,
+            animation: 'slide_from_right',
+            gestureEnabled: true,
+            freezeOnBlur: true,
+            contentStyle: { backgroundColor: colors.background },
           }}
         >
           {Object.entries(frontendScreens).map(([name, component]) => (

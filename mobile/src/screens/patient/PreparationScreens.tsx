@@ -3,6 +3,9 @@ import { Screen } from '../../components/Screen';
 import { Body, Button, Card, Companion, Link, Mascot, styles } from '../../ui';
 import { useDemo } from '../../demo/DemoContext';
 import { useFrontendNavigation } from '../../navigation/frontendTypes';
+import { useCameraPermission } from 'react-native-vision-camera';
+import { useIsFocused } from '@react-navigation/native';
+import { LocalPoseCamera } from '../../features/vision/LocalPoseCamera';
 export function PatientPreparationScreen() {
   const navigation = useFrontendNavigation();
   const { state } = useDemo();
@@ -52,6 +55,11 @@ export function PatientPreparationScreen() {
 }
 export function CameraPermissionScreen() {
   const navigation = useFrontendNavigation();
+  const { requestPermission } = useCameraPermission();
+  const requestCamera = async () => {
+    const granted = await requestPermission();
+    navigation.replace(granted ? 'Calibration' : 'CameraDenied');
+  };
   return (
     <Screen
       back="Preparação"
@@ -64,18 +72,12 @@ export function CameraPermissionScreen() {
             label="Não permitir"
             onPress={() => navigation.replace('CameraDenied')}
           />
-          <Button
-            label="Permitir câmera"
-            onPress={() => navigation.replace('Calibration')}
-          />
-          <Text style={styles.demo}>
-            Pedido de acesso representado visualmente. A câmera não é ativada.
-          </Text>
+          <Button label="Permitir câmera" onPress={requestCamera} />
         </>
       }
     >
       <Card title="Autorize o uso da câmera.">
-        <Body>Não guardamos imagens nesta demonstração.</Body>
+        <Body>Os quadros são analisados no aparelho e não são enviados.</Body>
       </Card>
       <Mascot />
     </Screen>
@@ -83,6 +85,7 @@ export function CameraPermissionScreen() {
 }
 export function CameraDeniedScreen() {
   const navigation = useFrontendNavigation();
+  const { requestPermission } = useCameraPermission();
   return (
     <Screen
       back="Preparação"
@@ -97,11 +100,12 @@ export function CameraDeniedScreen() {
           />
           <Button
             label="Tentar permitir câmera"
-            onPress={() => navigation.replace('CameraPermission')}
+            onPress={() => {
+              requestPermission().then(granted => {
+                navigation.replace(granted ? 'Calibration' : 'CameraDenied');
+              });
+            }}
           />
-          <Text style={styles.demo}>
-            Estado ilustrativo após negar a permissão.
-          </Text>
         </>
       }
     >
@@ -144,11 +148,12 @@ export function VoicePermissionScreen() {
 }
 export function CalibrationScreen() {
   const navigation = useFrontendNavigation();
+  const isFocused = useIsFocused();
   return (
     <Screen
       back="Preparação"
       title="Ajuste seu movimento"
-      subtitle="A câmera precisa ver seu braço."
+      subtitle="Visualização técnica da pose no aparelho."
       footer={
         <>
           <Button
@@ -156,17 +161,20 @@ export function CalibrationScreen() {
             onPress={() => navigation.navigate('PatientExercise')}
           />
           <Text style={styles.demo}>
-            Câmera e calibração simuladas neste protótipo.
+            A contagem clínica depende da aprovação de uma regra por um
+            fisioterapeuta.
           </Text>
         </>
       }
     >
-      <Card title="Fique de frente para o celular.">
-        <Body>Deixe o braço relaxado.</Body>
-        <Body>Mova-se apenas até seu limite.</Body>
+      <Card title="Pré-visualização de câmera e pose">
+        <LocalPoseCamera side="right" active={isFocused} />
       </Card>
       <Card white title="Faça o movimento indicado, sem forçar.">
-        <Body>A calibração não muda a meta do profissional.</Body>
+        <Body>
+          Os pontos exibidos são estimativas do modelo e ainda não validam
+          movimento nem calibram limites clínicos.
+        </Body>
       </Card>
       <Companion>Pronta para começar?</Companion>
     </Screen>

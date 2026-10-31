@@ -1,5 +1,6 @@
 import { Text } from 'react-native';
 import { Screen } from '../../components/Screen';
+import { EmptyState } from '../../components/ScreenStates';
 import { Body, Button, Card, Companion, styles } from '../../ui';
 import { useDemo, useDemoPatient } from '../../demo/DemoContext';
 import { useFrontendNavigation } from '../../navigation/frontendTypes';
@@ -29,12 +30,10 @@ export function PatientWorkoutScreen() {
           <Body>Braço direito</Body>
         </Card>
       ) : (
-        <Card title="Nenhum treino publicado">
-          <Body>
-            O profissional ainda está preparando seu treino. Aguarde a
-            publicação.
-          </Body>
-        </Card>
+        <EmptyState
+          title="Nenhum treino publicado"
+          message="O profissional ainda está preparando seu treino. Aguarde a publicação."
+        />
       )}
       {patient.note !== '' && (
         <Card white title="Orientação do profissional">

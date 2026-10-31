@@ -1,6 +1,13 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 
-import { colors, fonts } from '../theme/theme';
+import {
+  colors,
+  fonts,
+  layout,
+  radii,
+  spacing,
+  typography,
+} from '../theme/theme';
 
 interface PrimaryButtonProps {
   label: string;
@@ -48,12 +55,16 @@ const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
     backgroundColor: colors.primary,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     justifyContent: 'center',
-    minHeight: 56,
-    paddingHorizontal: 24,
+    minHeight: layout.controlHeight,
+    paddingHorizontal: spacing.lg,
   },
   pressed: { backgroundColor: colors.primaryPressed },
   disabled: { opacity: 0.55 },
-  label: { color: colors.surface, fontSize: 18, fontFamily: fonts.bold },
+  label: {
+    color: colors.surface,
+    ...typography.bodySmall,
+    fontFamily: fonts.bold,
+  },
 });

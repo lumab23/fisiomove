@@ -8,7 +8,14 @@ import {
   View,
 } from 'react-native';
 
-import { colors, spacing } from '../../theme/theme';
+import {
+  colors,
+  fonts,
+  layout,
+  radii,
+  spacing,
+  typography,
+} from '../../theme/theme';
 import type { FeedbackInterval } from './SessionController';
 import type { SessionExecutionSnapshot } from './SessionExecution';
 
@@ -177,43 +184,50 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 20,
+    borderRadius: radii.xl,
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.lg,
   },
   eyebrow: {
     color: colors.primary,
-    fontSize: 12,
-    fontWeight: '800',
+    ...typography.label,
+    fontFamily: fonts.bold,
     letterSpacing: 0.8,
   },
-  title: { color: colors.text, fontSize: 24, fontWeight: '800' },
+  title: { color: colors.text, ...typography.title, fontFamily: fonts.bold },
   feedback: {
     backgroundColor: colors.surfaceMuted,
-    borderRadius: 12,
+    borderRadius: radii.md,
     color: colors.text,
-    fontSize: 16,
-    lineHeight: 23,
+    ...typography.bodySmall,
     padding: spacing.md,
   },
   metrics: { flexDirection: 'row', gap: spacing.sm },
   metric: {
     alignItems: 'center',
     backgroundColor: colors.background,
-    borderRadius: 14,
+    borderRadius: radii.md,
     flex: 1,
     gap: spacing.xs,
     padding: spacing.md,
   },
-  metricValue: { color: colors.text, fontSize: 22, fontWeight: '800' },
-  metricLabel: { color: colors.textMuted, fontSize: 12, textAlign: 'center' },
+  metricValue: {
+    color: colors.text,
+    ...typography.title,
+    fontFamily: fonts.bold,
+  },
+  metricLabel: {
+    color: colors.textMuted,
+    ...typography.label,
+    textAlign: 'center',
+  },
   actions: { gap: spacing.sm },
   button: {
     alignItems: 'center',
     backgroundColor: colors.primary,
-    borderRadius: 14,
-    minHeight: 48,
+    borderRadius: radii.md,
+    minHeight: layout.compactControlHeight,
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
   },
@@ -222,7 +236,11 @@ const styles = StyleSheet.create({
     borderColor: colors.error,
     borderWidth: 1,
   },
-  buttonText: { color: colors.surface, fontSize: 16, fontWeight: '700' },
+  buttonText: {
+    color: colors.surface,
+    ...typography.bodySmall,
+    fontFamily: fonts.bold,
+  },
   secondaryButtonText: { color: colors.error },
   pressed: { opacity: 0.72 },
   disabled: { opacity: 0.55 },

@@ -1,9 +1,21 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import { CameraPreview } from '../../components/CameraPreview';
 import { Screen } from '../../components/Screen';
-import { Body, Button, Card, Companion, Mascot, styles, Title } from '../../ui';
+import { EmptyState } from '../../components/ScreenStates';
+import {
+  Body,
+  Button,
+  Card,
+  Companion,
+  Mascot,
+  colors,
+  styles,
+} from '../../ui';
 import { useDemo } from '../../demo/DemoContext';
 import { useFrontendNavigation } from '../../navigation/frontendTypes';
+import { LocalPoseCamera } from '../../features/vision/LocalPoseCamera';
+import { radii, spacing } from '../../theme/theme';
 export function SessionPauseScreen() {
   const navigation = useFrontendNavigation();
   return (
@@ -71,6 +83,7 @@ export function SessionRestScreen() {
 }
 export function CameraAdjustmentScreen() {
   const navigation = useFrontendNavigation();
+  const isFocused = useIsFocused();
   return (
     <Screen
       back="Exercício"
@@ -80,16 +93,19 @@ export function CameraAdjustmentScreen() {
         <Button label="Tentar novamente" onPress={() => navigation.goBack()} />
       }
     >
-      <CameraPreview>
+      <View style={sessionStyles.cameraPanel}>
+        <Text style={styles.eyebrow}>CÂMERA E POSE AO VIVO</Text>
+        <LocalPoseCamera side="right" active={isFocused} />
         <Card title="Braço fora da imagem">
           <Body>Afaste o celular.</Body>
         </Card>
-      </CameraPreview>
+      </View>
     </Screen>
   );
 }
 export function MovementGuidanceScreen() {
   const navigation = useFrontendNavigation();
+  const isFocused = useIsFocused();
   return (
     <Screen
       back="Exercício"
@@ -102,11 +118,13 @@ export function MovementGuidanceScreen() {
         />
       }
     >
-      <CameraPreview>
+      <View style={sessionStyles.cameraPanel}>
+        <Text style={styles.eyebrow}>CÂMERA E POSE AO VIVO</Text>
+        <LocalPoseCamera side="right" active={isFocused} />
         <Card title="Volte à posição inicial.">
           <Body>Mova o braço até o limite orientado.</Body>
         </Card>
-      </CameraPreview>
+      </View>
     </Screen>
   );
 }
@@ -186,6 +204,7 @@ export function PatientCompletionScreen() {
   const last = state.sessions[0];
   return (
     <Screen
+      title="Treino concluído"
       footer={
         <>
           <Button
@@ -204,7 +223,6 @@ export function PatientCompletionScreen() {
     >
       <View style={styles.center}>
         <Mascot kind="gold" />
-        <Title>Treino concluído</Title>
         <Text style={[styles.body, sessionStyles.centeredText]}>
           2 séries de {last?.repetitions ?? state.active.goal} repetições
           simuladas.
@@ -225,9 +243,10 @@ export function PatientCompletionScreen() {
 export function ProgressEmpty() {
   return (
     <>
-      <Card title="Nenhuma sessão ainda">
-        <Body>Seu resumo aparecerá aqui depois de testar o treino.</Body>
-      </Card>
+      <EmptyState
+        title="Nenhuma sessão ainda"
+        message="Seu resumo aparecerá aqui quando houver sessões registradas."
+      />
       <Companion>Vamos no seu ritmo!</Companion>
     </>
   );
@@ -236,4 +255,10 @@ export function ProgressEmpty() {
 const sessionStyles = StyleSheet.create({
   centeredText: { textAlign: 'center' },
   restMascot: { width: 163, height: 165, alignSelf: 'center' },
+  cameraPanel: {
+    padding: spacing.lg,
+    gap: spacing.lg,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.xl,
+  },
 });

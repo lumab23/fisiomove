@@ -11,6 +11,7 @@ export function PatientHomeScreen() {
   const { dispatch } = useDemo();
   return (
     <Screen
+      title="Início"
       footer={
         <>
           <Body>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text } from 'react-native';
 import { Screen, s } from '../../components/Screen';
+import { EmptyState } from '../../components/ScreenStates';
 import { Body, Button, Card, Companion, Link, styles } from '../../ui';
 import { useDemo, useDemoPatient } from '../../demo/DemoContext';
 import { useFrontendNavigation } from '../../navigation/frontendTypes';
@@ -120,9 +121,10 @@ export function PatientHistoryScreen() {
           </Card>
         ))
       ) : (
-        <Card title="Nenhuma sessão neste filtro">
-          <Body>Teste um treino ou escolha outro filtro.</Body>
-        </Card>
+        <EmptyState
+          title="Nenhuma sessão neste filtro"
+          message="Seu histórico aparecerá aqui quando houver sessões neste período."
+        />
       )}
     </Screen>
   );

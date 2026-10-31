@@ -13,10 +13,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiError, friendlyErrorMessage } from '../../api/errors';
 import { useAuth } from '../../auth/AuthContext';
 import { validateEmail, validatePassword } from '../../auth/validation';
-import { BrandHeader } from '../../components/BrandHeader';
+import { AppHeader } from '../../components/AppHeader';
 import { FormField } from '../../components/FormField';
 import { PrimaryButton } from '../../components/PrimaryButton';
-import { colors, spacing } from '../../theme/theme';
+import { InlineError } from '../../components/ScreenStates';
+import {
+  colors,
+  fonts,
+  layout,
+  radii,
+  spacing,
+  typography,
+} from '../../theme/theme';
 
 export function LoginScreen() {
   const { login, busy } = useAuth();
@@ -62,15 +70,12 @@ export function LoginScreen() {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        <AppHeader title="Entre no FisioMove" />
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <BrandHeader />
           <View style={styles.intro}>
-            <Text style={styles.title} accessibilityRole="header">
-              Entre no FisioMove
-            </Text>
             <Text style={styles.subtitle}>
               Use o acesso entregue pelo seu fisioterapeuta ou administrador.
             </Text>
@@ -101,11 +106,7 @@ export function LoginScreen() {
               onSubmitEditing={submit}
               editable={!busy}
             />
-            {error ? (
-              <Text style={styles.error} accessibilityRole="alert">
-                {error}
-              </Text>
-            ) : null}
+            {error ? <InlineError message={error} /> : null}
             <PrimaryButton
               label="Entrar"
               loading={busy}
@@ -130,34 +131,24 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     gap: spacing.xl,
     justifyContent: 'center',
-    padding: spacing.lg,
+    paddingHorizontal: layout.pageGutter,
+    paddingVertical: spacing.xl,
   },
   intro: { gap: spacing.sm },
-  title: {
-    color: colors.text,
-    fontSize: 32,
-    fontWeight: '800',
-    lineHeight: 39,
+  subtitle: {
+    color: colors.textMuted,
+    ...typography.body,
+    fontFamily: fonts.regular,
   },
-  subtitle: { color: colors.textMuted, fontSize: 18, lineHeight: 27 },
   card: {
     backgroundColor: colors.surfaceMuted,
-    borderRadius: 24,
-    gap: spacing.md,
-    padding: spacing.lg,
-  },
-  error: {
-    backgroundColor: colors.errorBackground,
-    borderRadius: 12,
-    color: colors.error,
-    fontSize: 16,
-    lineHeight: 22,
-    padding: spacing.md,
+    gap: spacing.lg,
+    padding: spacing.xl,
+    borderRadius: radii.xl,
   },
   support: {
     color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
+    ...typography.caption,
     textAlign: 'center',
   },
 });

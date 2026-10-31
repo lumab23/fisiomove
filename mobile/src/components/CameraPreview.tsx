@@ -1,6 +1,6 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
 import type { PropsWithChildren } from 'react';
-import { colors, fonts } from '../theme/theme';
+import { colors, fonts, radii, spacing, typography } from '../theme/theme';
 import { styles as ui } from '../ui';
 export function CameraPreview({
   children,
@@ -21,16 +21,15 @@ export function CameraPreview({
 }
 export const preview = StyleSheet.create({
   panel: {
-    padding: 16,
-    gap: 16,
-    backgroundColor: '#F6F1FC',
-    borderRadius: 24,
+    padding: spacing.lg,
+    gap: spacing.lg,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: colors.border,
   },
   label: {
-    fontSize: 13,
-    lineHeight: 20,
+    ...typography.caption,
     fontFamily: fonts.bold,
     color: colors.primary,
     textAlign: 'center',
