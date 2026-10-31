@@ -251,3 +251,10 @@ isolamento entre contas.
   explicitamente os campos ainda pendentes;
 - o catálogo real continuará vazio até existir exercício clinicamente aprovado;
 - a calibração deve permanecer local e seguir `docs/modules/calibration.md`.
+
+## Front-end navegável baseado no PDF
+
+A demonstração visual abre sem backend e cobre os fluxos do paciente e do
+fisioterapeuta. Consulte `../docs/mobile/pdf-screen-audit.md` para a auditoria e
+`../docs/mobile/frontend-guide.md` para executar e testar. O login integrado
+continua disponível pela opção de acesso à conta na demonstração.

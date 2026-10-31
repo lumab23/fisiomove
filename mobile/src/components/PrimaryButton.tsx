@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 
-import { colors } from '../theme/theme';
+import { colors, fonts } from '../theme/theme';
 
 interface PrimaryButtonProps {
   label: string;
@@ -55,5 +55,5 @@ const styles = StyleSheet.create({
   },
   pressed: { backgroundColor: colors.primaryPressed },
   disabled: { opacity: 0.55 },
-  label: { color: colors.surface, fontSize: 18, fontWeight: '700' },
+  label: { color: colors.surface, fontSize: 18, fontFamily: fonts.bold },
 });

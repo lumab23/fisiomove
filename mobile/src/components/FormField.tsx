@@ -6,7 +6,7 @@ import {
   type TextInputProps,
 } from 'react-native';
 
-import { colors } from '../theme/theme';
+import { colors, fonts } from '../theme/theme';
 
 interface FormFieldProps extends TextInputProps {
   label: string;
@@ -22,7 +22,12 @@ export function FormField({ label, error, ...input }: FormFieldProps) {
         {...input}
         accessibilityLabel={label}
         accessibilityHint={error}
-        style={[styles.input, error && styles.inputError]}
+        style={[
+          styles.input,
+          input.multiline && styles.multiline,
+          input.style,
+          error && styles.inputError,
+        ]}
         placeholderTextColor={colors.textMuted}
       />
       {error ? (
@@ -36,8 +41,9 @@ export function FormField({ label, error, ...input }: FormFieldProps) {
 
 const styles = StyleSheet.create({
   group: { gap: 8 },
-  label: { color: colors.text, fontSize: 16, fontWeight: '700' },
+  label: { color: colors.primary, fontSize: 16, fontFamily: fonts.bold },
   input: {
+    fontFamily: fonts.regular,
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: 14,
@@ -47,6 +53,7 @@ const styles = StyleSheet.create({
     minHeight: 56,
     paddingHorizontal: 16,
   },
+  multiline: { minHeight: 160, paddingVertical: 16, textAlignVertical: 'top' },
   inputError: { borderColor: colors.error, borderWidth: 2 },
   error: { color: colors.error, fontSize: 14 },
 });

@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '../theme/theme';
+import { colors, fonts } from '../theme/theme';
 
 export function BrandHeader() {
   return (
@@ -20,8 +20,8 @@ const styles = StyleSheet.create({
   },
   brand: {
     color: colors.primary,
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 18,
+    fontFamily: fonts.bold,
   },
   accent: {
     backgroundColor: colors.accent,

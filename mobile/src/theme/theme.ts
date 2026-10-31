@@ -1,23 +1,22 @@
 export const colors = {
-  background: '#FBFAFF',
+  background: '#FAF9FC',
   surface: '#FFFFFF',
-  surfaceMuted: '#F0E8FA',
-  primary: '#7042B6',
-  primaryPressed: '#593294',
-  accent: '#2BB8B3',
-  text: '#202033',
-  textMuted: '#626176',
-  border: '#DED5EA',
+  surfaceMuted: '#EEE7FA',
+  primary: '#6842A6',
+  primaryPressed: '#503080',
+  accent: '#28B8B1',
+  text: '#20243A',
+  textMuted: '#555B70',
+  border: '#DDD8E7',
   error: '#A62A3D',
   errorBackground: '#FDECEF',
-  success: '#217A65',
-  successBackground: '#E6F7F2',
+  success: '#17695A',
+  successBackground: '#DDF3F0',
+  peach: '#FFEFE3',
 } as const;
+export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 } as const;
 
-export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
+export const fonts = {
+  regular: 'AtkinsonHyperlegible-Regular',
+  bold: 'AtkinsonHyperlegible-Bold',
 } as const;
