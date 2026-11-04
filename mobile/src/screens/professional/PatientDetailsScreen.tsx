@@ -10,7 +10,6 @@ export function PatientDetailsScreen() {
       professional
       back="Pacientes"
       title={patient.name}
-      subtitle="Ficha da paciente"
       footer={
         <Button
           label="Alterar exercício"
@@ -42,7 +41,7 @@ export function PatientDetailsScreen() {
         onPress={() => navigation.navigate('PatientMonitoring')}
       />
       <Link
-        label="Ver como paciente (demo)  ›"
+        label="Ver área do paciente  ›"
         onPress={() =>
           navigation.reset({ index: 0, routes: [{ name: 'PatientHome' }] })
         }

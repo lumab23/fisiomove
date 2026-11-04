@@ -1,7 +1,7 @@
 import { Text } from 'react-native';
 import { Screen } from '../../components/Screen';
 import { EmptyState } from '../../components/ScreenStates';
-import { Body, Button, Card, Companion, styles } from '../../ui';
+import { Body, Button, Card, styles } from '../../ui';
 import { useDemo, useDemoPatient } from '../../demo/DemoContext';
 import { useFrontendNavigation } from '../../navigation/frontendTypes';
 export function PatientWorkoutScreen() {
@@ -12,7 +12,6 @@ export function PatientWorkoutScreen() {
     <Screen
       back="Início"
       title="Seu treino de hoje"
-      subtitle="Orientado pelo seu fisioterapeuta."
       footer={
         <Button
           label="Preparar exercício"
@@ -40,9 +39,8 @@ export function PatientWorkoutScreen() {
           <Body>{patient.note}</Body>
         </Card>
       )}
-      <Companion>Vamos no seu ritmo!</Companion>
       <Text style={styles.demo}>
-        Exemplo visual do PDF. Não é uma prescrição clínica real.
+        Exemplo de demonstração; não é uma prescrição clínica.
       </Text>
     </Screen>
   );

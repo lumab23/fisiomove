@@ -7,6 +7,7 @@ import {
 } from 'react';
 import {
   AccessibilityInfo,
+  Animated,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,10 +16,18 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import Svg, { Circle, Path } from 'react-native-svg';
+import { BlurView } from '@sbaiahmed1/react-native-blur';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
+import {
+  useFocusEffect,
+  useIsFocused,
+  useRoute,
+} from '@react-navigation/native';
 import { AppHeader } from './AppHeader';
-import { Link } from '../ui';
 import {
   colors,
   fonts,
@@ -45,97 +54,199 @@ export function Screen({
   professional?: boolean;
 }>) {
   const navigation = useFrontendNavigation();
+  const { state, dispatch } = useDemo();
+  const route = useRoute();
+  const isFocused = useIsFocused();
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const tabTransition = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (!state.message || !isFocused) return;
+    AccessibilityInfo.announceForAccessibility(state.message);
+    const timeout = setTimeout(
+      () => dispatch({ type: 'message', value: '' }),
+      2800,
+    );
+    return () => clearTimeout(timeout);
+  }, [dispatch, isFocused, state.message]);
   useFocusEffect(
     useCallback(() => {
       scroll.current?.scrollTo({ y: 0, animated: false });
     }, []),
+  );
+  useFocusEffect(
+    useCallback(() => {
+      const isTab =
+        professional &&
+        (route.name === 'PatientList' || route.name === 'PatientMonitoring');
+      if (!isTab) {
+        tabTransition.setValue(1);
+        return;
+      }
+      tabTransition.setValue(0.96);
+      const animation = Animated.timing(tabTransition, {
+        toValue: 1,
+        duration: 190,
+        useNativeDriver: true,
+      });
+      animation.start();
+      return () => animation.stop();
+    }, [professional, route.name, tabTransition]),
   );
   const goBack = () =>
     navigation.canGoBack()
       ? navigation.goBack()
       : navigation.navigate(professional ? 'PatientList' : 'PatientHome');
   return (
-    <SafeAreaView style={s.safe}>
+    <SafeAreaView
+      style={s.safe}
+      edges={professional ? ['top', 'left', 'right'] : undefined}
+    >
       <KeyboardAvoidingView
         style={s.safe}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <AppHeader
-          title={title}
-          backLabel={back}
-          onBack={back ? goBack : undefined}
-        />
-        <ScrollView
-          ref={scroll}
-          style={s.scrollView}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={s.scroll}
+        <Animated.View
+          style={[
+            s.safe,
+            professional &&
+            (route.name === 'PatientList' || route.name === 'PatientMonitoring')
+              ? {
+                  opacity: tabTransition,
+                  transform: [{ scale: tabTransition }],
+                }
+              : null,
+          ]}
         >
-          <View style={s.page}>
-            {subtitle ? <Text style={s.subtitle}>{subtitle}</Text> : null}
-            {children}
-            {footer && !professional ? (
-              <View style={s.scrollFooter}>{footer}</View>
-            ) : null}
-          </View>
-        </ScrollView>
-        {professional && footer ? (
-          <View style={s.fixedFooter}>{footer}</View>
-        ) : null}
-        {professional && <ProfessionalTabs />}
+          <AppHeader
+            title={title}
+            backLabel={back}
+            onBack={back ? goBack : undefined}
+          />
+          {state.message && isFocused ? (
+            <View
+              pointerEvents="none"
+              style={[
+                s.toastWrap,
+                state.message.startsWith('Confira') && s.toastError,
+              ]}
+            >
+              <Text accessibilityRole="alert" style={s.toastText}>
+                {state.message}
+              </Text>
+            </View>
+          ) : null}
+          <ScrollView
+            ref={scroll}
+            style={s.scrollView}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={s.scroll}
+          >
+            <View style={s.page}>
+              {subtitle ? <Text style={s.subtitle}>{subtitle}</Text> : null}
+              {children}
+              {footer && !professional ? (
+                <View style={s.scrollFooter}>{footer}</View>
+              ) : null}
+            </View>
+          </ScrollView>
+          {professional && footer ? (
+            <View style={s.fixedFooter}>{footer}</View>
+          ) : null}
+          {professional && <ProfessionalTabs />}
+        </Animated.View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 export function ProfessionalTabs() {
   const navigation = useFrontendNavigation();
+  const insets = useSafeAreaInsets();
   const route = navigation.getState().routes[navigation.getState().index].name;
+  const tabs = [
+    {
+      label: 'Pacientes',
+      route: 'PatientList' as const,
+      icon: 'people' as const,
+    },
+    {
+      label: 'Acompanhamento',
+      route: 'PatientMonitoring' as const,
+      icon: 'chart' as const,
+    },
+  ];
   return (
-    <View style={s.tabs}>
-      {(['Pacientes', 'Acompanhamento'] as const).map((label, i) => {
-        const active =
-          i === 1
-            ? route === 'PatientMonitoring'
-            : route !== 'PatientMonitoring';
-        return (
-          <Pressable
-            key={label}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: active }}
-            onPress={() =>
-              navigation.navigate(i === 0 ? 'PatientList' : 'PatientMonitoring')
-            }
-            style={[s.tab, active && s.activeTab]}
-          >
-            <Text style={s.tabText}>{label}</Text>
-          </Pressable>
-        );
-      })}
+    <View
+      style={[
+        s.tabsShell,
+        { paddingBottom: Math.max(insets.bottom, spacing.sm) },
+      ]}
+    >
+      <BlurView
+        pointerEvents="none"
+        blurType="light"
+        blurAmount={20}
+        overlayColor="rgba(250, 249, 252, 0.68)"
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={s.tabs}>
+        {tabs.map(({ label, route: targetRoute, icon }) => {
+          const active =
+            icon === 'chart'
+              ? route === 'PatientMonitoring'
+              : route !== 'PatientMonitoring';
+          const color = active ? colors.primary : colors.textMuted;
+          return (
+            <Pressable
+              key={label}
+              accessibilityRole="tab"
+              accessibilityLabel={label}
+              accessibilityState={{ selected: active }}
+              onPress={() => navigation.navigate(targetRoute)}
+              style={s.tab}
+            >
+              <TabIcon name={icon} color={color} />
+              <Text style={[s.tabText, { color }, active && s.activeTabText]}>
+                {label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
-export function Notice() {
-  const { state, dispatch } = useDemo();
-  useEffect(() => {
-    if (state.message) {
-      AccessibilityInfo.announceForAccessibility(state.message);
-    }
-  }, [state.message]);
-  if (!state.message) {
-    return null;
-  }
+
+function TabIcon({ name, color }: { name: 'people' | 'chart'; color: string }) {
   return (
-    <View style={s.notice}>
-      <Text accessibilityRole="alert" style={s.noticeText}>
-        {state.message}
-      </Text>
-      <Link
-        label="Dispensar mensagem"
-        onPress={() => dispatch({ type: 'message', value: '' })}
-      />
-    </View>
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+      {name === 'people' ? (
+        <>
+          <Circle cx="9" cy="8" r="3.25" stroke={color} strokeWidth={1.8} />
+          <Path
+            d="M3.5 20v-1.1a5.5 5.5 0 0 1 11 0V20M16 5.2a3.2 3.2 0 0 1 0 6.2m1.2 2.2a4.8 4.8 0 0 1 3.3 4.6V20"
+            stroke={color}
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </>
+      ) : (
+        <>
+          <Path
+            d="M4 19.5V5m0 14.5h16M7.5 15l4-4 3 2 5-6"
+            stroke={color}
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <Circle cx="19.5" cy="7" r="1.25" fill={color} />
+        </>
+      )}
+    </Svg>
   );
+}
+export function Notice() {
+  return null;
 }
 export const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
@@ -165,41 +276,63 @@ export const s = StyleSheet.create({
     maxWidth: layout.contentMaxWidth,
     paddingHorizontal: layout.pageGutter,
     paddingVertical: spacing.md,
+    paddingBottom: spacing.lg,
     gap: spacing.sm,
     backgroundColor: colors.background,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
+  tabsShell: {
+    width: '100%',
+    paddingTop: spacing.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(221, 216, 231, 0.7)',
+    backgroundColor: 'rgba(250, 249, 252, 0.72)',
+    overflow: 'hidden',
+  },
   tabs: {
     flexDirection: 'row',
-    alignSelf: 'center',
     width: '100%',
-    maxWidth: layout.contentMaxWidth,
-    padding: spacing.sm,
-    backgroundColor: colors.surface,
-    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
   },
   tab: {
     flex: 1,
-    minHeight: layout.compactControlHeight,
+    minHeight: 56,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.sm,
-    borderRadius: radii.lg,
+    gap: spacing.xs,
   },
-  activeTab: { backgroundColor: colors.surfaceMuted },
   tabText: {
-    color: colors.primary,
-    ...typography.bodySmall,
-    fontFamily: fonts.bold,
+    ...typography.label,
+    fontSize: 11,
+    lineHeight: 14,
+    fontFamily: fonts.regular,
     textAlign: 'center',
   },
-  notice: {
-    padding: spacing.md,
+  activeTabText: { fontFamily: fonts.bold },
+  toastWrap: {
+    alignSelf: 'center',
+    position: 'absolute',
+    top: layout.headerHeight,
+    width: '90%',
+    maxWidth: layout.contentMaxWidth - spacing.xl,
+    zIndex: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderRadius: radii.lg,
-    backgroundColor: colors.successBackground,
+    backgroundColor: colors.text,
+    shadowColor: '#000000',
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
-  noticeText: { color: colors.success, ...typography.bodySmall },
+  toastText: {
+    color: colors.surface,
+    ...typography.bodySmall,
+    textAlign: 'center',
+  },
+  toastError: { backgroundColor: colors.error },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   column: { flex: 1, minWidth: 120 },
 });

@@ -3,7 +3,7 @@ import { Text } from 'react-native';
 import { useRoute, type RouteProp } from '@react-navigation/native';
 import { Screen } from '../../components/Screen';
 import { FormField } from '../../components/FormField';
-import { Body, Button, Card, Companion, Link, styles } from '../../ui';
+import { Body, Button, Card, Link, styles } from '../../ui';
 import { useDemo, useDemoPatient } from '../../demo/DemoContext';
 import {
   useFrontendNavigation,
@@ -37,7 +37,7 @@ export function NoteEditorScreen() {
             setText(value);
             setError('');
           }}
-          placeholder="Toque aqui para escrever"
+          placeholder="Escreva uma orientação"
           multiline
           maxLength={1000}
           error={error}
@@ -51,7 +51,6 @@ export function NoteEditorScreen() {
           }}
         />
       </Card>
-      <Companion>Vamos escrever?</Companion>
     </Screen>
   );
 }
@@ -82,9 +81,7 @@ export function NoteReviewScreen() {
     >
       <Card title="Orientação ao paciente">
         <Body>{params.text}</Body>
-        <Text style={styles.demo}>Confira o texto antes de salvar.</Text>
       </Card>
-      <Companion>Confira a orientação.</Companion>
     </Screen>
   );
 }

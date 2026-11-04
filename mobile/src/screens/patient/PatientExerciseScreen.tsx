@@ -6,7 +6,7 @@ import {
   usePreventRemove,
 } from '@react-navigation/native';
 import { Screen, s } from '../../components/Screen';
-import { Body, Button, styles } from '../../ui';
+import { Button, styles } from '../../ui';
 import { useDemo } from '../../demo/DemoContext';
 import { useFrontendNavigation } from '../../navigation/frontendTypes';
 import {
@@ -77,18 +77,16 @@ export function PatientExerciseScreen() {
           <Text accessibilityRole="header" style={styles.cardTitle}>
             Elevação do braço
           </Text>
-          <Body>Série {active.series} de 2</Body>
         </View>
         <Pressable
           style={exercise.counter}
           accessibilityRole="button"
-          accessibilityLabel="Simular uma repetição"
+          accessibilityLabel="Contar repetição simulada"
           accessibilityValue={{
             text: `${active.count} de ${active.goal} repetições`,
           }}
           accessibilityState={{ disabled: active.count === active.goal }}
           disabled={active.count === active.goal}
-          accessibilityHint="Toque para acrescentar uma repetição ilustrativa"
           onPress={() => dispatch({ type: 'repeat' })}
         >
           <Text style={styles.eyebrow}>SÉRIE {active.series}/2</Text>

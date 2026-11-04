@@ -76,7 +76,7 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
         ...state,
         patients: [...state.patients, action.patient],
         selectedId: action.patient.id,
-        message: 'Paciente cadastrado nesta demonstração.',
+        message: 'Paciente cadastrado.',
       };
     case 'workout':
       return {
@@ -91,7 +91,7 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
             : p,
         ),
         message: action.published
-          ? 'Treino publicado na demonstração.'
+          ? 'Treino publicado.'
           : 'Rascunho salvo. Publique para disponibilizar ao paciente.',
       };
     case 'note':
@@ -100,7 +100,7 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
         patients: state.patients.map(p =>
           p.id === action.id ? { ...p, note: action.note } : p,
         ),
-        message: 'Observação salva na demonstração.',
+        message: 'Observação salva.',
       };
     case 'voice':
       return { ...state, voice: action.enabled };

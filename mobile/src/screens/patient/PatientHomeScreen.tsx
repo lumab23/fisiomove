@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import { AccountAccess } from '../../demo/AccountAccess';
 import { Screen, Notice } from '../../components/Screen';
 import { Body, Button, Card, Link, Mascot, styles, Title } from '../../ui';
@@ -15,37 +15,27 @@ export function PatientHomeScreen() {
       footer={
         <>
           <Body>
-            Se sentir desconforto, pare e siga a orientação do seu
-            fisioterapeuta.
+            Se sentir desconforto, pare e siga a orientação do fisioterapeuta.
           </Body>
           <Link
-            label="Ver área profissional (demo)  ›"
+            label="Área profissional  ›"
             onPress={() => {
               dispatch({ type: 'message', value: '' });
               navigation.navigate('PatientList');
             }}
           />
           <AccountAccess />
-          <Text style={styles.demo}>
-            Protótipo conceitual • dados locais e fictícios
-          </Text>
         </>
       }
     >
       <View style={styles.heading}>
         <Title>Olá, {patient.name.split(' ')[0]}!</Title>
-        <Body>Vamos começar seu treino?</Body>
       </View>
       <Notice />
       <Card>
-        <Text style={styles.eyebrow}>TREINO RECOMENDADO</Text>
-        <Title>Sua atividade de fisioterapia</Title>
-        <Body>Orientada pelo seu fisioterapeuta</Body>
+        <Title>Treino recomendado</Title>
         <Mascot kind="home" />
       </Card>
-      <Body>
-        Faça o treino em casa seguindo as orientações do profissional.
-      </Body>
       <Button
         label="Iniciar treino"
         onPress={() => navigation.navigate('PatientWorkout')}

@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { Text } from 'react-native';
 import { Screen } from '../../components/Screen';
 import { FormField } from '../../components/FormField';
-import { Button, styles } from '../../ui';
+import { Button } from '../../ui';
 import { useDemo } from '../../demo/DemoContext';
 import { validatePatient } from '../../demo/model';
 import { useFrontendNavigation } from '../../navigation/frontendTypes';
@@ -17,6 +16,10 @@ export function PatientCreateScreen() {
     const next = validatePatient(name, identification, contact, state.patients);
     setErrors(next);
     if (Object.keys(next).length) {
+      dispatch({
+        type: 'message',
+        value: 'Confira os campos destacados para continuar.',
+      });
       return;
     }
     dispatch({
@@ -37,13 +40,15 @@ export function PatientCreateScreen() {
     <Screen
       back="Fisioterapeuta"
       title="Cadastrar paciente"
-      subtitle="Dados de exemplo para o protótipo."
       footer={<Button label="Cadastrar e configurar treino" onPress={submit} />}
     >
       <FormField
         label="NOME"
         value={name}
-        onChangeText={setName}
+        onChangeText={value => {
+          setName(value);
+          setErrors(current => ({ ...current, name: undefined }));
+        }}
         placeholder="Nome completo"
         autoCapitalize="words"
         maxLength={100}
@@ -52,7 +57,10 @@ export function PatientCreateScreen() {
       <FormField
         label="IDENTIFICAÇÃO"
         value={identification}
-        onChangeText={setIdentification}
+        onChangeText={value => {
+          setIdentification(value);
+          setErrors(current => ({ ...current, identification: undefined }));
+        }}
         placeholder="Paciente 002"
         maxLength={40}
         error={errors.identification}
@@ -60,15 +68,15 @@ export function PatientCreateScreen() {
       <FormField
         label="CONTATO"
         value={contact}
-        onChangeText={setContact}
+        onChangeText={value => {
+          setContact(value);
+          setErrors(current => ({ ...current, contact: undefined }));
+        }}
         placeholder="(85) 90000-0000"
         keyboardType="phone-pad"
         maxLength={24}
         error={errors.contact}
       />
-      <Text style={styles.demo}>
-        Use apenas dados fictícios. O cadastro fica na memória deste app.
-      </Text>
     </Screen>
   );
 }

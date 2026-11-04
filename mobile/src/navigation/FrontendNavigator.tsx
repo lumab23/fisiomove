@@ -103,6 +103,12 @@ export function FrontendNavigator({
               key={name}
               name={name as keyof FrontendStackParamList}
               component={component}
+              options={{
+                animation:
+                  name === 'PatientList' || name === 'PatientMonitoring'
+                    ? 'fade'
+                    : undefined,
+              }}
             />
           ))}
         </Stack.Navigator>

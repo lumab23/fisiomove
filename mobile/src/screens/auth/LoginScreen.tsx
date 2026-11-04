@@ -107,12 +107,7 @@ export function LoginScreen() {
               editable={!busy}
             />
             {error ? <InlineError message={error} /> : null}
-            <PrimaryButton
-              label="Entrar"
-              loading={busy}
-              onPress={submit}
-              accessibilityHint="Acessa sua conta com o e-mail e a senha informados"
-            />
+            <PrimaryButton label="Entrar" loading={busy} onPress={submit} />
           </View>
           <Text style={styles.support}>
             Não compartilhe sua senha. Em caso de dificuldade, procure o

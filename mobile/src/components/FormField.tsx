@@ -24,7 +24,14 @@ export function FormField({ label, error, ...input }: FormFieldProps) {
   const errorId = error ? `${label.replace(/\s/g, '-')}-error` : undefined;
   return (
     <View style={styles.group}>
-      <Text style={styles.label}>{label}</Text>
+      <View style={styles.labelRow}>
+        <Text style={styles.label}>{label}</Text>
+        {error ? (
+          <Text style={styles.errorIndicator} accessibilityElementsHidden>
+            •
+          </Text>
+        ) : null}
+      </View>
       <TextInput
         {...input}
         accessibilityLabel={label}
@@ -48,11 +55,13 @@ export function FormField({ label, error, ...input }: FormFieldProps) {
 
 const styles = StyleSheet.create({
   group: { gap: spacing.sm },
+  labelRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   label: {
     color: colors.primary,
     ...typography.bodySmall,
     fontFamily: fonts.bold,
   },
+  errorIndicator: { color: colors.error, fontSize: 16, lineHeight: 18 },
   input: {
     fontFamily: fonts.regular,
     backgroundColor: colors.surface,

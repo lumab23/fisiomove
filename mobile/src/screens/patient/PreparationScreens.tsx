@@ -1,6 +1,6 @@
 import { Text, View } from 'react-native';
 import { Screen } from '../../components/Screen';
-import { Body, Button, Card, Companion, Link, Mascot, styles } from '../../ui';
+import { Body, Button, Card, Link, Mascot, styles } from '../../ui';
 import { useDemo } from '../../demo/DemoContext';
 import { useFrontendNavigation } from '../../navigation/frontendTypes';
 import { useCameraPermission } from 'react-native-vision-camera';
@@ -13,11 +13,7 @@ export function PatientPreparationScreen() {
     <Screen
       back="Meu treino"
       title="Prepare o celular"
-      subtitle={
-        state.voice
-          ? 'Comandos de voz ativados (simulação).'
-          : 'Deixe tudo pronto antes de começar.'
-      }
+      subtitle={state.voice ? 'Comandos de voz simulados.' : undefined}
       footer={
         <>
           <Button
@@ -76,8 +72,8 @@ export function CameraPermissionScreen() {
         </>
       }
     >
-      <Card title="Autorize o uso da câmera.">
-        <Body>Os quadros são analisados no aparelho e não são enviados.</Body>
+      <Card>
+        <Body>A análise é local; imagens não são enviadas.</Body>
       </Card>
       <Mascot />
     </Screen>
@@ -90,7 +86,6 @@ export function CameraDeniedScreen() {
     <Screen
       back="Preparação"
       title="Câmera não autorizada"
-      subtitle="Sem ela, o treino não pode começar."
       footer={
         <>
           <Button
@@ -109,8 +104,8 @@ export function CameraDeniedScreen() {
         </>
       }
     >
-      <Card title="A câmera está desativada.">
-        <Body>Tente permitir novamente ou volte.</Body>
+      <Card>
+        <Body>Permita o acesso para iniciar o treino.</Body>
       </Card>
       <Mascot />
     </Screen>
@@ -127,7 +122,6 @@ export function VoicePermissionScreen() {
     <Screen
       back="Preparação"
       title="Usar comandos de voz?"
-      subtitle="É opcional. Você também pode usar os botões."
       footer={
         <>
           <Button
@@ -135,9 +129,9 @@ export function VoicePermissionScreen() {
             label="Continuar sem voz"
             onPress={() => finish(false)}
           />
-          <Button label="Permitir microfone" onPress={() => finish(true)} />
+          <Button label="Usar comandos" onPress={() => finish(true)} />
           <Text style={styles.demo}>
-            Nesta demonstração, o microfone não é ativado.
+            Comandos simulados; microfone inativo.
           </Text>
         </>
       }
@@ -153,7 +147,6 @@ export function CalibrationScreen() {
     <Screen
       back="Preparação"
       title="Ajuste seu movimento"
-      subtitle="Visualização técnica da pose no aparelho."
       footer={
         <>
           <Button
@@ -167,16 +160,15 @@ export function CalibrationScreen() {
         </>
       }
     >
-      <Card title="Pré-visualização de câmera e pose">
+      <Card>
         <LocalPoseCamera side="right" active={isFocused} />
       </Card>
-      <Card white title="Faça o movimento indicado, sem forçar.">
+      <Card white>
+        <Text style={styles.cardTitle}>Faça o movimento sem forçar.</Text>
         <Body>
-          Os pontos exibidos são estimativas do modelo e ainda não validam
-          movimento nem calibram limites clínicos.
+          Os pontos são estimativas; não validam o movimento nem a calibração.
         </Body>
       </Card>
-      <Companion>Pronta para começar?</Companion>
     </Screen>
   );
 }

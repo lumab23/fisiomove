@@ -8,6 +8,7 @@ import {
   spacing,
   typography,
 } from '../theme/theme';
+import { BrandLogo } from './BrandLogo';
 
 interface AppHeaderProps {
   title?: string;
@@ -43,7 +44,7 @@ export function AppHeader({
             </Pressable>
           ) : null}
         </View>
-        <Text style={styles.brand}>FisioMove</Text>
+        <BrandLogo />
         <View style={[styles.slot, styles.actionSlot]}>
           {onAction && actionLabel ? (
             <Pressable
@@ -92,12 +93,6 @@ const styles = StyleSheet.create({
     width: layout.compactControlHeight,
   },
   actionSlot: { alignItems: 'flex-end' },
-  brand: {
-    color: colors.primary,
-    fontFamily: fonts.bold,
-    ...typography.brand,
-    textAlign: 'center',
-  },
   iconButton: {
     alignItems: 'center',
     backgroundColor: colors.surfaceMuted,

@@ -200,7 +200,11 @@ export const styles = StyleSheet.create({
     borderRadius: radii.lg,
   },
   compactButtonText: { ...typography.bodySmall },
-  secondary: { backgroundColor: colors.lavender },
+  secondary: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderWidth: 1,
+  },
   secondaryText: { color: colors.purple },
   disabled: { opacity: 0.45 },
   pressed: { opacity: 0.7 },

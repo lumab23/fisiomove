@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Pressable, Text } from 'react-native';
+import { Pressable } from 'react-native';
 import { Screen, Notice } from '../../components/Screen';
 import { EmptyState } from '../../components/ScreenStates';
 import { FormField } from '../../components/FormField';
-import { Body, Button, Card, Link, styles } from '../../ui';
+import { Body, Button, Card, Link } from '../../ui';
 import { useDemo } from '../../demo/DemoContext';
 import { useFrontendNavigation } from '../../navigation/frontendTypes';
 export function PatientListScreen() {
@@ -26,9 +26,8 @@ export function PatientListScreen() {
             label="Cadastrar paciente"
             onPress={() => navigation.navigate('PatientCreate')}
           />
-          <Body>Selecione um paciente para ver seu treino.</Body>
           <Link
-            label="‹  Área do paciente (demo)"
+            label="‹  Área do paciente"
             onPress={() =>
               navigation.reset({ index: 0, routes: [{ name: 'PatientHome' }] })
             }
@@ -62,14 +61,13 @@ export function PatientListScreen() {
                   ? '1 exercício atribuído'
                   : 'Treino em rascunho'}
               </Body>
-              <Text style={styles.body}>Abrir ficha e acompanhamento</Text>
             </Card>
           </Pressable>
         ))
       ) : (
         <EmptyState
           title="Nenhum paciente encontrado"
-          message="Tente outro nome ou cadastre um novo paciente."
+          message="Ajuste a busca ou cadastre um paciente."
           actionLabel="Limpar busca"
           onAction={() => setSearch('')}
         />

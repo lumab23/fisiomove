@@ -29,7 +29,7 @@ export function PatientProgressScreen() {
             }
           />
           <Text style={styles.demo}>
-            Pontos não aumentam as repetições prescritas.
+            Pontuação não altera as repetições prescritas.
           </Text>
         </>
       }
@@ -39,21 +39,11 @@ export function PatientProgressScreen() {
           <Card title="Última sessão">
             <Body>Elevação de braço sentado</Body>
             <Body>
-              {last.total} repetições simuladas •{' '}
+              {last.total} repetições •{' '}
               {last.completed
                 ? `2 séries de ${last.repetitions}`
                 : 'sessão interrompida'}
             </Body>
-          </Card>
-          <Card
-            white
-            title={
-              last.completed
-                ? 'Meta do treino concluída'
-                : 'Sessão não concluída'
-            }
-          >
-            <Body>Conquistas refletem seu progresso individual.</Body>
           </Card>
           <Companion>
             {last.completed ? 'Você está evoluindo!' : 'Um passo de cada vez.'}

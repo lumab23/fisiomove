@@ -75,11 +75,15 @@ export function LocalPoseCamera({
   const { hasPermission, requestPermission } = useCameraPermission();
   const [permissionRequested, setPermissionRequested] = useState(false);
   const [latest, setLatest] = useState<RawPoseObservation | null>(null);
+  const [displayLandmarks, setDisplayLandmarks] = useState<
+    RawPoseObservation['landmarks']
+  >({});
   const [previewSize, setPreviewSize] = useState({ width: 0, height: 0 });
   const [inferenceError, setInferenceError] = useState<string | null>(null);
   const [droppedFrames, setDroppedFrames] = useState(0);
   const [appState, setAppState] = useState(AppState.currentState);
   const onObservationRef = useRef(onObservation);
+  const previousDisplayRef = useRef<DisplayLandmarks | null>(null);
   onObservationRef.current = onObservation;
 
   const detector = useKeypointDetector(detectorModel);
@@ -144,8 +148,15 @@ export function LocalPoseCamera({
         is_mirrored: isMirrored,
         inference_duration_ms: inferenceDuration,
       });
+      const smoothed = smoothDisplayLandmarks(raw, previousDisplayRef.current);
+      previousDisplayRef.current = {
+        timestamp_ms: raw.timestamp_ms,
+        landmarks: smoothed,
+      };
       setLatest(raw);
+      setDisplayLandmarks(smoothed);
       setInferenceError(null);
+      // Keep the original detections for movement logic; smoothing is visual only.
       onObservationRef.current?.(raw);
     },
     [],
@@ -276,7 +287,7 @@ export function LocalPoseCamera({
             : 'Aguardando pose'}
         </Text>
         {latest &&
-          Object.entries(latest.landmarks).map(([id, point]) => {
+          Object.entries(displayLandmarks).map(([id, point]) => {
             if (!point || !id.startsWith(`${side}_`)) return null;
             const position = previewPoint(latest, point, previewSize);
             return (
@@ -394,4 +405,43 @@ function countVisibleArmPoints(
         `${prefix}_${part}` as keyof RawPoseObservation['landmarks']
       ],
   ).length;
+}
+
+interface DisplayLandmarks {
+  timestamp_ms: number;
+  landmarks: RawPoseObservation['landmarks'];
+}
+
+const DISPLAY_SMOOTHING_ALPHA = 0.22;
+const DISPLAY_SMOOTHING_MAX_GAP_MS = 300;
+
+function smoothDisplayLandmarks(
+  observation: RawPoseObservation,
+  previous: DisplayLandmarks | null,
+): RawPoseObservation['landmarks'] {
+  if (
+    !previous ||
+    observation.timestamp_ms - previous.timestamp_ms >
+      DISPLAY_SMOOTHING_MAX_GAP_MS
+  ) {
+    return observation.landmarks;
+  }
+
+  const smoothed: RawPoseObservation['landmarks'] = {};
+  for (const [id, point] of Object.entries(observation.landmarks) as [
+    keyof RawPoseObservation['landmarks'],
+    NonNullable<
+      RawPoseObservation['landmarks'][keyof RawPoseObservation['landmarks']]
+    >,
+  ][]) {
+    const prior = previous.landmarks[id];
+    smoothed[id] = prior
+      ? {
+          ...point,
+          x: prior.x + (point.x - prior.x) * DISPLAY_SMOOTHING_ALPHA,
+          y: prior.y + (point.y - prior.y) * DISPLAY_SMOOTHING_ALPHA,
+        }
+      : point;
+  }
+  return smoothed;
 }

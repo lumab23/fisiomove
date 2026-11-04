@@ -1,5 +1,5 @@
 import { Screen } from '../../components/Screen';
-import { Body, Button, Card, Companion } from '../../ui';
+import { Body, Button, Card } from '../../ui';
 import { useDemo, useDemoPatient } from '../../demo/DemoContext';
 import { useFrontendNavigation } from '../../navigation/frontendTypes';
 export function PatientMonitoringScreen() {
@@ -12,7 +12,6 @@ export function PatientMonitoringScreen() {
       professional
       back={patient.name}
       title="Acompanhamento"
-      subtitle={`Paciente: ${patient.name}`}
       footer={
         <Button
           label="Voltar aos pacientes"
@@ -38,11 +37,8 @@ export function PatientMonitoringScreen() {
           <Body>Resultado simulado; treino atual pode variar.</Body>
         </Card>
       ) : (
-        <Card white title="Nenhuma sessão registrada">
-          <Body>Este paciente ainda não testou o treino na demonstração.</Body>
-        </Card>
+        <Card white title="Nenhuma sessão registrada" />
       )}
-      <Companion>Tudo acompanhado.</Companion>
     </Screen>
   );
 }

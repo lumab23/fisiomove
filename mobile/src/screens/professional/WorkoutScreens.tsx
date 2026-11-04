@@ -21,7 +21,6 @@ export function WorkoutConfigurationScreen() {
       professional
       back={patient.name}
       title={`Treino de ${patient.name.split(' ')[0]}`}
-      subtitle="Exercício atribuído"
       footer={
         <>
           <Button
@@ -82,7 +81,7 @@ export function WorkoutConfigurationScreen() {
         onPress={() => setRepetitions(repetitions === 8 ? 10 : 8)}
       />
       <Text accessibilityLiveRegion="polite" style={styles.demo}>
-        {repetitions} repetições selecionadas. Opções fictícias exibidas no PDF.
+        Valores fictícios da demonstração.
       </Text>
     </Screen>
   );
@@ -102,7 +101,7 @@ export function WorkoutReviewScreen() {
       footer={
         <>
           <Button
-            label="Publicar treino (demo)"
+            label="Publicar treino"
             onPress={() => {
               dispatch({
                 type: 'workout',

@@ -3,15 +3,7 @@ import { useIsFocused } from '@react-navigation/native';
 import { CameraPreview } from '../../components/CameraPreview';
 import { Screen } from '../../components/Screen';
 import { EmptyState } from '../../components/ScreenStates';
-import {
-  Body,
-  Button,
-  Card,
-  Companion,
-  Mascot,
-  colors,
-  styles,
-} from '../../ui';
+import { Body, Button, Card, Mascot, colors, styles } from '../../ui';
 import { useDemo } from '../../demo/DemoContext';
 import { useFrontendNavigation } from '../../navigation/frontendTypes';
 import { LocalPoseCamera } from '../../features/vision/LocalPoseCamera';
@@ -22,7 +14,6 @@ export function SessionPauseScreen() {
     <Screen
       back="Exercício"
       title="Treino pausado"
-      subtitle="A contagem está parada."
       footer={
         <>
           <Button
@@ -34,9 +25,7 @@ export function SessionPauseScreen() {
             label="Encerrar sessão"
             onPress={() => navigation.navigate('ConfirmExit')}
           />
-          <Text style={styles.demo}>
-            Nesta demonstração, a pausa é simulada.
-          </Text>
+          <Text style={styles.demo}>Pausa simulada.</Text>
         </>
       }
     >
@@ -65,9 +54,6 @@ export function SessionRestScreen() {
               navigation.popTo('PatientExercise');
             }}
           />
-          <Text style={styles.demo}>
-            Inicie a próxima série quando estiver pronto.
-          </Text>
         </>
       }
     >
@@ -88,7 +74,6 @@ export function CameraAdjustmentScreen() {
     <Screen
       back="Exercício"
       title="Ajuste a câmera"
-      subtitle="A contagem está pausada."
       footer={
         <Button label="Tentar novamente" onPress={() => navigation.goBack()} />
       }
@@ -135,12 +120,11 @@ export function ConfirmExitScreen() {
     <Screen
       back="Voltar à sessão"
       title="Encerrar o treino?"
-      subtitle="A contagem está pausada."
       footer={
         <>
           <Button
             secondary
-            label="Encerrar mesmo assim"
+            label="Encerrar sessão"
             onPress={() => {
               dispatch({
                 type: 'finish',
@@ -156,7 +140,7 @@ export function ConfirmExitScreen() {
       }
     >
       <CameraPreview compact>
-        <Card title="Treino não concluído">
+        <Card>
           <Body>Você pode voltar depois.</Body>
         </Card>
       </CameraPreview>
@@ -168,7 +152,6 @@ export function SessionInterruptedScreen() {
   return (
     <Screen
       title="Treino interrompido"
-      subtitle="Você pode voltar depois."
       footer={
         <>
           <Button
@@ -191,8 +174,8 @@ export function SessionInterruptedScreen() {
       }
     >
       <CameraPreview compact>
-        <Card title="Sessão não concluída">
-          <Body>Fale com seu fisioterapeuta.</Body>
+        <Card>
+          <Body>Fale com seu fisioterapeuta se precisar de orientação.</Body>
         </Card>
       </CameraPreview>
     </Screen>
@@ -234,21 +217,16 @@ export function PatientCompletionScreen() {
           {last?.total ?? 0} repetições • meta concluída
         </Text>
       </Card>
-      <Body>
-        As recompensas acompanham o plano, sem incentivar repetições extras.
-      </Body>
+      <Body>Siga as repetições prescritas; não faça extras.</Body>
     </Screen>
   );
 }
 export function ProgressEmpty() {
   return (
-    <>
-      <EmptyState
-        title="Nenhuma sessão ainda"
-        message="Seu resumo aparecerá aqui quando houver sessões registradas."
-      />
-      <Companion>Vamos no seu ritmo!</Companion>
-    </>
+    <EmptyState
+      title="Nenhuma sessão ainda"
+      message="Seu resumo aparecerá aqui quando houver sessões registradas."
+    />
   );
 }
 

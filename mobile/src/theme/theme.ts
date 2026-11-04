@@ -5,6 +5,7 @@ export const colors = {
   primary: '#6842A6',
   primaryPressed: '#503080',
   accent: '#28B8B1',
+  brandAccent: '#1A918B',
   text: '#20243A',
   textMuted: '#555B70',
   border: '#DDD8E7',
