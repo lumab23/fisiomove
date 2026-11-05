@@ -2,10 +2,12 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { CameraPreview } from '../../components/CameraPreview';
 import { Screen } from '../../components/Screen';
-import { EmptyState } from '../../components/ScreenStates';
 import { Body, Button, Card, Mascot, colors, styles } from '../../ui';
 import { useDemo } from '../../demo/DemoContext';
-import { useFrontendNavigation } from '../../navigation/frontendTypes';
+import {
+  resetToPatientTabs,
+  useFrontendNavigation,
+} from '../../navigation/frontendTypes';
 import { LocalPoseCamera } from '../../features/vision/LocalPoseCamera';
 import { radii, spacing } from '../../theme/theme';
 export function SessionPauseScreen() {
@@ -25,7 +27,6 @@ export function SessionPauseScreen() {
             label="Encerrar sessão"
             onPress={() => navigation.navigate('ConfirmExit')}
           />
-          <Text style={styles.demo}>Pausa simulada.</Text>
         </>
       }
     >
@@ -157,18 +158,11 @@ export function SessionInterruptedScreen() {
           <Button
             secondary
             label="Ir para o início"
-            onPress={() =>
-              navigation.reset({ index: 0, routes: [{ name: 'PatientHome' }] })
-            }
+            onPress={() => resetToPatientTabs(navigation)}
           />
           <Button
             label="Voltar ao meu treino"
-            onPress={() =>
-              navigation.reset({
-                index: 1,
-                routes: [{ name: 'PatientHome' }, { name: 'PatientWorkout' }],
-              })
-            }
+            onPress={() => resetToPatientTabs(navigation, 'workout')}
           />
         </>
       }
@@ -192,14 +186,12 @@ export function PatientCompletionScreen() {
         <>
           <Button
             label="Voltar ao início"
-            onPress={() =>
-              navigation.reset({ index: 0, routes: [{ name: 'PatientHome' }] })
-            }
+            onPress={() => resetToPatientTabs(navigation)}
           />
           <Button
             secondary
             label="Ver meu progresso"
-            onPress={() => navigation.navigate('PatientProgress')}
+            onPress={() => resetToPatientTabs(navigation, 'progress')}
           />
         </>
       }
@@ -208,7 +200,7 @@ export function PatientCompletionScreen() {
         <Mascot kind="gold" />
         <Text style={[styles.body, sessionStyles.centeredText]}>
           2 séries de {last?.repetitions ?? state.active.goal} repetições
-          simuladas.
+          concluídas.
         </Text>
       </View>
       <Card>
@@ -221,15 +213,6 @@ export function PatientCompletionScreen() {
     </Screen>
   );
 }
-export function ProgressEmpty() {
-  return (
-    <EmptyState
-      title="Nenhuma sessão ainda"
-      message="Seu resumo aparecerá aqui quando houver sessões registradas."
-    />
-  );
-}
-
 const sessionStyles = StyleSheet.create({
   centeredText: { textAlign: 'center' },
   restMascot: { width: 163, height: 165, alignSelf: 'center' },

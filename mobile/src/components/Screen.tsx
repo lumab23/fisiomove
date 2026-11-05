@@ -46,12 +46,14 @@ export function Screen({
   back,
   footer,
   professional = false,
+  tab = false,
 }: PropsWithChildren<{
   title?: string;
   subtitle?: string;
   back?: string;
   footer?: React.ReactNode;
   professional?: boolean;
+  tab?: boolean;
 }>) {
   const navigation = useFrontendNavigation();
   const { state, dispatch } = useDemo();
@@ -95,11 +97,11 @@ export function Screen({
   const goBack = () =>
     navigation.canGoBack()
       ? navigation.goBack()
-      : navigation.navigate(professional ? 'PatientList' : 'PatientHome');
+      : navigation.navigate(professional ? 'PatientList' : 'PatientTabs');
   return (
     <SafeAreaView
       style={s.safe}
-      edges={professional ? ['top', 'left', 'right'] : undefined}
+      edges={professional || tab ? ['top', 'left', 'right'] : undefined}
     >
       <KeyboardAvoidingView
         style={s.safe}

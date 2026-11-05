@@ -5,6 +5,8 @@ import {
   StyleSheet,
   Text,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import {
   models,
@@ -41,6 +43,8 @@ interface LocalPoseCameraProps {
   side: Exclude<Side, 'bilateral'>;
   active: boolean;
   onObservation?: (observation: RawPoseObservation) => void;
+  immersive?: boolean;
+  style?: StyleProp<ViewStyle>;
 }
 
 type CocoDetection = KeypointDetection<
@@ -68,6 +72,8 @@ export function LocalPoseCamera({
   side,
   active,
   onObservation,
+  immersive = false,
+  style,
 }: LocalPoseCameraProps) {
   // The patient faces the screen during the exercise, so the front camera
   // must point toward them while the display and live landmarks remain visible.
@@ -228,7 +234,7 @@ export function LocalPoseCamera({
 
   if (!hasPermission) {
     return (
-      <View style={styles.message}>
+      <View style={[styles.message, immersive && styles.immersiveMessage]}>
         <Text style={styles.title}>Permissão da câmera necessária</Text>
         <Text style={styles.body}>
           A imagem é analisada no aparelho e não é enviada ao servidor.
@@ -250,12 +256,16 @@ export function LocalPoseCamera({
     );
   }
   if (!device) {
-    return <Text style={styles.body}>Nenhuma câmera frontal encontrada.</Text>;
+    return (
+      <View style={[styles.message, immersive && styles.immersiveMessage]}>
+        <Text style={styles.body}>Nenhuma câmera frontal encontrada.</Text>
+      </View>
+    );
   }
 
   return (
     <View
-      style={styles.container}
+      style={[styles.container, immersive && styles.immersive, style]}
       onLayout={event =>
         setPreviewSize({
           width: event.nativeEvent.layout.width,
@@ -275,17 +285,28 @@ export function LocalPoseCamera({
         {!detector.isReady || !resizer ? (
           <ActivityIndicator color="#fff" />
         ) : null}
-        <Text style={styles.badge}>
-          {inferenceError ??
-            resizerError ??
-            detector.error?.message ??
-            `${side === 'left' ? 'Lado esquerdo' : 'Lado direito'} · ${countVisibleArmPoints(latest, side)}/3 pontos`}
-        </Text>
-        <Text style={styles.badge}>
-          {latest
-            ? `${latest.inference_duration_ms} ms · análise local · ${droppedFrames} quadros descartados`
-            : 'Aguardando pose'}
-        </Text>
+        {immersive ? (
+          <ImmersiveStatus
+            error={inferenceError ?? resizerError ?? detector.error?.message}
+            ready={detector.isReady && resizer !== null}
+            visible={countVisibleArmPoints(latest, side) === 3}
+          />
+        ) : null}
+        {immersive ? null : (
+          <>
+            <Text style={styles.badge}>
+              {inferenceError ??
+                resizerError ??
+                detector.error?.message ??
+                `${side === 'left' ? 'Lado esquerdo' : 'Lado direito'} · ${countVisibleArmPoints(latest, side)}/3 pontos`}
+            </Text>
+            <Text style={styles.badge}>
+              {latest
+                ? `${latest.inference_duration_ms} ms · análise local · ${droppedFrames} quadros descartados`
+                : 'Aguardando pose'}
+            </Text>
+          </>
+        )}
         {latest &&
           Object.entries(displayLandmarks).map(([id, point]) => {
             if (!point || !id.startsWith(`${side}_`)) return null;
@@ -305,7 +326,50 @@ export function LocalPoseCamera({
   );
 }
 
+function ImmersiveStatus({
+  error,
+  ready,
+  visible,
+}: {
+  error?: string | null;
+  ready: boolean;
+  visible: boolean;
+}) {
+  const text = error
+    ? 'Não foi possível analisar a imagem agora.'
+    : !ready
+      ? 'Preparando a câmera…'
+      : visible
+        ? 'Braço visível'
+        : 'Mostre o braço inteiro para a câmera';
+  return (
+    <Text
+      accessibilityLiveRegion="polite"
+      style={[styles.status, visible && !error && styles.statusOk]}
+    >
+      {text}
+    </Text>
+  );
+}
+
 const styles = StyleSheet.create({
+  immersive: { flex: 1, minHeight: 0, borderRadius: 0 },
+  immersiveMessage: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
+  status: {
+    ...typography.bodySmall,
+    fontFamily: fonts.bold,
+    color: colors.surface,
+    backgroundColor: colors.cameraOverlay,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    overflow: 'hidden',
+  },
+  statusOk: { backgroundColor: colors.success },
   container: {
     minHeight: 280,
     overflow: 'hidden',

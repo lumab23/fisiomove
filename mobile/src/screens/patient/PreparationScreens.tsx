@@ -11,7 +11,7 @@ export function PatientPreparationScreen() {
   const { state } = useDemo();
   return (
     <Screen
-      back="Meu treino"
+      back="Voltar"
       title="Prepare o celular"
       subtitle={state.voice ? 'Comandos de voz simulados.' : undefined}
       footer={

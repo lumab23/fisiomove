@@ -3,8 +3,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AccountContext } from '../demo/AccountAccess';
 import { colors } from '../theme/theme';
 import type { FrontendStackParamList } from './frontendTypes';
-import { PatientHomeScreen } from '../screens/patient/PatientHomeScreen';
-import { PatientWorkoutScreen } from '../screens/patient/PatientWorkoutScreen';
+import { PatientTabs } from './PatientTabs';
+import { PhysiotherapistInfoScreen } from '../screens/patient/PhysiotherapistInfoScreen';
 import {
   CalibrationScreen,
   CameraDeniedScreen,
@@ -22,10 +22,6 @@ import {
   SessionPauseScreen,
   SessionRestScreen,
 } from '../screens/patient/SessionScreens';
-import {
-  PatientHistoryScreen,
-  PatientProgressScreen,
-} from '../screens/patient/ProgressScreens';
 import { PatientListScreen } from '../screens/professional/PatientListScreen';
 import { PatientCreateScreen } from '../screens/professional/PatientCreateScreen';
 import { PatientDetailsScreen } from '../screens/professional/PatientDetailsScreen';
@@ -41,8 +37,8 @@ import { PatientMonitoringScreen } from '../screens/professional/PatientMonitori
 
 const Stack = createNativeStackNavigator<FrontendStackParamList>();
 export const frontendScreens = {
-  PatientHome: PatientHomeScreen,
-  PatientWorkout: PatientWorkoutScreen,
+  PatientTabs: PatientTabs,
+  PhysiotherapistInfo: PhysiotherapistInfoScreen,
   PatientPreparation: PatientPreparationScreen,
   CameraPermission: CameraPermissionScreen,
   CameraDenied: CameraDeniedScreen,
@@ -56,8 +52,6 @@ export const frontendScreens = {
   ConfirmExit: ConfirmExitScreen,
   SessionInterrupted: SessionInterruptedScreen,
   PatientCompletion: PatientCompletionScreen,
-  PatientProgress: PatientProgressScreen,
-  PatientHistory: PatientHistoryScreen,
   PatientList: PatientListScreen,
   PatientCreate: PatientCreateScreen,
   PatientDetails: PatientDetailsScreen,
@@ -70,14 +64,25 @@ export const frontendScreens = {
 export function FrontendNavigator({
   onAccount,
   accountLabel = 'Acessar minha conta',
-  initialRouteName = 'PatientHome',
+  accountEmail,
+  professionalDemo = true,
+  initialRouteName = 'PatientTabs',
 }: {
   onAccount?: () => void;
   accountLabel?: string;
-  initialRouteName?: 'PatientHome' | 'PatientList';
+  accountEmail?: string;
+  professionalDemo?: boolean;
+  initialRouteName?: 'PatientTabs' | 'PatientList';
 }) {
   return (
-    <AccountContext.Provider value={{ action: onAccount, label: accountLabel }}>
+    <AccountContext.Provider
+      value={{
+        action: onAccount,
+        label: accountLabel,
+        email: accountEmail,
+        professionalDemo,
+      }}
+    >
       <NavigationContainer
         theme={{
           ...DefaultTheme,

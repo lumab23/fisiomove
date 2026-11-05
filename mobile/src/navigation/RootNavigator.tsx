@@ -53,11 +53,13 @@ export function RootNavigator() {
   return (
     <DemoProvider>
       <FrontendNavigator
-        initialRouteName={flow === 'patient' ? 'PatientHome' : 'PatientList'}
+        initialRouteName={flow === 'patient' ? 'PatientTabs' : 'PatientList'}
         onAccount={() => {
           logout().catch(() => undefined);
         }}
         accountLabel="Sair da conta"
+        accountEmail={user.email}
+        professionalDemo={flow !== 'patient'}
       />
     </DemoProvider>
   );

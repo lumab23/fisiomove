@@ -9,6 +9,7 @@ import {
   typography,
 } from '../theme/theme';
 import { BrandLogo } from './BrandLogo';
+import { Icon } from './Icon';
 
 interface AppHeaderProps {
   title?: string;
@@ -40,7 +41,7 @@ export function AppHeader({
                 pressed && styles.pressed,
               ]}
             >
-              <Text style={styles.backIcon}>‹</Text>
+              <Icon name="back" size={22} color={colors.primary} />
             </Pressable>
           ) : null}
         </View>
@@ -100,12 +101,6 @@ const styles = StyleSheet.create({
     height: layout.compactControlHeight,
     justifyContent: 'center',
     width: layout.compactControlHeight,
-  },
-  backIcon: {
-    color: colors.primary,
-    fontFamily: fonts.regular,
-    ...typography.icon,
-    marginTop: -4,
   },
   actionIcon: {
     color: colors.primary,

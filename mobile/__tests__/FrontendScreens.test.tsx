@@ -23,6 +23,7 @@ jest.mock(
 jest.mock('@react-navigation/native', () => ({
   useRoute: () => ({ params: {} }),
   useFocusEffect: () => undefined,
+  useIsFocused: () => true,
 }));
 let app: ReactTestRenderer.ReactTestRenderer;
 async function render(screen: React.ReactNode) {
