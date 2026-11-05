@@ -7,7 +7,6 @@ import { PatientTabs } from './PatientTabs';
 import { PhysiotherapistInfoScreen } from '../screens/patient/PhysiotherapistInfoScreen';
 import {
   CalibrationScreen,
-  CameraDeniedScreen,
   CameraPermissionScreen,
   PatientPreparationScreen,
   VoicePermissionScreen,
@@ -41,7 +40,6 @@ export const frontendScreens = {
   PhysiotherapistInfo: PhysiotherapistInfoScreen,
   PatientPreparation: PatientPreparationScreen,
   CameraPermission: CameraPermissionScreen,
-  CameraDenied: CameraDeniedScreen,
   VoicePermission: VoicePermissionScreen,
   Calibration: CalibrationScreen,
   PatientExercise: PatientExerciseScreen,

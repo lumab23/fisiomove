@@ -5,12 +5,27 @@ import { DemoProvider } from '../src/demo/DemoContext';
 import { seedState, type DemoState } from '../src/demo/model';
 import { FrontendNavigator } from '../src/navigation/FrontendNavigator';
 
-jest.mock('react-native-vision-camera', () => ({
-  useCameraPermission: () => ({
-    hasPermission: false,
-    requestPermission: jest.fn().mockResolvedValue(true),
-  }),
-}));
+const mockCamera: { initial: string; result: string } = {
+  initial: 'not-determined',
+  result: 'authorized',
+};
+jest.mock('react-native-vision-camera', () => {
+  const { useState } = require('react');
+  return {
+    useCameraPermission: () => {
+      const [status, setStatus] = useState(mockCamera.initial);
+      return {
+        status,
+        hasPermission: status === 'authorized',
+        canRequestPermission: status === 'not-determined',
+        requestPermission: async () => {
+          setStatus(mockCamera.result);
+          return mockCamera.result === 'authorized';
+        },
+      };
+    },
+  };
+});
 jest.mock('../src/features/vision/LocalPoseCamera', () => ({
   LocalPoseCamera: () => null,
 }));
@@ -64,6 +79,8 @@ async function pressTab(label: string) {
 }
 
 afterEach(async () => {
+  mockCamera.initial = 'not-determined';
+  mockCamera.result = 'authorized';
   await act(async () => app.unmount());
 });
 
@@ -153,7 +170,7 @@ test('immersive session counts only taps and unlocks the series at the goal', as
   await render();
   await press('Iniciar treino');
   await press('Continuar');
-  await press('Permitir câmera');
+  await press('Ativar câmera');
   await press('Começar exercício');
   expect(hasText('Repetição')).toBe(true);
   expect(hasText('Contar repetição')).toBe(true);
@@ -162,4 +179,55 @@ test('immersive session counts only taps and unlocks the series at the goal', as
   }
   expect(hasText('Concluir série 1')).toBe(true);
   expect(hasText('Contar repetição')).toBe(false);
+});
+
+async function openCameraStep() {
+  await press('Iniciar treino');
+  await press('Continuar');
+}
+
+test('asks for the camera with one clear action and lets the patient decline', async () => {
+  await render();
+  await openCameraStep();
+  expect(hasText('Vamos ativar sua câmera?')).toBe(true);
+  expect(hasText('Ativar câmera')).toBe(true);
+  await press('Agora não');
+  expect(hasText('Prepare o celular')).toBe(true);
+});
+
+test('a denied request stays in the flow with guidance instead of retrying', async () => {
+  mockCamera.result = 'denied';
+  await render();
+  await openCameraStep();
+  await press('Ativar câmera');
+  expect(hasText('A câmera está desativada')).toBe(true);
+  expect(hasText('Ativar câmera')).toBe(false);
+  expect(hasText('Tentar')).toBe(false);
+  await press('Como permitir a câmera');
+  expect(hasText('Abrir Ajustes do celular')).toBe(true);
+  await press('Voltar aos exercícios');
+  expect(hasText('Exercícios prescritos')).toBe(true);
+});
+
+test('a previously blocked camera shows settings guidance right away', async () => {
+  mockCamera.initial = 'denied';
+  await render();
+  await openCameraStep();
+  expect(hasText('A câmera está desativada')).toBe(true);
+  expect(hasText('Vamos ativar sua câmera?')).toBe(false);
+});
+
+test('a restricted camera explains the block without a permission request', async () => {
+  mockCamera.initial = 'restricted';
+  await render();
+  await openCameraStep();
+  expect(hasText('A câmera está bloqueada neste celular')).toBe(true);
+  expect(hasText('Ativar câmera')).toBe(false);
+});
+
+test('an already allowed camera skips the permission step', async () => {
+  mockCamera.initial = 'authorized';
+  await render();
+  await openCameraStep();
+  expect(hasText('Começar exercício')).toBe(true);
 });

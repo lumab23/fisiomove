@@ -76,7 +76,10 @@ export function CameraAdjustmentScreen() {
       back="Exercício"
       title="Ajuste a câmera"
       footer={
-        <Button label="Tentar novamente" onPress={() => navigation.goBack()} />
+        <Button
+          label="Voltar ao exercício"
+          onPress={() => navigation.goBack()}
+        />
       }
     >
       <View style={sessionStyles.cameraPanel}>

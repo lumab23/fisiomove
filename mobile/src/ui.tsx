@@ -1,6 +1,7 @@
 import { Children, type PropsWithChildren } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { AnimatedMascot } from './components/AnimatedMascot';
 import { Icon, type IconName } from './components/Icon';
 import {
   colors as themeColors,
@@ -225,12 +226,6 @@ export function Mascot({
   kind?: 'pink' | 'home' | 'gold';
   small?: boolean;
 }) {
-  const source =
-    kind === 'home'
-      ? require('./assets/mascot-home.png')
-      : kind === 'gold'
-        ? require('./assets/mascot-gold.png')
-        : require('./assets/mascot-pink.png');
   return (
     <View
       style={[
@@ -240,12 +235,7 @@ export function Mascot({
         small && styles.smallMascot,
       ]}
     >
-      <Image
-        source={source}
-        style={[styles.mascotImage, small && styles.smallMascotImage]}
-        resizeMode="contain"
-        accessible={false}
-      />
+      <AnimatedMascot kind={kind} width={small ? 74.88 : 104} />
     </View>
   );
 }

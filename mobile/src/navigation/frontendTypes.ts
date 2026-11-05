@@ -17,7 +17,6 @@ export type FrontendStackParamList = {
   PatientPreparation: undefined;
   PhysiotherapistInfo: undefined;
   CameraPermission: undefined;
-  CameraDenied: undefined;
   VoicePermission: undefined;
   Calibration: undefined;
   PatientExercise: undefined;

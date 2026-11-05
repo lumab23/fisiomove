@@ -2,6 +2,8 @@ import {
   Activity,
   ArrowLeft,
   Award,
+  Camera,
+  CameraOff,
   BriefcaseMedical,
   ChartLine,
   ChevronRight,
@@ -46,6 +48,8 @@ const icons = {
   back: ArrowLeft,
   close: X,
   settings: Settings,
+  camera: Camera,
+  cameraOff: CameraOff,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof icons;
