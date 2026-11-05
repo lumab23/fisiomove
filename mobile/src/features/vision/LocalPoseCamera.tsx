@@ -5,6 +5,8 @@ import {
   StyleSheet,
   Text,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import {
   models,
@@ -24,7 +26,12 @@ import {
   type Resizer,
 } from 'react-native-vision-camera-resizer';
 import { scheduleOnRN } from 'react-native-worklets';
-import type { CameraOrientation } from 'react-native-vision-camera';
+import type {
+  CameraOrientation,
+  InterruptionReason,
+} from 'react-native-vision-camera';
+import { Button } from '../../ui';
+import { CameraMessage, CameraSettingsSteps } from './CameraGuidance';
 import type { Side } from '../../contracts/domain';
 import type { FrameOrientation } from './types';
 import {
@@ -41,6 +48,8 @@ interface LocalPoseCameraProps {
   side: Exclude<Side, 'bilateral'>;
   active: boolean;
   onObservation?: (observation: RawPoseObservation) => void;
+  immersive?: boolean;
+  style?: StyleProp<ViewStyle>;
 }
 
 type CocoDetection = KeypointDetection<
@@ -68,12 +77,14 @@ export function LocalPoseCamera({
   side,
   active,
   onObservation,
+  immersive = false,
+  style,
 }: LocalPoseCameraProps) {
   // The patient faces the screen during the exercise, so the front camera
   // must point toward them while the display and live landmarks remain visible.
   const device = useCameraDevice('front');
-  const { hasPermission, requestPermission } = useCameraPermission();
-  const [permissionRequested, setPermissionRequested] = useState(false);
+  const { hasPermission, canRequestPermission, requestPermission } =
+    useCameraPermission();
   const [latest, setLatest] = useState<RawPoseObservation | null>(null);
   const [displayLandmarks, setDisplayLandmarks] = useState<
     RawPoseObservation['landmarks']
@@ -221,41 +232,78 @@ export function LocalPoseCamera({
   });
 
   const outputs = useMemo(() => [frameOutput], [frameOutput]);
-  const request = useCallback(async () => {
-    setPermissionRequested(true);
-    await requestPermission();
-  }, [requestPermission]);
+  const [interruption, setInterruption] = useState<InterruptionReason | null>(
+    null,
+  );
+  const [cameraFailed, setCameraFailed] = useState(false);
+  const [cameraKey, setCameraKey] = useState(0);
+  const shell = [styles.message, immersive && styles.immersiveMessage];
 
   if (!hasPermission) {
     return (
-      <View style={styles.message}>
-        <Text style={styles.title}>Permissão da câmera necessária</Text>
-        <Text style={styles.body}>
-          A imagem é analisada no aparelho e não é enviada ao servidor.
-        </Text>
-        {!permissionRequested ? (
-          <Text
-            accessibilityRole="button"
-            onPress={request}
-            style={styles.action}
+      <View style={shell}>
+        {canRequestPermission ? (
+          <CameraMessage
+            icon="camera"
+            title="Vamos ativar sua câmera?"
+            description="A câmera ajuda a acompanhar seus movimentos durante o exercício."
           >
-            Permitir câmera
-          </Text>
+            <Button
+              icon="camera"
+              label="Ativar câmera"
+              onPress={() => {
+                requestPermission().catch(() => undefined);
+              }}
+            />
+          </CameraMessage>
         ) : (
-          <Text style={styles.body}>
-            Se negada, habilite a câmera nos Ajustes.
-          </Text>
+          <CameraMessage
+            icon="cameraOff"
+            title="A câmera está desativada"
+            description="Para acompanhar seus movimentos durante o exercício, precisamos acessar a câmera do seu dispositivo."
+          >
+            <CameraSettingsSteps />
+          </CameraMessage>
         )}
       </View>
     );
   }
   if (!device) {
-    return <Text style={styles.body}>Nenhuma câmera frontal encontrada.</Text>;
+    return (
+      <View style={shell}>
+        <CameraMessage
+          icon="cameraOff"
+          title="Não encontramos a câmera"
+          description="Este celular não tem uma câmera frontal disponível para o exercício."
+        />
+      </View>
+    );
   }
+  if (cameraFailed) {
+    return (
+      <View style={shell}>
+        <CameraMessage
+          icon="cameraOff"
+          title="Não foi possível ligar a câmera"
+          description="Feche outros aplicativos que usam a câmera, como chamadas de vídeo, e ligue de novo."
+        >
+          <Button
+            icon="camera"
+            label="Ligar a câmera de novo"
+            onPress={() => {
+              setCameraFailed(false);
+              setCameraKey(key => key + 1);
+            }}
+          />
+        </CameraMessage>
+      </View>
+    );
+  }
+  const interruptionMessage = describeInterruption(interruption);
 
   return (
     <View
-      style={styles.container}
+      style={[styles.container, immersive && styles.immersive, style]}
       onLayout={event =>
         setPreviewSize({
           width: event.nativeEvent.layout.width,
@@ -264,28 +312,48 @@ export function LocalPoseCamera({
       }
     >
       <Camera
+        key={cameraKey}
         style={StyleSheet.absoluteFill}
         device={device}
         outputs={outputs}
         isActive={active && appState === 'active'}
         orientationSource="interface"
         resizeMode="contain"
+        onError={() => setCameraFailed(true)}
+        onInterruptionStarted={setInterruption}
+        onInterruptionEnded={() => setInterruption(null)}
       />
+      {interruptionMessage ? (
+        <View style={styles.interruption}>
+          <CameraMessage icon="cameraOff" {...interruptionMessage} />
+        </View>
+      ) : null}
       <View pointerEvents="none" style={styles.overlay}>
         {!detector.isReady || !resizer ? (
           <ActivityIndicator color="#fff" />
         ) : null}
-        <Text style={styles.badge}>
-          {inferenceError ??
-            resizerError ??
-            detector.error?.message ??
-            `${side === 'left' ? 'Lado esquerdo' : 'Lado direito'} · ${countVisibleArmPoints(latest, side)}/3 pontos`}
-        </Text>
-        <Text style={styles.badge}>
-          {latest
-            ? `${latest.inference_duration_ms} ms · análise local · ${droppedFrames} quadros descartados`
-            : 'Aguardando pose'}
-        </Text>
+        {immersive ? (
+          <ImmersiveStatus
+            error={inferenceError ?? resizerError ?? detector.error?.message}
+            ready={detector.isReady && resizer !== null}
+            visible={countVisibleArmPoints(latest, side) === 3}
+          />
+        ) : null}
+        {immersive ? null : (
+          <>
+            <Text style={styles.badge}>
+              {inferenceError ??
+                resizerError ??
+                detector.error?.message ??
+                `${side === 'left' ? 'Lado esquerdo' : 'Lado direito'} · ${countVisibleArmPoints(latest, side)}/3 pontos`}
+            </Text>
+            <Text style={styles.badge}>
+              {latest
+                ? `${latest.inference_duration_ms} ms · análise local · ${droppedFrames} quadros descartados`
+                : 'Aguardando pose'}
+            </Text>
+          </>
+        )}
         {latest &&
           Object.entries(displayLandmarks).map(([id, point]) => {
             if (!point || !id.startsWith(`${side}_`)) return null;
@@ -305,28 +373,62 @@ export function LocalPoseCamera({
   );
 }
 
+function ImmersiveStatus({
+  error,
+  ready,
+  visible,
+}: {
+  error?: string | null;
+  ready: boolean;
+  visible: boolean;
+}) {
+  const text = error
+    ? 'Não foi possível analisar a imagem agora.'
+    : !ready
+      ? 'Preparando a câmera…'
+      : visible
+        ? 'Braço visível'
+        : 'Mostre o braço inteiro para a câmera';
+  return (
+    <Text
+      accessibilityLiveRegion="polite"
+      style={[styles.status, visible && !error && styles.statusOk]}
+    >
+      {text}
+    </Text>
+  );
+}
+
 const styles = StyleSheet.create({
+  immersive: { flex: 1, minHeight: 0, borderRadius: 0 },
+  immersiveMessage: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
+  status: {
+    ...typography.bodySmall,
+    fontFamily: fonts.bold,
+    color: colors.surface,
+    backgroundColor: colors.cameraOverlay,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    overflow: 'hidden',
+  },
+  statusOk: { backgroundColor: colors.success },
   container: {
     minHeight: 280,
     overflow: 'hidden',
     backgroundColor: colors.cameraSurface,
     borderRadius: radii.md,
   },
-  message: { padding: spacing.xl, gap: spacing.md, alignItems: 'center' },
-  title: {
-    ...typography.body,
-    fontFamily: fonts.bold,
-    color: colors.cameraSurface,
-  },
-  body: {
-    ...typography.bodySmall,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-  action: {
-    color: colors.cameraLandmark,
-    fontFamily: fonts.bold,
-    padding: spacing.md,
+  message: { padding: spacing.lg, gap: spacing.md, alignItems: 'center' },
+  interruption: {
+    ...StyleSheet.absoluteFill,
+    justifyContent: 'center',
+    padding: spacing.lg,
+    backgroundColor: colors.cameraOverlay,
   },
   overlay: {
     ...StyleSheet.absoluteFill,
@@ -378,6 +480,34 @@ function previewPoint(
     x: (preview.width - contentWidth) / 2 + oriented.x * contentWidth,
     y: oriented.y * preview.height,
   };
+}
+
+function describeInterruption(
+  reason: InterruptionReason | null,
+): { title: string; description: string } | null {
+  switch (reason) {
+    case 'video-device-in-use-by-another-client':
+    case 'video-device-not-available-with-multiple-foreground-apps':
+      return {
+        title: 'A câmera está sendo usada por outro aplicativo',
+        description:
+          'Feche o outro aplicativo, como uma chamada de vídeo, e volte para cá.',
+      };
+    case 'video-device-not-available-due-to-system-pressure':
+      return {
+        title: 'A câmera pausou por um momento',
+        description:
+          'O celular está muito quente ou ocupado. Aguarde um pouco, ela volta sozinha.',
+      };
+    case 'unknown':
+    case 'sensitive-content-mitigation-activated':
+      return {
+        title: 'A câmera pausou por um momento',
+        description: 'Aguarde um pouco, ela volta sozinha.',
+      };
+    default:
+      return null;
+  }
 }
 
 function mapOrientation(orientation: CameraOrientation): FrameOrientation {

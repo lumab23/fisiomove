@@ -1,24 +1,37 @@
-import { Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../../components/Screen';
 import { Body, Button, Card, Link, Mascot, styles } from '../../ui';
 import { useDemo } from '../../demo/DemoContext';
-import { useFrontendNavigation } from '../../navigation/frontendTypes';
+import {
+  resetToPatientTabs,
+  useFrontendNavigation,
+} from '../../navigation/frontendTypes';
+import {
+  CameraMessage,
+  CameraSettingsSteps,
+} from '../../features/vision/CameraGuidance';
 import { useCameraPermission } from 'react-native-vision-camera';
 import { useIsFocused } from '@react-navigation/native';
 import { LocalPoseCamera } from '../../features/vision/LocalPoseCamera';
 export function PatientPreparationScreen() {
   const navigation = useFrontendNavigation();
   const { state } = useDemo();
+  const { hasPermission: cameraReady } = useCameraPermission();
   return (
     <Screen
-      back="Meu treino"
+      back="Voltar"
       title="Prepare o celular"
       subtitle={state.voice ? 'Comandos de voz simulados.' : undefined}
       footer={
         <>
           <Button
             label="Continuar"
-            onPress={() => navigation.navigate('CameraPermission')}
+            onPress={() =>
+              navigation.navigate(
+                cameraReady ? 'Calibration' : 'CameraPermission',
+              )
+            }
           />
           <Link
             label={
@@ -51,63 +64,92 @@ export function PatientPreparationScreen() {
 }
 export function CameraPermissionScreen() {
   const navigation = useFrontendNavigation();
-  const { requestPermission } = useCameraPermission();
-  const requestCamera = async () => {
-    const granted = await requestPermission();
-    navigation.replace(granted ? 'Calibration' : 'CameraDenied');
+  const { status, requestPermission } = useCameraPermission();
+  const [asked, setAsked] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+  const [showSteps, setShowSteps] = useState(false);
+  useEffect(() => {
+    if (status === 'authorized') {
+      navigation.replace('Calibration');
+    }
+  }, [navigation, status]);
+  const backToExercises = () => resetToPatientTabs(navigation, 'workout');
+  const activate = async () => {
+    setRequesting(true);
+    try {
+      await requestPermission();
+    } finally {
+      setAsked(true);
+      setRequesting(false);
+    }
   };
-  return (
-    <Screen
-      back="Preparação"
-      title="Usar a câmera?"
-      subtitle="Para acompanhar o braço durante a sessão."
-      footer={
-        <>
+  if (status === 'authorized') {
+    return <Screen back="Preparação" />;
+  }
+  if (status === 'restricted') {
+    return (
+      <Screen back="Preparação">
+        <CameraMessage
+          icon="cameraOff"
+          title="A câmera está bloqueada neste celular"
+          description="Os ajustes do aparelho não deixam usar a câmera. Peça ajuda a quem cuida das configurações do seu celular."
+        >
           <Button
             secondary
-            label="Não permitir"
-            onPress={() => navigation.replace('CameraDenied')}
+            label="Voltar aos exercícios"
+            onPress={backToExercises}
           />
-          <Button label="Permitir câmera" onPress={requestCamera} />
-        </>
-      }
-    >
-      <Card>
-        <Body>A análise é local; imagens não são enviadas.</Body>
-      </Card>
-      <Mascot />
-    </Screen>
-  );
-}
-export function CameraDeniedScreen() {
-  const navigation = useFrontendNavigation();
-  const { requestPermission } = useCameraPermission();
-  return (
-    <Screen
-      back="Preparação"
-      title="Câmera não autorizada"
-      footer={
-        <>
+        </CameraMessage>
+      </Screen>
+    );
+  }
+  if (status === 'denied' || asked) {
+    return (
+      <Screen back="Preparação">
+        <CameraMessage
+          icon="cameraOff"
+          title="A câmera está desativada"
+          description="Para acompanhar seus movimentos durante o exercício, precisamos acessar a câmera do seu dispositivo."
+        >
+          {showSteps ? (
+            <CameraSettingsSteps />
+          ) : (
+            <Button
+              label="Como permitir a câmera"
+              onPress={() => setShowSteps(true)}
+            />
+          )}
           <Button
             secondary
-            label="Voltar à preparação"
-            onPress={() => navigation.popTo('PatientPreparation')}
+            label="Voltar aos exercícios"
+            onPress={backToExercises}
           />
-          <Button
-            label="Tentar permitir câmera"
-            onPress={() => {
-              requestPermission().then(granted => {
-                navigation.replace(granted ? 'Calibration' : 'CameraDenied');
-              });
-            }}
-          />
-        </>
-      }
-    >
-      <Card>
-        <Body>Permita o acesso para iniciar o treino.</Body>
-      </Card>
-      <Mascot />
+        </CameraMessage>
+      </Screen>
+    );
+  }
+  return (
+    <Screen back="Preparação">
+      <CameraMessage
+        icon="camera"
+        title="Vamos ativar sua câmera?"
+        description="A câmera ajuda a acompanhar seus movimentos durante o exercício."
+      >
+        <Button
+          icon="camera"
+          label="Ativar câmera"
+          disabled={requesting}
+          onPress={activate}
+        />
+        <Button
+          secondary
+          label="Agora não"
+          onPress={() => navigation.goBack()}
+        />
+      </CameraMessage>
+      <Text style={[styles.demo, preparation.centered]}>
+        As imagens ficam só no seu celular e não são enviadas.
+      </Text>
     </Screen>
   );
 }
@@ -172,3 +214,7 @@ export function CalibrationScreen() {
     </Screen>
   );
 }
+
+const preparation = StyleSheet.create({
+  centered: { textAlign: 'center' },
+});

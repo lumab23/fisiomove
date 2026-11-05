@@ -1,19 +1,23 @@
 export const colors = {
-  background: '#FAF9FC',
+  background: '#F7F6FA',
   surface: '#FFFFFF',
   surfaceMuted: '#EEE7FA',
   primary: '#6842A6',
   primaryPressed: '#503080',
+  onPrimary: '#FFFFFF',
+  onPrimaryMuted: '#E9E1F7',
   accent: '#28B8B1',
   brandAccent: '#1A918B',
   text: '#20243A',
   textMuted: '#555B70',
-  border: '#DDD8E7',
+  border: '#E3DFEC',
   error: '#A62A3D',
   errorBackground: '#FDECEF',
   success: '#17695A',
   successBackground: '#DDF3F0',
   warning: '#FA805F',
+  warningText: '#8A4B12',
+  warningBackground: '#FFEFE3',
   peach: '#FFEFE3',
   cameraSurface: '#17232D',
   cameraOverlay: '#17232DCC',
@@ -62,4 +66,14 @@ export const layout = {
 export const fonts = {
   regular: 'AtkinsonHyperlegible-Regular',
   bold: 'AtkinsonHyperlegible-Bold',
+} as const;
+
+export const elevation = {
+  card: {
+    shadowColor: '#2A1B4A',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
 } as const;

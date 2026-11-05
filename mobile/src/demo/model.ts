@@ -1,5 +1,19 @@
 /** Fictional UI data only. No API contracts or clinical calculations. */
 export type Repetitions = 8 | 10;
+/** Example from the prototype PDF; not a clinical prescription. */
+export const demoExercise = {
+  name: 'Elevação de braço sentado',
+  side: 'Braço direito',
+  series: 2,
+} as const;
+/** Fictional professional: the API has no physiotherapist profile yet. */
+export const demoPhysiotherapist = {
+  name: 'Dra. Ana Ribeiro',
+  registry: 'CREFITO (exemplo)',
+  specialty: 'Fisioterapia traumato-ortopédica',
+  about:
+    'Acompanha seu treino em casa e ajusta a prescrição conforme sua evolução.',
+} as const;
 export type DemoPatient = {
   id: string;
   name: string;

@@ -5,7 +5,10 @@ import { EmptyState } from '../../components/ScreenStates';
 import { FormField } from '../../components/FormField';
 import { Body, Button, Card, Link } from '../../ui';
 import { useDemo } from '../../demo/DemoContext';
-import { useFrontendNavigation } from '../../navigation/frontendTypes';
+import {
+  resetToPatientTabs,
+  useFrontendNavigation,
+} from '../../navigation/frontendTypes';
 export function PatientListScreen() {
   const { state, dispatch } = useDemo();
   const navigation = useFrontendNavigation();
@@ -28,9 +31,7 @@ export function PatientListScreen() {
           />
           <Link
             label="‹  Área do paciente"
-            onPress={() =>
-              navigation.reset({ index: 0, routes: [{ name: 'PatientHome' }] })
-            }
+            onPress={() => resetToPatientTabs(navigation)}
           />
         </>
       }

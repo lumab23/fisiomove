@@ -70,7 +70,7 @@ export function LoginScreen() {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <AppHeader title="Entre no FisioMove" />
+        <AppHeader brand title="Entre no FisioMove" />
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"

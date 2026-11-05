@@ -1,12 +1,22 @@
-import { useNavigation } from '@react-navigation/native';
+import {
+  useNavigation,
+  type CompositeNavigationProp,
+  type NavigatorScreenParams,
+} from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { Repetitions } from '../demo/model';
-export type FrontendStackParamList = {
+export type ExerciseSection = 'workout' | 'history' | 'progress';
+export type PatientTabParamList = {
   PatientHome: undefined;
-  PatientWorkout: undefined;
+  PatientExercises: { section?: ExerciseSection } | undefined;
+  PatientProfile: undefined;
+};
+export type FrontendStackParamList = {
+  PatientTabs: NavigatorScreenParams<PatientTabParamList> | undefined;
   PatientPreparation: undefined;
+  PhysiotherapistInfo: undefined;
   CameraPermission: undefined;
-  CameraDenied: undefined;
   VoicePermission: undefined;
   Calibration: undefined;
   PatientExercise: undefined;
@@ -17,8 +27,6 @@ export type FrontendStackParamList = {
   ConfirmExit: undefined;
   SessionInterrupted: undefined;
   PatientCompletion: undefined;
-  PatientProgress: undefined;
-  PatientHistory: undefined;
   PatientList: undefined;
   PatientCreate: undefined;
   PatientDetails: undefined;
@@ -30,6 +38,29 @@ export type FrontendStackParamList = {
 };
 export type FrontendNavigation =
   NativeStackNavigationProp<FrontendStackParamList>;
+export type PatientTabNavigation = CompositeNavigationProp<
+  BottomTabNavigationProp<PatientTabParamList>,
+  FrontendNavigation
+>;
 export function useFrontendNavigation() {
   return useNavigation<FrontendNavigation>();
+}
+export function usePatientTabNavigation() {
+  return useNavigation<PatientTabNavigation>();
+}
+export function resetToPatientTabs(
+  navigation: FrontendNavigation,
+  section?: ExerciseSection,
+) {
+  navigation.reset({
+    index: 0,
+    routes: [
+      {
+        name: 'PatientTabs',
+        params: section
+          ? { screen: 'PatientExercises', params: { section } }
+          : { screen: 'PatientHome' },
+      },
+    ],
+  });
 }

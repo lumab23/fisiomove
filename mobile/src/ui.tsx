@@ -1,8 +1,11 @@
-import type { PropsWithChildren } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Children, type PropsWithChildren } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { AnimatedMascot } from './components/AnimatedMascot';
+import { Icon, type IconName } from './components/Icon';
 import {
   colors as themeColors,
+  elevation,
   fonts,
   layout,
   radii,
@@ -24,17 +27,29 @@ export function Button({
   secondary = false,
   disabled = false,
   compact = false,
+  inverse = false,
+  icon,
+  accessibilityHint,
 }: {
   label: string;
   onPress: () => void;
   secondary?: boolean;
   disabled?: boolean;
   compact?: boolean;
+  inverse?: boolean;
+  icon?: IconName;
+  accessibilityHint?: string;
 }) {
+  const textColor = inverse
+    ? colors.primary
+    : secondary
+      ? colors.purple
+      : colors.white;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
@@ -42,20 +57,126 @@ export function Button({
         styles.button,
         compact && styles.compactButton,
         secondary && styles.secondary,
+        inverse && styles.inverse,
         disabled && styles.disabled,
         pressed && styles.pressed,
       ]}
     >
+      {icon && <Icon name={icon} size={20} color={textColor} />}
       <Text
         style={[
           styles.buttonText,
           compact && styles.compactButtonText,
-          secondary && styles.secondaryText,
+          { color: textColor },
         ]}
       >
         {label}
       </Text>
     </Pressable>
+  );
+}
+export function SectionTitle({ children }: PropsWithChildren) {
+  return (
+    <Text accessibilityRole="header" style={styles.sectionTitle}>
+      {children}
+    </Text>
+  );
+}
+export function Badge({
+  label,
+  tone = 'neutral',
+}: {
+  label: string;
+  tone?: 'neutral' | 'success' | 'warning' | 'inverse';
+}) {
+  return (
+    <View style={[styles.badge, badgeTones[tone].box]}>
+      <Text style={[styles.badgeText, badgeTones[tone].text]}>{label}</Text>
+    </View>
+  );
+}
+export function ListRow({
+  icon,
+  title,
+  description,
+  onPress,
+  accessibilityHint,
+}: {
+  icon: IconName;
+  title: string;
+  description?: string;
+  onPress?: () => void;
+  accessibilityHint?: string;
+}) {
+  const content = (
+    <>
+      <View style={styles.rowIcon}>
+        <Icon name={icon} size={22} color={colors.primary} />
+      </View>
+      <View style={styles.rowText}>
+        <Text style={styles.rowTitle}>{title}</Text>
+        {description && (
+          <Text style={styles.rowDescription}>{description}</Text>
+        )}
+      </View>
+      {onPress && (
+        <Icon name="chevronRight" size={20} color={colors.textMuted} />
+      )}
+    </>
+  );
+  if (!onPress) {
+    return <View style={styles.row}>{content}</View>;
+  }
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityHint={accessibilityHint ?? description}
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+    >
+      {content}
+    </Pressable>
+  );
+}
+export function ListGroup({ children }: PropsWithChildren) {
+  const items = Children.toArray(children).filter(Boolean);
+  return (
+    <View style={[styles.white, styles.group]}>
+      {items.map((child, index) => (
+        <View key={index} style={index > 0 && styles.divider}>
+          {child}
+        </View>
+      ))}
+    </View>
+  );
+}
+export function EmptyState({
+  title,
+  children,
+  action,
+}: PropsWithChildren<{
+  title: string;
+  action?: { label: string; icon?: IconName; onPress: () => void };
+}>) {
+  return (
+    <View style={[styles.card, styles.white, styles.empty]}>
+      <Mascot small />
+      <Text accessibilityRole="header" style={styles.emptyTitle}>
+        {title}
+      </Text>
+      <Text style={[styles.body, styles.centerText]}>{children}</Text>
+      {action && (
+        <View style={styles.emptyAction}>
+          <Button
+            secondary
+            icon={action.icon}
+            label={action.label}
+            onPress={action.onPress}
+          />
+        </View>
+      )}
+    </View>
   );
 }
 export function Link({
@@ -68,6 +189,7 @@ export function Link({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label.replace(/[‹›]/g, '').trim()}
       onPress={onPress}
       style={({ pressed }) => [styles.link, pressed && styles.pressed]}
     >
@@ -104,12 +226,6 @@ export function Mascot({
   kind?: 'pink' | 'home' | 'gold';
   small?: boolean;
 }) {
-  const source =
-    kind === 'home'
-      ? require('./assets/mascot-home.png')
-      : kind === 'gold'
-        ? require('./assets/mascot-gold.png')
-        : require('./assets/mascot-pink.png');
   return (
     <View
       style={[
@@ -119,12 +235,7 @@ export function Mascot({
         small && styles.smallMascot,
       ]}
     >
-      <Image
-        source={source}
-        style={[styles.mascotImage, small && styles.smallMascotImage]}
-        resizeMode="contain"
-        accessible={false}
-      />
+      <AnimatedMascot kind={kind} width={small ? 74.88 : 104} />
     </View>
   );
 }
@@ -172,7 +283,64 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.border,
+    ...elevation.card,
   },
+  sectionTitle: {
+    color: colors.ink,
+    fontSize: 20,
+    lineHeight: 26,
+    fontFamily: fonts.bold,
+  },
+  badge: {
+    alignSelf: 'flex-start',
+    borderRadius: radii.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  badgeText: { fontFamily: fonts.bold, fontSize: 14, lineHeight: 20 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    minHeight: 64,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: colors.white,
+  },
+  rowPressed: { backgroundColor: colors.background },
+  group: { borderRadius: radii.xl, overflow: 'hidden' },
+  divider: { borderTopWidth: 1, borderTopColor: colors.border },
+  rowIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.lavender,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowText: { flex: 1, gap: 2 },
+  rowTitle: {
+    color: colors.ink,
+    fontSize: 17,
+    lineHeight: 24,
+    fontFamily: fonts.bold,
+  },
+  rowDescription: {
+    color: colors.muted,
+    fontSize: 15,
+    lineHeight: 21,
+    fontFamily: fonts.regular,
+  },
+  empty: { alignItems: 'center', paddingVertical: 28 },
+  emptyTitle: {
+    color: colors.ink,
+    fontSize: 20,
+    lineHeight: 26,
+    fontFamily: fonts.bold,
+    textAlign: 'center',
+  },
+  centerText: { textAlign: 'center' },
+  emptyAction: { alignSelf: 'stretch', marginTop: 4 },
   eyebrow: {
     color: colors.purple,
     ...typography.caption,
@@ -184,6 +352,8 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.purple,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+    flexDirection: 'row',
+    gap: spacing.sm,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -192,6 +362,7 @@ export const styles = StyleSheet.create({
     ...typography.body,
     fontFamily: fonts.bold,
     textAlign: 'center',
+    flexShrink: 1,
   },
   compactButton: {
     minHeight: layout.compactControlHeight,
@@ -206,6 +377,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
   },
   secondaryText: { color: colors.purple },
+  inverse: { backgroundColor: colors.white },
   disabled: { opacity: 0.45 },
   pressed: { opacity: 0.7 },
   link: {
@@ -279,3 +451,21 @@ export const styles = StyleSheet.create({
     fontFamily: fonts.bold,
   },
 });
+const badgeTones = {
+  neutral: StyleSheet.create({
+    box: { backgroundColor: colors.lavender },
+    text: { color: colors.purple },
+  }),
+  success: StyleSheet.create({
+    box: { backgroundColor: colors.successBackground },
+    text: { color: colors.success },
+  }),
+  warning: StyleSheet.create({
+    box: { backgroundColor: colors.warningBackground },
+    text: { color: colors.warningText },
+  }),
+  inverse: StyleSheet.create({
+    box: { backgroundColor: 'rgba(255,255,255,0.18)' },
+    text: { color: colors.onPrimary },
+  }),
+};

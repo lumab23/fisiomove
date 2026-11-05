@@ -1,7 +1,10 @@
 import { Screen, Notice } from '../../components/Screen';
 import { Body, Button, Card, Link } from '../../ui';
 import { useDemoPatient } from '../../demo/DemoContext';
-import { useFrontendNavigation } from '../../navigation/frontendTypes';
+import {
+  resetToPatientTabs,
+  useFrontendNavigation,
+} from '../../navigation/frontendTypes';
 export function PatientDetailsScreen() {
   const navigation = useFrontendNavigation();
   const patient = useDemoPatient();
@@ -42,9 +45,7 @@ export function PatientDetailsScreen() {
       />
       <Link
         label="Ver área do paciente  ›"
-        onPress={() =>
-          navigation.reset({ index: 0, routes: [{ name: 'PatientHome' }] })
-        }
+        onPress={() => resetToPatientTabs(navigation)}
       />
     </Screen>
   );

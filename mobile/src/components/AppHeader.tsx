@@ -9,6 +9,7 @@ import {
   typography,
 } from '../theme/theme';
 import { BrandLogo } from './BrandLogo';
+import { Icon } from './Icon';
 
 interface AppHeaderProps {
   title?: string;
@@ -16,16 +17,46 @@ interface AppHeaderProps {
   onBack?: () => void;
   actionLabel?: string;
   onAction?: () => void;
+  /** Branded header for login and loading screens; internal screens omit it. */
+  brand?: boolean;
 }
 
-/** Fixed shared header used by app and authentication screens. */
 export function AppHeader({
   title,
   backLabel,
   onBack,
   actionLabel,
   onAction,
+  brand = false,
 }: AppHeaderProps) {
+  if (!brand) {
+    if (!title && !onBack) {
+      return null;
+    }
+    return (
+      <View style={styles.page}>
+        {onBack ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Voltar para ${backLabel ?? 'a tela anterior'}`}
+            hitSlop={8}
+            onPress={onBack}
+            style={({ pressed }) => [styles.back, pressed && styles.pressed]}
+          >
+            <Icon name="back" size={22} color={colors.primary} />
+            <Text numberOfLines={1} style={styles.backText}>
+              {backLabel ?? 'Voltar'}
+            </Text>
+          </Pressable>
+        ) : null}
+        {title ? (
+          <Text accessibilityRole="header" style={styles.pageTitle}>
+            {title}
+          </Text>
+        ) : null}
+      </View>
+    );
+  }
   return (
     <View style={styles.header}>
       <View style={styles.topRow}>
@@ -40,7 +71,7 @@ export function AppHeader({
                 pressed && styles.pressed,
               ]}
             >
-              <Text style={styles.backIcon}>‹</Text>
+              <Icon name="back" size={22} color={colors.primary} />
             </Pressable>
           ) : null}
         </View>
@@ -71,6 +102,37 @@ export function AppHeader({
 }
 
 const styles = StyleSheet.create({
+  page: {
+    alignSelf: 'center',
+    backgroundColor: colors.background,
+    paddingHorizontal: layout.pageGutter,
+    paddingTop: spacing.md,
+    gap: spacing.xs,
+    width: '100%',
+    maxWidth: layout.contentMaxWidth,
+    zIndex: 1,
+  },
+  back: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    minHeight: layout.compactControlHeight,
+    paddingRight: spacing.md,
+    maxWidth: '100%',
+  },
+  backText: {
+    color: colors.primary,
+    fontFamily: fonts.bold,
+    ...typography.bodySmall,
+    flexShrink: 1,
+  },
+  pageTitle: {
+    color: colors.text,
+    fontFamily: fonts.bold,
+    ...typography.heading,
+    textAlign: 'center',
+  },
   header: {
     alignSelf: 'center',
     backgroundColor: colors.background,
@@ -100,12 +162,6 @@ const styles = StyleSheet.create({
     height: layout.compactControlHeight,
     justifyContent: 'center',
     width: layout.compactControlHeight,
-  },
-  backIcon: {
-    color: colors.primary,
-    fontFamily: fonts.regular,
-    ...typography.icon,
-    marginTop: -4,
   },
   actionIcon: {
     color: colors.primary,
