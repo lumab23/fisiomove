@@ -13,7 +13,7 @@ export function AuthLoadingScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.content}>
-        <AppHeader title={failed ? 'FisioMove' : 'Acessando sua conta'} />
+        <AppHeader brand title={failed ? 'FisioMove' : 'Acessando sua conta'} />
         <View style={styles.center}>
           {failed ? (
             <ErrorState

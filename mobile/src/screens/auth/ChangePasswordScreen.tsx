@@ -69,7 +69,7 @@ export function ChangePasswordScreen() {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <AppHeader title="Crie uma nova senha" />
+        <AppHeader brand title="Crie uma nova senha" />
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
