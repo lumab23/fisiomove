@@ -2,7 +2,7 @@
 
 > `User` e `RefreshToken` são implementados por B02; paciente e vínculo por B03;
 > exercícios, treinos e observações por B04–B06; sessões por B07; histórico e
-> progresso por B08; conquistas por B09.
+> progresso por B08. Conquistas (B09) foram removidas do produto (DEC-007).
 
 Campos comuns de entidades persistidas: `id: UUID`, `created_at: datetime UTC` e `updated_at: datetime UTC`.
 
@@ -49,14 +49,59 @@ Hashes de senha e de renovação nunca fazem parte de DTOs de resposta.
 - `approval_status: pending | approved | revoked`;
 - `approved_rule_version: string | null`;
 - evidência interna: profissional, data e referência documental da última
-  aprovação válida.
+  aprovação válida;
+- proveniência interna (`source`, `source_external_id`, `source_url`,
+  `source_license`): todas nulas para exercício criado no FisioMove, ou todas
+  preenchidas para item adicionado da biblioteca de referência (DEC-006); o par
+  `(source, source_external_id)` é único.
+- tradução pt-BR opcional (DEC-011, migração `20261106_0014`): `name_pt_br`
+  (até 200), `instructions_pt_br` (passos no formato `"n. passo"`, um por
+  linha), `translated_by_id` (usuário fisioterapeuta) e `translated_at`; todas
+  nulas ou todas preenchidas (`ck_exercises_localization_complete`). `name` e
+  `instructions` originais nunca são alterados.
+- imagens copiadas da biblioteca (DEC-010, migração `20261106_0013`) na tabela
+  `exercise_images`: `exercise_id`, `position` (1–6), `content_type`
+  (`image/png | image/jpeg | image/webp`), `sha256`, `source_url`, `data`
+  (bytes), `byte_size` (1 B – 2 MiB), `created_at`; `(exercise_id, position)`
+  é único.
+
+`ExerciseResponse` expõe os campos acima (sem a evidência interna) e:
+
+- `source: ExerciseSourceResponse | null`, que traz a atribuição: `source`
+  (nome da fonte), `external_id`, `source_url`, `license`, `license_url` e
+  `attribution` (texto de atribuição). É `null` para exercícios sem
+  proveniência. Sem tradução, `attribution` é
+  `"Name and instructions from <fonte>, licensed under <licença>. Text is kept in the original language without edits."`;
+  com tradução, indica a alteração exigida pela CC BY-NC:
+  `"Adapted from <fonte>, licensed under <licença>. Name and instructions translated into Portuguese by <tradutor> on <AAAA-MM-DD>; the original English text is preserved."`
+  (data em UTC; `<tradutor>` é o mesmo valor de `translated_by_name`).
+- `images: ExerciseImageResponse[]` (`{ position: int, url: string }`), em
+  ordem de `position`; `url` é relativa à raiz do servidor
+  (`/api/v1/exercises/{id}/images/{position}`, prefixo padrão) e exige o
+  mesmo `Authorization: Bearer` das demais rotas. Lista vazia quando não há
+  imagem.
+- `localization: ExerciseLocalizationResponse | null`:
+  `{ language: "pt-BR", name, instructions, translated_by_name, translated_at }`.
+  `instructions` usa o mesmo formato de texto do original (`"1. ...\n2. ..."`);
+  `translated_by_name` é o nome do perfil do fisioterapeuta
+  (`physiotherapist_profiles.full_name`) ou, sem perfil, o texto neutro "fisioterapeuta do FisioMove" — nunca o e-mail (DEC-005).
+  `null` sem tradução: o cliente mostra o original com o selo de idioma.
+
+O `exercise_snapshot` guarda o `ExerciseResponse` do momento em que os itens do
+treino são definidos (criação ou `PATCH` com `items`); `publish` copia os itens
+da revisão em rascunho. Snapshots anteriores à proveniência não têm `source`;
+anteriores a 0013/0014 não têm `images` nem `localization`, e não mudam quando
+o exercício recebe imagens ou tradução depois (Q-P6): a novidade só chega numa
+nova revisão com os itens redefinidos e publicada.
 
 `ExerciseApprovalEvent` registra, de forma append-only, exercício, versão da
 regra, decisão `approved | revoked`, profissional responsável, data e referência
 documental. O registro técnico da evidência não substitui a validação clínica.
 Uma mudança de `rule_version` invalida a aprovação anterior até nova evidência.
 Somente exercício ativo, aprovado e com versão coincidente aparece no catálogo
-e pode entrar em nova prescrição.
+e pode entrar em nova prescrição. Item adicionado da biblioteca é aprovado em
+nome do fisioterapeuta para uso acadêmico (DEC-006), com
+`supported_parameters = {}` e `rule_version = "library-reference-no-camera-rule:v1"`.
 
 Nenhum limiar clínico ou parâmetro angular padrão é definido em B01.
 
@@ -105,7 +150,7 @@ limitada a `sets × repetitions` para cada item do snapshot. Sessão interrompid
 recebe somente os pontos do resultado parcial; sessão concluída já precisa
 conter a prescrição completa. Repetição adicional é rejeitada, não pontuada.
 
-Idempotência usa a chave única `(patient_id, client_session_id)`. Mesmo conteúdo retorna o resultado existente; conteúdo divergente retorna `409 idempotency_conflict`. Retry não duplica sessão nem conquista. Apenas dados derivados são aceitos; mídia não é enviada.
+Idempotência usa a chave única `(patient_id, client_session_id)`. Mesmo conteúdo retorna o resultado existente; conteúdo divergente retorna `409 idempotency_conflict`. Retry não duplica sessão. Apenas dados derivados são aceitos; mídia não é enviada.
 
 O corpo recebido não contém `patient_id` nem `workout_snapshot`: a identidade
 vem do usuário autenticado, e o snapshot é obtido no servidor da revisão
@@ -150,13 +195,6 @@ Exemplo:
 `ProgressSummary`: `patient_id`, `period_start`, `period_end`, `completed_sessions`, `interrupted_sessions`, `active_duration_ms`, `prescribed_repetitions`, `performed_repetitions`, `score`, `generated_at`.
 
 Progresso é derivado de sessões persistidas e não representa conclusão de recuperação clínica. Estado vazio retorna zeros coerentes.
-
-## Conquistas (B09)
-
-`Achievement`: `id`, `patient_id`, `code`, `session_result_id`, `achieved_at`.
-O trio `(patient_id, session_result_id, code)` é único. A regra implementada
-concede `session_goal_reached` somente quando uma sessão `completed` atinge
-exatamente todos os itens do snapshot; sessão interrompida não concede.
 
 ## Calibração individual (M06, mobile)
 

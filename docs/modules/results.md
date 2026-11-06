@@ -1,13 +1,10 @@
-# Resultados e conquista simples (B09)
+# Resultados: pontuação e seed fictício (B09–B10)
 
-Uma sessão concluída recebe `session_goal_reached` quando cada item da revisão
-imutável tem exatamente os sets e repetições prescritos. Sessões interrompidas não
-recebem essa conquista. A unicidade por paciente, sessão e código torna retries
-idempotentes. A conquista é criada na mesma transação do resultado da sessão.
-
-O paciente autenticado consulta `GET /api/v1/me/achievements`. Um fisioterapeuta
-autenticado consulta `GET /api/v1/patients/{patient_id}/achievements` somente para
-pacientes com vínculo ativo.
+Conquistas foram removidas do produto (DEC-007, 2026-11-06): não há mais tabela
+`achievements` (migração `20261106_0011`; o downgrade recria o schema da `0007`
+vazio) nem rotas `/me/achievements` e `/patients/{patient_id}/achievements`. A
+gamificação fica na pontuação e no progresso. Registrar no texto do TCC a
+divergência com o Documento de Visão e o Relatório de Viabilidade.
 
 ## Pontuação individual (B10)
 

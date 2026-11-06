@@ -1,7 +1,10 @@
 # Pendências da experiência do paciente
 
 Estado em 05/11/2026, após a navegação em abas (Início, Exercícios, Perfil), o
-refinamento visual e a tela de execução imersiva. Este documento lista o que
+refinamento visual e a tela de execução imersiva. Atualizado em 06/11/2026 com
+as Fases 1 e 2 de `docs/plans/2026-11-06-mvp-login-demo-biblioteca.md` (o app
+abre no Login e as abas do paciente leem a API) e com a execução do treino real
+(`docs/plans/2026-11-06-execucao-treino-real.md`). Este documento lista o que
 ainda está mockado, simulado ou ausente, e o que é preciso para cada item virar
 funcionalidade real.
 
@@ -9,61 +12,115 @@ funcionalidade real.
 
 | Área | Situação hoje | O que falta |
 | --- | --- | --- |
-| Dados do paciente nas telas | Dados de demonstração (`src/demo/`) | Ligar telas à API |
-| Nome do paciente | Fixo na demo | Endpoint de perfil do paciente |
-| Fisioterapeuta | Mockado (`demoPhysiotherapist`) | Perfil profissional no backend |
-| Conversar com o fisioterapeuta | Aviso de indisponível | Canal autorizado (WhatsApp ou chat) |
+| Dados do paciente nas abas | API (`/me/workouts`, `/me/sessions`, `/me/progress`) com carregamento, vazio e erro | — (o fisioterapeuta adiciona exercícios ao catálogo pela biblioteca de referência, DEC-006) |
+| Iniciar treino | Ativo: "Iniciar"/"Continuar treino" → preparação → câmera → enquadramento → execução com os valores do `WorkoutItem` → conclusão com status de envio | Validar no iPhone com câmera real (KI-006); progresso perdido se o app for encerrado (Q-T2) |
+| Nome do paciente | API (`GET /me/profile`) | — |
+| Fisioterapeuta | Nome via `GET /me/physiotherapist`; estado vazio sem nome ou sem vínculo | — (só o nome existe; Q-P5) |
+| Conversar com o fisioterapeuta | Inexistente | Canal autorizado (WhatsApp ou chat) |
 | Câmera ao vivo | Real (vision-camera, frontal) | Validar em Android |
 | Pose | Real, no aparelho (YOLO26 via ExecuTorch) | Validar desempenho em aparelhos antigos |
-| Contagem de repetições | Manual, por toque | Ligar `MovementEngine` a uma regra aprovada |
-| Demonstração do movimento | Figura estática | Animação aprovada pelo profissional |
+| Contagem de repetições | Manual, por toque, enviada como `completed_repetitions` (DEC-008) | Ligar `MovementEngine` a uma regra aprovada |
+| Demonstração do movimento | "Como fazer" com os passos (pt-BR quando traduzidos, senão o original com selo), todas as imagens da fonte pela API (DEC-010), a orientação do profissional e a fonte | Animação aprovada pelo profissional; ver imagens no iPhone (não verificado) |
+| Idioma dos exercícios da biblioteca | Nome e passos em pt-BR escritos pelo fisioterapeuta (DEC-011); sem tradução, original com "Texto original em inglês" e leitor de tela em inglês | Traduzir os itens já adicionados e republicar os treinos (Q-P6) |
 | Configurações da conta | Inexistente | Definir escopo (senha, fonte, voz) |
-| Comandos de voz | Simulados, microfone inativo | Implementar reconhecimento de voz |
+| Comandos de voz | Fora do fluxo (DEC-009); controles manuais | Implementar reconhecimento de voz |
 
-## 1. Telas do paciente ainda usam dados de demonstração
+## 1. Telas do paciente ligadas à API (06/11/2026)
 
-Início, Exercícios e Perfil leem `DemoContext`. Os serviços e endpoints já
-existem (`/me/workouts`, `/me/sessions`, `/me/progress`, `/me/achievements`),
-mas nenhuma tela os chama.
+O modo demonstração saiu do runtime: `App.tsx` monta `AppProviders` e o app
+abre no Login. No fluxo autenticado do paciente, `RootNavigator` monta o stack
+do paciente; Início, Exercícios e Perfil leem a API. Os dados vêm dos hooks de `src/integration/usePatientData.ts`
+(`usePatientProfile`, `useMyWorkouts`, `useMySessions`, `useMyProgress`), que
+devolvem `AsyncState`, `reload` e `refresh` (recarga sem esconder o conteúdo,
+usada ao voltar à tela):
 
-Para ligar:
+- Início: saudação com o primeiro nome de `/me/profile` ("Olá!" enquanto
+  carrega ou se falhar), o treino publicado mais recente (`Workout.items`, com
+  nome do `exercise_snapshot`, séries, repetições e lado exatamente como
+  publicados) e a última sessão (`/me/sessions?page_size=1`).
+- Exercícios > Meu treino: todos os treinos publicados, itens, orientação do
+  profissional (`instructions` e `professional_guidance`).
+- Exercício vindo da biblioteca de referência mostra o nome em pt-BR
+  (`exercise_snapshot.localization`, DEC-011) ou, sem tradução, o original com
+  o selo "Texto original em inglês" e `accessibilityLanguage="en"`; a primeira
+  imagem (pela API, DEC-010) com texto alternativo e legenda de fonte/licença;
+  e a atribuição: "Fonte: OpenExerciseBase (CC BY-NC 4.0)" ou, traduzido,
+  "Adaptado de … Nome e passos traduzidos para o português por <nome> em
+  <data>; o original em inglês foi preservado." (Início e Exercícios).
+- Exercícios > Histórico: as 50 sessões mais recentes (`SessionSummary`), com
+  filtro local por status. Sessões mais antigas que isso ainda não aparecem
+  (sem paginação na tela).
+- Exercícios > Progresso: `ProgressSummary` da semana corrente, de segunda
+  00:00 a domingo 23:59:59.999 no fuso do aparelho (decisão de apresentação
+  Q-P7). Conquistas foram removidas do produto (DEC-007).
+- Cada bloco tem `LoadingState`, `ErrorState` (ou `InlineError` com "Tentar
+  novamente" em blocos secundários) e estado vazio.
 
-- Trocar `useDemoPatient`/`useDemo` por hooks de dados com estados de
-  carregamento, erro e vazio (os componentes `EmptyState` já existem).
-- Mapear `Workout.items` para a lista de "Exercícios prescritos" e o card do
-  Início.
-- Usar `SessionSummary` no Histórico e `ProgressSummary` no Progresso; os
-  indicadores atuais já seguem os mesmos campos (`completed_sessions`,
-  `interrupted_sessions`, `performed_repetitions`).
-- Bloqueio clínico: o catálogo de produção está vazio até o fisioterapeuta
-  aprovar o primeiro exercício (`docs/contracts/clinical-catalog.md`). Sem isso,
-  `/me/workouts` volta vazio e o app mostra o estado "Nenhum treino publicado".
+Catálogo: desde a DEC-006, o fisioterapeuta adiciona exercícios ao catálogo a
+partir da biblioteca de referência (uso acadêmico), direto do editor de treino.
+Enquanto nenhum treino for publicado, `/me/workouts` volta vazio e o app mostra
+"Nenhum treino publicado". Nenhum dado fictício substitui esse estado.
+
+Execução do treino (plano `docs/plans/2026-11-06-execucao-treino-real.md`,
+06/11/2026): o treino publicado mostra "Iniciar treino" (ou "Continuar treino"
+se houver rascunho local da mesma revisão). As rotas ficam no stack do paciente
+e carregam só IDs; o treino, o rascunho e o progresso ficam em memória
+(`features/session/ActiveSession.tsx`).
+
+- Preparação carrega `GET /workouts/{id}`; revisão diferente ou 404 mostra "Seu
+  treino foi atualizado pelo fisioterapeuta" e descarta o rascunho antigo.
+- "Confira o enquadramento" (antes "Calibração") mostra a câmera com o lado do
+  primeiro item; não há calibração. O rascunho (`prepare`) só é criado em
+  "Começar exercício".
+- Execução: "Exercício X de Y", nome (pt-BR ou original com selo), lado, "Série X de Y",
+  "Repetição N de M", orientação do profissional e atribuição; câmera imersiva
+  com status de enquadramento sobre `colors.cameraOverlay`; "Contar repetição"
+  (56 pt) só com a série ativa; pausa, "Como fazer" e "Encerrar" sempre
+  visíveis; descanso regressivo sem "pular" (Q-P4); sair da tela ou do app
+  pausa (RN20); o teto é o prescrito (RN19).
+- "Como fazer" pausa a sessão e mostra os passos em pt-BR
+  (`localization.instructions`) ou `exercise_snapshot.instructions` (com
+  "Texto original em inglês" quando vem da biblioteca sem tradução), todas as
+  imagens do snapshot, a orientação do profissional e a fonte. Não há textos
+  corretivos. Treinos publicados antes da tradução/imagens só as mostram
+  depois que o fisioterapeuta salva os itens de novo e publica (Q-P6).
+- Sair antes da primeira repetição descarta o rascunho (DEC-009); depois,
+  envia sessão interrompida. Conclusão e interrupção mostram o resumo por item
+  e o status de envio (aguardando, enviando, enviado, erro) com "Tentar enviar
+  agora".
+- Início, Meu treino, Histórico e Progresso recarregam ao voltar à tela; o
+  Histórico mostra sessões da fila local como "Aguardando envio".
+
+O fluxo do fisioterapeuta lê a API desde a Fase 4 (pacientes, acesso e senha
+provisória, treinos, observações e acompanhamento). `src/demo/` e `src/flow.ts`
+foram removidos; não há dado de demonstração no app.
 
 ## 2. Nome do paciente
 
-`GET /auth/me` devolve só `email`, `role` e flags. A saudação "Olá, Maria!" vem
-da demo. Proposta: incluir `full_name` em uma rota `GET /me/profile` a partir do
-registro em `patients`, sem expor dados de outros pacientes.
+Resolvido: `GET /me/profile` devolve `{ full_name }` do próprio paciente
+(`ProfileService.mine()`, `mobileServices.profile`). A saudação e o Perfil usam
+esse nome; o e-mail vem da sessão autenticada.
 
-## 3. Fisioterapeuta (mockado)
+## 3. Fisioterapeuta (nome do profissional)
 
-O Perfil mostra "Dra. Ana Ribeiro" com o selo **Dados de exemplo**. O backend
-guarda apenas o vínculo (`physiotherapist_id`) e o usuário profissional tem só
-email e senha: não há nome, foto, registro no CREFITO, especialidade ou telefone.
+Fase 7 (06/11/2026): o perfil do fisioterapeuta guarda somente o nome de
+exibição (Q-P5; `docs/contracts/physiotherapist-profile.md`). Não há foto,
+registro no CREFITO, especialidade nem telefone.
 
-Proposta:
-
-1. Tabela `physiotherapist_profiles` (nome, CREFITO, especialidade, foto
-   opcional, telefone de contato opcional com consentimento explícito do
-   profissional), editável apenas pelo próprio profissional.
-2. Rota `GET /me/physiotherapist` para o paciente, que resolve o vínculo ativo
-   no servidor e devolve somente esses campos.
-3. Trocar `demoPhysiotherapist` pelos dados da rota; manter o card e a tela
-   "Informações" como estão.
+- Paciente: a seção "Meu fisioterapeuta" do Perfil e a tela
+  `PhysiotherapistInfo` usam `useLinkedPhysiotherapist()`
+  (`GET /me/physiotherapist`). Com nome, mostram o nome e "Seu
+  fisioterapeuta". Com `full_name: null` ou 404 `physiotherapist_not_found`
+  (sem vínculo), mantêm o `EmptyState` "Dados do fisioterapeuta". Outras falhas
+  mostram `ErrorState` com "Tentar novamente".
+- Fisioterapeuta: "Meu perfil" (na aba Configurações) lê `GET /me/physiotherapist-profile` e salva com `PUT`, validando
+  2–200 caracteres após remover espaços.
+- Continuam sem "Conversar" nem outros dados do profissional. O
+  `AccountContext` guarda só o e-mail e a ação de sair.
 
 ## 4. Conversar
 
-O botão "Conversar" abre um aviso de indisponibilidade; não há chat fictício.
+O botão "Conversar" saiu junto com o modo demonstração; não há chat fictício.
 Caminho mais simples depois do item 3: se o profissional cadastrar um número e
 autorizar o contato, abrir `https://wa.me/<número>` com `Linking.openURL`. Um
 chat próprio exigiria mensagens, notificações e moderação, fora do escopo do MVP.
@@ -85,7 +142,11 @@ Pendências:
 ## 6. Contagem automática de repetições
 
 Hoje o paciente toca em "Contar repetição" a cada repetição. O texto da tela
-deixa isso claro e o progresso só avança com o toque. O motor de movimento
+deixa isso claro e o progresso só avança com o toque. O toque é enviado como
+`completed_repetitions` e gera pontuação limitada ao prescrito (DEC-008, uso
+acadêmico); a origem manual é dedutível do `rule_version` do snapshot
+(`library-reference-no-camera-rule:v1`). O resumo da conclusão diz que as
+repetições foram contadas pelos toques e não sugere validação do movimento. O motor de movimento
 (`MovementEngine`) e a execução da sessão (`SessionExecution`) já existem e
 estão testados, mas exigem uma regra de movimento aprovada (ângulos, tolerâncias,
 fases), que não pode ser inventada.
@@ -96,9 +157,20 @@ substitui o botão manual (o botão pode ficar como alternativa acessível).
 
 ## 7. Demonstração do movimento
 
-O espaço "Como fazer" no topo da tela de execução mostra uma figura estática.
-Não existe animação nem vídeo no projeto, e uma animação inventada poderia
-ensinar o movimento errado.
+"Como fazer" (aberto pela tela de execução) mostra só textos de origem
+conhecida: os passos do snapshot do exercício, a orientação do profissional e a
+fonte. Não existe animação nem vídeo no projeto, e uma animação inventada
+poderia ensinar o movimento errado.
+
+Imagens (DEC-010, 06/11/2026): itens da biblioteca trazem `images` no
+snapshot; o app carrega cada uma de `/api/v1/exercises/{id}/images/{n}` com o
+header `Authorization` (`Image` do RN, sem dependência nova), nunca do GitHub.
+Texto alternativo "Imagem n de N do exercício <nome>" e legenda "Imagem:
+OpenExerciseBase (CC BY-NC 4.0); parte do material da fonte pode ter sido
+gerada por IA". Se a imagem falhar, a sessão é renovada uma vez e a imagem é
+pedida de novo; depois aparece "Não foi possível carregar a imagem …". Início,
+Exercícios, revisão e editor mostram a primeira; "Como fazer", todas. Não
+verificado em aparelho (KI-006): carregamento com header e cache no iOS/Android.
 
 Proposta: para cada exercício aprovado, o profissional valida um asset curto
 (vídeo MP4 em loop ou animação Lottie) ligado à versão do exercício
@@ -113,8 +185,9 @@ Nada foi exibido no Perfil para não mostrar funções inexistentes.
 
 ## 9. Comandos de voz
 
-A preparação oferece "Usar comandos", mas o microfone não é ativado. O texto da
-tela informa isso. Implementar exige reconhecimento de fala no aparelho e
+Fora do fluxo desde a DEC-009: a preparação não oferece mais comandos de voz e
+não há tela de permissão de microfone. Pausar, continuar e encerrar são manuais
+e sempre visíveis (RN21). Implementar exige reconhecimento de fala no aparelho e
 permissão de microfone.
 
 ## 10. Itens técnicos
@@ -124,5 +197,5 @@ permissão de microfone.
   ("Unimplemented component").
 - O Jest transforma `@react-navigation`, `@sbaiahmed1` e usa o build CommonJS do
   `lucide-react-native` (`jest.config.js`).
-- `FrontendScreens.test.tsx` recebeu o mock de `useIsFocused`, usado pela nova
-  versão de `Screen`.
+- Os testes da execução ficam em `__tests__/ExecutionScreens.test.tsx` e
+  montam o `FrontendNavigator` real com a sincronização simulada.

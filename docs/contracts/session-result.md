@@ -21,6 +21,15 @@ como repetição; movimento parcial não fecha uma série. Interrupção conserv
 ciclos completos e séries parciais que já ocorreram. O fim da sessão desativa o
 stream da câmera e libera o microfone se uma integração futura o tiver aberto.
 
+Exceção acadêmica (DEC-008): o app ainda não executa o motor de movimento em
+nenhum item (KI-004), então **toda** repetição é contada por toque do paciente e
+enviada como `completed_repetitions`. Enquanto a contagem automática não existir,
+toda sessão registrada tem origem manual; os itens importados da biblioteca têm
+ainda `rule_version = "library-reference-no-camera-rule:v1"`. Quando a contagem
+automática for ligada, a origem passa a exigir um campo próprio (ex.:
+`counting_mode`). Isso relaxa a RN06 e a RN08 apenas no uso acadêmico (DEC-006) e
+precisa ser revisto antes de qualquer uso clínico.
+
 O `SessionExecution` é a máquina de estados local; `SessionController` encaminha
 repetições completas do motor para ela e produz o `SessionCompletion` consumido por
 M02. Alertas não navegam para outra área e usam intervalo mínimo explícito para

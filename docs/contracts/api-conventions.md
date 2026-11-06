@@ -77,7 +77,7 @@ Respostas nunca incluem stack trace, URL do banco, hash de senha ou token intern
 Perfis: `patient` e `physiotherapist`.
 
 - O perfil vem da identidade autenticada e nunca de um ID ou papel enviado pelo cliente.
-- Paciente acessa somente seus treinos publicados, suas sessões, progresso e conquistas.
+- Paciente acessa somente seus treinos publicados, suas sessões e seu progresso.
 - Fisioterapeuta acessa somente pacientes com vínculo ativo e os recursos desses pacientes.
 - Cadastro público não pode conceder o perfil `physiotherapist`.
 - Identidade sem permissão recebe `403` ou `404` quando ocultar a existência reduzir exposição de dados.

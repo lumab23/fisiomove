@@ -50,6 +50,25 @@ python -m app.modules.auth.cli create-physiotherapist \
 
 A senha temporária é lida por prompt oculto, não por argumento ou log. Uma segunda execução é recusada se já existir fisioterapeuta.
 
+Fisioterapeutas adicionais são criados pelo mesmo operador local, também sem rota HTTP:
+
+```bash
+python -m app.modules.auth.cli add-physiotherapist \
+  --email outro.profissional@example.com
+```
+
+- A senha temporária é pedida duas vezes por prompt oculto; confirmação divergente encerra com código `2` sem criar conta.
+- A senha temporária precisa ter de 12 a 128 caracteres; a conta nasce `is_active=true` e `must_change_password=true`.
+- E-mail já usado por qualquer conta (paciente ou profissional) é recusado com `email_conflict` (código de saída `1`).
+- Cada fisioterapeuta só enxerga os pacientes com vínculo ativo criado por ele; não há compartilhamento de pacientes entre profissionais.
+
+## Senha esquecida
+
+Não existe fluxo de "esqueci a senha" por e-mail nem rota pública de redefinição.
+
+- Paciente: pede ao fisioterapeuta vinculado, que chama `POST /api/v1/patients/{id}/access` com `{"operation":"reset_temporary_password"}`. A nova senha temporária é exibida uma única vez ao profissional, a anterior deixa de funcionar, as renovações são revogadas e o paciente precisa trocá-la no próximo acesso.
+- Fisioterapeuta: não há recuperação no produto; depende do operador local do backend.
+
 `PatientAccountService` é a interface interna consumida por B03:
 
 - `create_access(email)` cria uma conta `patient` ativa com senha temporária;
@@ -70,5 +89,7 @@ B03 verifica identidade profissional e vínculo antes de chamar o serviço. As o
 | 403 | `account_inactive`, `password_change_required`, `insufficient_role` |
 | 404 | `account_not_found` |
 | 409 | `email_conflict`, `role_mismatch`, `initial_physiotherapist_exists` |
+
+Na CLI, esses erros aparecem como a mensagem correspondente (ex.: `An account already uses this email.`) em `stderr`, com código de saída `1`.
 
 Credenciais e tokens não devem ser incluídos em logs ou detalhes de erro.

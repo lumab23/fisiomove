@@ -65,6 +65,35 @@ relativa para contraste de texto. Todas excedem 4,5:1:
 | `error` / `errorBackground` | 6,10:1 |
 | `surface` / `primary` (texto do botão) | 7,20:1 |
 | `text` / `accent` (CTA turquesa) | 6,24:1 |
+| `text` / `surfaceMuted` (faixa superior da autenticação) | 12,69:1 |
+| `textMuted` / `surfaceMuted` | 5,60:1 |
+| `textMuted` / `surface` (dica de campo, item pendente) | 6,74:1 |
+| `success` / `background` (item cumprido da checklist) | 6,09:1 |
+| `primary` / `surface` ("Mostrar senha", "Voltar") | 7,20:1 |
+
+Elemento gráfico não textual: preenchimento `primary` sobre trilho `border` na
+barra "Passo 1 de 2" tem 5,49:1 (mínimo de 3:1). Os valores foram calculados com
+a fórmula de luminância relativa da WCAG 2.x.
+
+### Movimento
+
+`motion` em `theme.ts` vale só para o mascote da tela de boas-vindas (estilo
+"movimento acolhedor", aprovado pela Luma):
+
+| Token | Valor | Uso |
+| --- | ---: | --- |
+| `motion.breathMs` | 4000 | Ciclo completo da respiração |
+| `motion.breathScale` | 1,04 | Escala máxima da respiração |
+| `motion.stretchEveryMs` | 12000 | Espera entre alongamentos |
+| `motion.stretchMs` | 900 | Subida e descida do braço |
+| `motion.stretchHoldMs` | 1200 | Braço levantado |
+
+Regras: usar `Animated` com `useNativeDriver`; nada de animação em loop perto de
+campos de formulário (as demais telas de autenticação usam o mascote parado,
+`AnimatedMascot still`); com Reduce Motion ativo, ou antes de o sistema
+responder, nenhuma animação roda e o mascote fica na pose de repouso. O hook
+compartilhado é `src/accessibility/useReduceMotion.ts`. Os valores são
+decorativos e não descrevem nenhum exercício.
 
 ## Regras por tela
 
@@ -82,21 +111,38 @@ relativa para contraste de texto. Todas excedem 4,5:1:
    quando possível.
 5. Manter ações de paciente após o conteúdo rolável para não ocultar o CTA em
    telas menores. Nas telas profissionais, manter o rodapé de ação acima das
-   abas fixas.
+   abas fixas. O fisioterapeuta tem três abas, em posição fixa e com rótulo
+   visível: Pacientes, Acompanhamento e Configurações. A aba ativa vem do
+   conjunto de rotas (`professionalTabFor` em `Screen.tsx`): Configurações fica
+   ativa em `ProfessionalSettings`, `ProfessionalProfile` e na biblioteca
+   aberta pelas Configurações; a biblioteca aberta pelo editor de treino
+   (modo de escolha, `pickFor`) pertence a Pacientes.
 6. Manter a transição nativa `slide_from_right`. Novas exceções precisam
    representar um fluxo que realmente exija outra transição.
 7. Preservar rótulos de acessibilidade, estado desabilitado, anúncio de erro e
    área de toque mínima de 48 pontos. Não comunicar status somente por cor.
 
+8. Telas de autenticação usam `AuthLayout` (faixa superior em `surfaceMuted`
+   com borda inferior arredondada, marca, "Voltar" com texto e mascote) e
+   conteúdo rolável com `KeyboardAvoidingView`, para funcionar com fonte grande.
+   Fluxo: Boas-vindas → Entrar (login em dois passos) ou Primeiro acesso
+   (informativo, sem cadastro público) → Criar senha quando
+   `must_change_password`. Campos de senha usam `FormField revealable`.
+
 ## Arquivos estruturais
 
 - `mobile/src/theme/theme.ts`: paleta, escala, tipografia, cantos e layout.
 - `mobile/src/components/AppHeader.tsx`: cabeçalho global fixo.
+- `mobile/src/components/AuthLayout.tsx` e `AuthHero.tsx`: moldura e mascote
+  animado das telas de autenticação.
 - `mobile/src/components/Screen.tsx`: moldura, rolagem, rodapé e abas.
 - `mobile/src/components/ScreenStates.tsx`: skeleton, vazio e erro.
 - `mobile/src/ui.tsx`: primitivos de botão, texto, cartão e elementos de apoio.
 - `mobile/src/navigation/FrontendNavigator.tsx`: transição padrão das telas.
 
-O protótipo ainda usa dados locais e fictícios em vários fluxos. Os estados
-padronizados oferecem a base visual para telas conectadas à API; não simulam
-carregamentos de dados que ainda não existem.
+Não há mais modo demonstração: as telas do paciente e do fisioterapeuta leem a
+API e usam esses estados para carregamento, lista vazia e falha. Dado sem fonte
+real aparece como estado vazio, nunca como exemplo fictício (DEC-001). Os
+estados não simulam carregamentos de dados que ainda não existem. As telas de
+execução da sessão também leem o treino publicado; sobre a câmera, todo texto
+fica em fundo `colors.cameraOverlay`.

@@ -6,7 +6,8 @@ Visão e o Relatório de Viabilidade descrevem a intenção de começar com até
 exercícios de membro superior, mas deixam a escolha do movimento, amplitudes,
 desvios e feedback dependentes de validação profissional.
 
-Por isso, nenhuma migração ou seed de produção cadastra exercício. A fixture
+Por isso, nenhuma migração ou seed de produção cadastra exercício (o catálogo só
+recebe itens por decisão do fisioterapeuta; ver a exceção da DEC-006 abaixo). A fixture
 `fictional-test-only` é criada somente dentro de bancos temporários da suíte e
 não pode ser promovida ao catálogo real.
 
@@ -34,11 +35,44 @@ revogação. Exercícios migrados recebem `pending`; nenhum dado é aprovado
 automaticamente. O catálogo e novas prescrições aceitam somente estado
 `approved` com versão coincidente.
 
-Não existe endpoint público de aprovação. `ExerciseGovernanceService` é uma
-interface interna para um futuro processo institucional autorizado. Chamá-la
-registra a evidência informada, mas não prova que a avaliação clínica ocorreu;
-a instituição ainda deve definir quem pode autorizar a chamada, quais documentos
-são válidos e como devem ser retidos.
+Não existe endpoint genérico de aprovação ou revogação.
+`ExerciseGovernanceService` registra a evidência informada, mas não prova que a
+avaliação clínica ocorreu; para exercícios definidos clinicamente, a instituição
+ainda deve definir quem pode autorizar a chamada, quais documentos são válidos e
+como devem ser retidos.
+
+### Exceção: material da biblioteca de referência (DEC-006, uso acadêmico)
+
+Por decisão de Luma (DEC-006, que substitui a DEC-004 só no trecho "nunca entra
+em `exercises`"), o fisioterapeuta pode adicionar um item da OpenExerciseBase ao
+catálogo por `POST /api/v1/exercise-library/{external_id}/catalog`. A rota chama
+`ExerciseGovernanceService.approve` em nome dele, com a referência
+`fisiomove:library-import:openexercisebase:{external_id}; DEC-006 (uso acadêmico)`,
+e grava proveniência e atribuição CC BY-NC 4.0 (`source`, `source_external_id`,
+`source_url`, `source_license`).
+
+- "Aprovado", nesse caso, significa "escolhido pelo fisioterapeuta para uso
+  acadêmico", não validação clínica. Rever antes de qualquer uso clínico ou
+  comercial.
+- Nenhum valor clínico vem da fonte nem é inventado: `supported_parameters = {}`,
+  `rule_version = "library-reference-no-camera-rule:v1"` (sem regra de câmera,
+  `MovementEngine` desligado), lados escolhidos pelo fisioterapeuta, e séries,
+  repetições e descanso digitados por ele em cada treino.
+- Nome e instruções originais ficam em inglês, sem edição; parte do conteúdo da
+  fonte foi gerada por IA e revisada pelo provedor. Uma tradução pt-BR opcional
+  (DEC-011) é escrita ou revisada por um fisioterapeuta (na adição ou por
+  `PUT /api/v1/exercises/{id}/localization`), fica em colunas separadas com
+  autoria e data, e a atribuição passa a indicar a alteração. Traduzir não
+  altera `rule_version`, aprovação nem eventos de governança; qualquer
+  fisioterapeuta ativo pode editar (vale a última edição) e não há rota para
+  apagar a tradução.
+- Até 6 imagens da fonte (PNG/JPEG/WebP, até 2 MiB cada) são copiadas na adição
+  (DEC-010) e servidas pela API; o aparelho do paciente não acessa o provedor.
+  Imagens são material de referência, não critério de execução.
+- O catálogo é global: o item adicionado aparece para todos os
+  fisioterapeutas, com os lados da primeira adição.
+
+Contrato completo em `exercise-library.md`.
 
 ## Demonstração técnica
 

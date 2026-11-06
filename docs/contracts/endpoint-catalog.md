@@ -14,8 +14,17 @@
 | B03 | `GET /api/v1/patients/{id}` | UUID no caminho | `PatientResponse` |
 | B03 | `PATCH /api/v1/patients/{id}` | `PatientUpdate` | `PatientResponse` |
 | B03 | `POST /api/v1/patients/{id}/access` | `PatientAccessRequest` | `PatientAccessResponse` sem credenciais internas |
+| B03 | `GET /api/v1/me/profile` | identidade autenticada (`patient`) | `PatientSelfProfile` (`{ full_name }`) |
+| Fase 7 | `GET /api/v1/me/physiotherapist-profile` | identidade autenticada (`physiotherapist`) | `PhysiotherapistProfileResponse` (`{ full_name: str \| null }`) |
+| Fase 7 | `PUT /api/v1/me/physiotherapist-profile` | `PhysiotherapistProfileUpdate` (`{ full_name }`) | `PhysiotherapistProfileResponse` |
+| Fase 7 | `GET /api/v1/me/physiotherapist` | identidade autenticada (`patient`) | `LinkedPhysiotherapistResponse` (`{ full_name: str \| null }`) |
 | B04 | `GET /api/v1/exercises` | paginação/filtros | `Page[ExerciseResponse]` |
-| B04 | `GET /api/v1/exercises/{id}` | UUID no caminho | `ExerciseResponse` |
+| B04 | `GET /api/v1/exercises/{id}` | UUID no caminho | `ExerciseResponse` (com `images` e `localization`) |
+| DEC-010 | `GET /api/v1/exercises/{id}/images/{position}` | UUID e posição 1–6 (qualquer conta autenticada com senha trocada) | bytes da imagem (`image/png \| image/jpeg \| image/webp`), `Cache-Control: private, max-age=86400`, `ETag`; `404 exercise_image_not_found` |
+| DEC-011 | `PUT /api/v1/exercises/{id}/localization` | `ExerciseLocalizationUpdate` (`{ name, instructions: string[] }`, `physiotherapist`) | `ExerciseResponse` com `localization`; não altera `rule_version` nem aprovação |
+| Fase 8 | `GET /api/v1/exercise-library` | `query?`, `body_part?`, paginação (`physiotherapist`) | `LibraryExercisePage` com `attribution` |
+| Fase 8 | `GET /api/v1/exercise-library/{external_id}` | id externo validado (`physiotherapist`) | `LibraryExerciseDetailResponse` com `attribution` e `catalog_exercise` |
+| DEC-006 | `POST /api/v1/exercise-library/{external_id}/catalog` | `CatalogImportRequest` (`{ allowed_sides, name_pt_br?, instructions_pt_br? }`, `physiotherapist`) | `ExerciseResponse` (`201` criado, com imagens copiadas; `200` existente, sem sobrescrever) |
 | B04-B05 | `POST /api/v1/patients/{id}/workouts` | `WorkoutCreate` | `WorkoutResponse` |
 | B04-B05 | `GET /api/v1/patients/{id}/workouts` | paginação/filtros | `Page[WorkoutResponse]` |
 | B05 | `GET /api/v1/workouts/{id}` | UUID no caminho | `WorkoutResponse` |
@@ -33,14 +42,14 @@
 | B08 | `GET /api/v1/patients/{patient_id}/sessions/{session_id}` | UUIDs no caminho | `SessionResultResponse` |
 | B08 | `GET /api/v1/me/progress` | período | `ProgressSummary` |
 | B08 | `GET /api/v1/patients/{patient_id}/progress` | período | `ProgressSummary` |
-| B09 | `GET /api/v1/me/achievements` | identidade autenticada | `list[AchievementResponse]` |
-| B09 | `GET /api/v1/patients/{patient_id}/achievements` | UUID de paciente vinculado | `list[AchievementResponse]` |
 
 B10 reutiliza as rotas B07/B08: `SessionResultResponse`, `SessionSummary` e
 `ProgressSummary` incluem `score`. Não há ranking nem endpoint redundante de
 pontuação. B11 não cria rota: calibração e visão computacional permanecem no
-mobile. B12 não cria rota pública de aprovação; as consultas de catálogo
+mobile. B12 não cria rota genérica de aprovação; as consultas de catálogo
 retornam apenas exercícios ativos com aprovação válida para a `rule_version`.
+A única rota que registra aprovação é a adição de item da biblioteca ao
+catálogo (DEC-006). As rotas de conquistas (B09) foram removidas (DEC-007).
 
 ## DTOs de autenticação implementados
 
@@ -59,6 +68,23 @@ Tokens e senhas nunca são persistidos ou registrados em texto puro. O comportam
 - `PatientResponse`: dados básicos, estado do registro e indicadores de acesso; nunca inclui hashes ou tokens.
 - `PatientAccessResponse`: identifica paciente/conta, ação executada e senha temporária exibida uma única vez.
 
+## DTOs de perfil do fisioterapeuta implementados
+
+- `PhysiotherapistProfileUpdate`: `full_name` (2–200 caracteres após `strip`); rejeita campos desconhecidos.
+- `PhysiotherapistProfileResponse` e `LinkedPhysiotherapistResponse`: apenas `full_name: string | null`; nunca e-mail, IDs ou flags da conta.
+
+Detalhes em `physiotherapist-profile.md`.
+
+## Biblioteca externa de referência
+
+`/exercise-library` é material de referência do OpenExerciseBase (CC BY-NC 4.0),
+só para fisioterapeuta. Consultar não grava nada. `POST
+/exercise-library/{external_id}/catalog` adiciona o item a `/exercises` para uso
+acadêmico (DEC-006): aprovação em nome do fisioterapeuta, proveniência e
+atribuição, sem parâmetro clínico; idempotente por `(source, external_id)`.
+Falha do provedor retorna `503 external_library_unavailable`. Detalhes, campos
+proibidos e atribuição obrigatória em `exercise-library.md`.
+
 ## DTOs de escrita implementados
 
 - `WorkoutCreate`/`WorkoutUpdate`: instruções e lista ordenada de itens conforme `domain-contracts.md`.
@@ -66,5 +92,8 @@ Tokens e senhas nunca são persistidos ou registrados em texto puro. O comportam
 - `SessionResultCreate`: resultado derivado conforme `domain-contracts.md`, sem
   `score`, calibração, imagens, vídeo ou áudio.
 
-Todos os DTOs de escrita rejeitam campos desconhecidos. O catálogo permanece
-sem registros de produção enquanto não existir exercício clinicamente aprovado.
+- `CatalogImportRequest`: `allowed_sides` com 1 a 3 lados distintos, sem padrão.
+
+Todos os DTOs de escrita rejeitam campos desconhecidos. Nenhuma migração ou seed
+cadastra exercício; o catálogo só recebe itens adicionados pelo fisioterapeuta
+a partir da biblioteca (DEC-006).

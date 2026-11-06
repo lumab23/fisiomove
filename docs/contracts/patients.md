@@ -12,6 +12,18 @@
 
 Essa função é a interface que B04-B06 e as leituras profissionais de B07-B08 devem reutilizar. Ela autoriza o vínculo, mas não substitui regras específicas do recurso futuro.
 
+## Perfil do próprio paciente
+
+`GET /api/v1/me/profile` exige `patient` autenticado (`require_role`) e senha temporária já trocada (`403 password_change_required` caso contrário). Sem corpo nem parâmetros: o registro vem do token via `get_own_patient(session, user)`, que filtra `Patient.user_id == user.id` e `Patient.is_active`.
+
+Resposta `200` (`PatientSelfProfile`), somente o nome:
+
+```json
+{"full_name": "Maria Ficticia"}
+```
+
+Nenhum outro campo (id, e-mail, telefone, vínculo) é exposto. Perfil diferente de `patient` retorna `403 insufficient_role`; usuário sem registro de paciente ou com registro inativo retorna `404 patient_not_found`. Exceção deliberada à regra "todas as rotas exigem `physiotherapist`" acima.
+
 ## Registro e vínculo
 
 `POST /api/v1/patients` cria o paciente e o vínculo na mesma transação. Entrada:
@@ -83,7 +95,7 @@ A resposta inclui a senha temporária somente nessa chamada. O hash permanece in
 
 ## Integrações do MVP
 
-Treinos, notas, sessões, progresso e conquistas referenciam `patients.id`,
+Treinos, notas, sessões e progresso referenciam `patients.id`,
 preservam registros inativos e reutilizam a autorização por vínculo. Desativar
 o paciente bloqueia novos acessos sem excluir o histórico. A pontuação é derivada
 das sessões válidas e aparece no progresso, sem criar uma identidade ou vínculo
