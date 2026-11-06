@@ -1,8 +1,19 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { ExerciseImageGallery } from '../../components/ExerciseImageGallery';
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
-import { useDemo, useDemoPatient } from '../../demo/DemoContext';
-import { demoExercise } from '../../demo/model';
+import {
+  ErrorState,
+  InlineError,
+  LoadingState,
+} from '../../components/ScreenStates';
+import type { SessionPage, WorkoutPage } from '../../contracts/domain';
+import {
+  useMySessions,
+  useMyWorkouts,
+  usePatientProfile,
+  type Resource,
+} from '../../integration/usePatientData';
 import { usePatientTabNavigation } from '../../navigation/frontendTypes';
 import { colors, fonts, radii, spacing } from '../../theme/theme';
 import {
@@ -15,65 +26,46 @@ import {
   SectionTitle,
 } from '../../ui';
 import { SessionRow } from './SessionRow';
+import { StartWorkoutButton } from './StartWorkoutButton';
+import {
+  exerciseImages,
+  exerciseSourceText,
+  exerciseText,
+  originalLanguageSeal,
+  prescriptionText,
+  textLanguage,
+} from './workoutText';
+
+export function firstNameOf(fullName: string) {
+  return fullName.trim().split(/\s+/)[0] ?? '';
+}
 
 export function PatientHomeScreen() {
   const navigation = usePatientTabNavigation();
-  const patient = useDemoPatient();
-  const { state, dispatch } = useDemo();
-  const last = state.sessions.find(session => session.patientId === patient.id);
-  const start = () => {
-    dispatch({ type: 'start' });
-    navigation.navigate('PatientPreparation');
-  };
+  const profile = usePatientProfile();
+  const workouts = useMyWorkouts();
+  const sessions = useMySessions(1);
+  const firstName =
+    profile.state.status === 'success'
+      ? firstNameOf(profile.state.data.full_name)
+      : '';
   return (
     <Screen tab>
       <View style={home.greeting}>
         <Text accessibilityRole="header" style={home.hello}>
-          Olá, {patient.name.split(' ')[0]}!
+          {firstName ? `Olá, ${firstName}!` : 'Olá!'}
         </Text>
         <Mascot kind="home" small />
       </View>
-      {patient.published ? (
-        <View style={home.hero}>
-          <View style={home.heroTop}>
-            <Text style={home.eyebrow}>TREINO DE HOJE</Text>
-            <Badge tone="inverse" label="Exemplo" />
-          </View>
-          <Text accessibilityRole="header" style={home.title}>
-            {demoExercise.name}
-          </Text>
-          <Text style={home.meta}>
-            {demoExercise.series} séries · {patient.repetitions} repetições ·{' '}
-            {demoExercise.side}
-          </Text>
-          {patient.note !== '' && (
-            <View style={home.note}>
-              <Text style={home.noteLabel}>Orientação do profissional</Text>
-              <Text style={home.noteText}>{patient.note}</Text>
-            </View>
-          )}
-          <Button
-            inverse
-            icon="play"
-            label="Iniciar treino"
-            accessibilityHint="Abre a preparação do exercício"
-            onPress={start}
-          />
-        </View>
-      ) : (
-        <EmptyState title="Nenhum treino publicado">
-          Seu fisioterapeuta ainda está preparando o treino.
-        </EmptyState>
-      )}
+      <WorkoutSummary
+        resource={workouts}
+        onOpen={() =>
+          navigation.navigate('PatientExercises', { section: 'workout' })
+        }
+      />
       <View style={home.section}>
         <SectionTitle>Última atividade</SectionTitle>
-        {last ? (
-          <ListGroup>
-            <SessionRow session={last} />
-          </ListGroup>
-        ) : (
-          <Text style={home.muted}>Nenhuma sessão realizada ainda.</Text>
-        )}
+        <LastActivity resource={sessions} />
         <Link
           label="Ver histórico e progresso  ›"
           onPress={() =>
@@ -89,6 +81,111 @@ export function PatientHomeScreen() {
         </Text>
       </View>
     </Screen>
+  );
+}
+
+function WorkoutSummary({
+  resource: { state, reload },
+  onOpen,
+}: {
+  resource: Resource<WorkoutPage>;
+  onOpen: () => void;
+}) {
+  if (state.status === 'idle' || state.status === 'loading') {
+    return <LoadingState label="Carregando seu treino" />;
+  }
+  if (state.status === 'failure') {
+    return (
+      <ErrorState
+        title="Não foi possível carregar seu treino"
+        message={state.message}
+        onRetry={reload}
+      />
+    );
+  }
+  const workout = state.data.items[0];
+  if (state.status === 'empty' || !workout) {
+    return (
+      <EmptyState title="Nenhum treino publicado">
+        Seu fisioterapeuta ainda está preparando o treino.
+      </EmptyState>
+    );
+  }
+  return (
+    <View style={home.hero}>
+      <Text style={home.eyebrow}>SEU TREINO</Text>
+      {workout.items.map(item => {
+        const text = exerciseText(item);
+        const source = exerciseSourceText(item);
+        return (
+          <View key={item.id} style={home.item}>
+            <Text
+              accessibilityRole="header"
+              accessibilityLanguage={textLanguage(text.original)}
+              style={home.title}
+            >
+              {text.name}
+            </Text>
+            {text.original ? (
+              <Badge tone="inverse" label={originalLanguageSeal} />
+            ) : null}
+            <ExerciseImageGallery
+              inverse
+              limit={1}
+              images={exerciseImages(item.exercise_snapshot)}
+              exerciseName={text.name}
+            />
+            <Text style={home.meta}>{prescriptionText(item)}</Text>
+            {item.professional_guidance ? (
+              <Text style={home.meta}>{item.professional_guidance}</Text>
+            ) : null}
+            {source ? <Text style={home.meta}>{source}</Text> : null}
+          </View>
+        );
+      })}
+      {workout.instructions ? (
+        <View style={home.note}>
+          <Text style={home.noteLabel}>Orientação do profissional</Text>
+          <Text style={home.noteText}>{workout.instructions}</Text>
+        </View>
+      ) : null}
+      <StartWorkoutButton inverse workout={workout} />
+      <Button
+        inverse
+        compact
+        icon="activity"
+        label="Ver meu treino"
+        accessibilityHint="Abre a lista de exercícios prescritos"
+        onPress={onOpen}
+      />
+    </View>
+  );
+}
+
+function LastActivity({
+  resource: { state, reload },
+}: {
+  resource: Resource<SessionPage>;
+}) {
+  if (state.status === 'idle' || state.status === 'loading') {
+    return <LoadingState label="Carregando a última atividade" />;
+  }
+  if (state.status === 'failure') {
+    return (
+      <>
+        <InlineError message={state.message} />
+        <Link label="Tentar novamente" onPress={reload} />
+      </>
+    );
+  }
+  const last = state.data.items[0];
+  if (state.status === 'empty' || !last) {
+    return <Text style={home.muted}>Nenhuma sessão realizada ainda.</Text>;
+  }
+  return (
+    <ListGroup>
+      <SessionRow session={last} />
+    </ListGroup>
   );
 }
 
@@ -112,13 +209,7 @@ const home = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.md,
   },
-  heroTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
+  item: { gap: spacing.xs },
   eyebrow: {
     color: colors.onPrimaryMuted,
     fontFamily: fonts.bold,
@@ -139,7 +230,7 @@ const home = StyleSheet.create({
     lineHeight: 24,
   },
   note: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: colors.primaryPressed,
     borderRadius: radii.lg,
     padding: spacing.md,
     gap: spacing.xs,

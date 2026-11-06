@@ -7,8 +7,11 @@ import {
   BriefcaseMedical,
   ChartLine,
   ChevronRight,
+  Circle,
   CircleAlert,
   CircleCheck,
+  Eye,
+  EyeOff,
   Clock,
   House,
   Info,
@@ -50,6 +53,9 @@ const icons = {
   settings: Settings,
   camera: Camera,
   cameraOff: CameraOff,
+  circle: Circle,
+  eye: Eye,
+  eyeOff: EyeOff,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof icons;

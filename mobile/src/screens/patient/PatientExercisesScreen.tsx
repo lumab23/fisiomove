@@ -1,34 +1,51 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRoute, type RouteProp } from '@react-navigation/native';
+import { ExerciseImageGallery } from '../../components/ExerciseImageGallery';
 import { Screen } from '../../components/Screen';
+import { ErrorState, LoadingState } from '../../components/ScreenStates';
 import { SegmentedControl } from '../../components/SegmentedControl';
-import { useDemo, useDemoPatient } from '../../demo/DemoContext';
-import { demoExercise } from '../../demo/model';
+import {
+  currentWeek,
+  useMyProgress,
+  useMySessions,
+  useMyWorkouts,
+} from '../../integration/usePatientData';
 import {
   usePatientTabNavigation,
   type ExerciseSection,
   type PatientTabParamList,
 } from '../../navigation/frontendTypes';
-import { colors, fonts, radii } from '../../theme/theme';
+import { colors, fonts, radii, spacing, typography } from '../../theme/theme';
 import {
-  Badge,
   Body,
-  Button,
   Card,
   EmptyState,
   ListGroup,
   ListRow,
   SectionTitle,
-  styles,
 } from '../../ui';
-import { formatSessionDate, SessionRow } from './SessionRow';
+import { useSessionSync } from '../../sync/SessionSyncContext';
+import type { PendingSession } from '../../sync/types';
+import { PendingSessionRow, SessionRow } from './SessionRow';
+import { StartWorkoutButton } from './StartWorkoutButton';
+import {
+  exerciseImages,
+  exerciseSourceText,
+  exerciseText,
+  originalLanguageSeal,
+  prescriptionText,
+  textLanguage,
+} from './workoutText';
 
 const sections = [
   ['workout', 'Meu treino'],
   ['history', 'Histórico'],
   ['progress', 'Progresso'],
 ] as const;
+
+/** History shows the most recent sessions returned in one page. */
+const historyPageSize = 50;
 
 export function PatientExercisesScreen() {
   const navigation = usePatientTabNavigation();
@@ -63,10 +80,21 @@ export function PatientExercisesScreen() {
 }
 
 function MyWorkout() {
-  const navigation = usePatientTabNavigation();
-  const patient = useDemoPatient();
-  const { dispatch } = useDemo();
-  if (!patient.published) {
+  const { state, reload } = useMyWorkouts();
+  if (state.status === 'idle' || state.status === 'loading') {
+    return <LoadingState label="Carregando seu treino" />;
+  }
+  if (state.status === 'failure') {
+    return (
+      <ErrorState
+        title="Não foi possível carregar seu treino"
+        message={state.message}
+        onRetry={reload}
+      />
+    );
+  }
+  const workouts = state.data.items;
+  if (state.status === 'empty' || !workouts.length) {
     return (
       <EmptyState title="Nenhum treino publicado">
         Seu fisioterapeuta ainda está preparando o treino.
@@ -75,30 +103,53 @@ function MyWorkout() {
   }
   return (
     <>
-      <View style={exercises.section}>
-        <SectionTitle>Exercícios prescritos</SectionTitle>
-        <ListGroup>
-          <ListRow
-            icon="activity"
-            title={demoExercise.name}
-            description={`${demoExercise.series} séries · ${patient.repetitions} repetições · ${demoExercise.side}`}
-          />
-        </ListGroup>
-      </View>
-      {patient.note !== '' && (
-        <Card white title="Orientação do profissional">
-          <Body>{patient.note}</Body>
-        </Card>
-      )}
-      <Button
-        icon="play"
-        label="Iniciar treino"
-        accessibilityHint="Abre a preparação do exercício"
-        onPress={() => {
-          dispatch({ type: 'start' });
-          navigation.navigate('PatientPreparation');
-        }}
-      />
+      {workouts.map((workout, index) => (
+        <View key={workout.id} style={exercises.section}>
+          <SectionTitle>
+            {workouts.length > 1
+              ? `Treino ${index + 1}`
+              : 'Exercícios prescritos'}
+          </SectionTitle>
+          <ListGroup>
+            {workout.items.map(item => {
+              const text = exerciseText(item);
+              const images = exerciseImages(item.exercise_snapshot);
+              return (
+                <View key={item.id}>
+                  <ListRow
+                    icon="activity"
+                    title={text.name}
+                    titleLanguage={textLanguage(text.original)}
+                    description={[
+                      text.original ? originalLanguageSeal : null,
+                      prescriptionText(item),
+                      item.professional_guidance,
+                      exerciseSourceText(item),
+                    ]
+                      .filter(Boolean)
+                      .join('\n')}
+                  />
+                  {images.length ? (
+                    <View style={exercises.image}>
+                      <ExerciseImageGallery
+                        limit={1}
+                        images={images}
+                        exerciseName={text.name}
+                      />
+                    </View>
+                  ) : null}
+                </View>
+              );
+            })}
+          </ListGroup>
+          {workout.instructions ? (
+            <Card white title="Orientação do profissional">
+              <Body>{workout.instructions}</Body>
+            </Card>
+          ) : null}
+          <StartWorkoutButton workout={workout} />
+        </View>
+      ))}
     </>
   );
 }
@@ -110,13 +161,49 @@ const filters = [
 ] as const;
 
 function History({ onStart }: { onStart: () => void }) {
-  const { state } = useDemo();
-  const patient = useDemoPatient();
+  const { state, reload, refresh } = useMySessions(historyPageSize);
+  const { pending, lastReport } = useSessionSync();
   const [filter, setFilter] = useState<(typeof filters)[number][0]>('all');
-  const sessions = state.sessions.filter(
-    session =>
-      session.patientId === patient.id &&
-      (filter === 'all' || session.completed === (filter === 'completed')),
+  // A session sent in the background moves from the local queue to the API.
+  const seenReport = useRef(lastReport);
+  useEffect(() => {
+    if (lastReport !== seenReport.current) {
+      seenReport.current = lastReport;
+      if (lastReport?.sent) {
+        refresh();
+      }
+    }
+  }, [lastReport, refresh]);
+  if (state.status === 'idle' || state.status === 'loading') {
+    return <LoadingState label="Carregando seu histórico" />;
+  }
+  const waiting = pending.filter(
+    item => filter === 'all' || item.payload.status === filter,
+  );
+  if (state.status === 'failure') {
+    return (
+      <>
+        <PendingSessions items={waiting} />
+        <ErrorState
+          title="Não foi possível carregar o histórico"
+          message={state.message}
+          onRetry={reload}
+        />
+      </>
+    );
+  }
+  if (state.status === 'empty' && !pending.length) {
+    return (
+      <EmptyState
+        title="Nenhuma sessão ainda"
+        action={{ label: 'Ver meu treino', icon: 'activity', onPress: onStart }}
+      >
+        Suas sessões aparecerão aqui depois do primeiro treino.
+      </EmptyState>
+    );
+  }
+  const sessions = state.data.items.filter(
+    session => filter === 'all' || session.status === filter,
   );
   return (
     <>
@@ -127,107 +214,117 @@ function History({ onStart }: { onStart: () => void }) {
         value={filter}
         onChange={setFilter}
       />
+      <PendingSessions items={waiting} />
       {sessions.length ? (
         <ListGroup>
           {sessions.map(session => (
             <SessionRow key={session.id} session={session} />
           ))}
         </ListGroup>
-      ) : (
-        <EmptyState
-          title={
-            filter === 'all' ? 'Nenhuma sessão ainda' : 'Nenhuma sessão aqui'
-          }
-          action={
-            filter === 'all'
-              ? { label: 'Ver meu treino', icon: 'activity', onPress: onStart }
-              : undefined
-          }
-        >
-          {filter === 'all'
-            ? 'Suas sessões aparecerão aqui depois do primeiro treino.'
-            : 'Escolha outro filtro para ver as demais sessões.'}
+      ) : waiting.length ? null : (
+        <EmptyState title="Nenhuma sessão aqui">
+          Escolha outro filtro para ver as demais sessões.
         </EmptyState>
       )}
     </>
   );
 }
 
+/** Sessions saved on this device and not yet accepted by the API. */
+function PendingSessions({ items }: { items: PendingSession[] }) {
+  if (!items.length) {
+    return null;
+  }
+  return (
+    <ListGroup>
+      {items.map(item => (
+        <PendingSessionRow
+          key={item.payload.client_session_id}
+          pending={item}
+        />
+      ))}
+    </ListGroup>
+  );
+}
+
+function formatDay(date: string) {
+  return new Date(date).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+  });
+}
+
 function Progress({ onStart }: { onStart: () => void }) {
-  const { state } = useDemo();
-  const patient = useDemoPatient();
-  const sessions = state.sessions.filter(s => s.patientId === patient.id);
-  if (!sessions.length) {
-    return (
+  const [period] = useState(() => currentWeek(new Date()));
+  const { state, reload } = useMyProgress(period);
+  const weekLabel = `Semana de ${formatDay(period.period_start)} a ${formatDay(
+    period.period_end,
+  )}`;
+  let summary: React.ReactNode;
+  if (state.status === 'idle' || state.status === 'loading') {
+    summary = <LoadingState label="Carregando seu progresso" />;
+  } else if (state.status === 'failure') {
+    summary = (
+      <ErrorState
+        title="Não foi possível carregar o progresso"
+        message={state.message}
+        onRetry={reload}
+      />
+    );
+  } else if (state.status === 'empty') {
+    summary = (
       <EmptyState
-        title="Nenhuma sessão ainda"
+        title="Nenhuma sessão nesta semana"
         action={{ label: 'Ver meu treino', icon: 'activity', onPress: onStart }}
       >
-        Seu resumo aparecerá aqui depois do primeiro treino.
+        Seu resumo da semana aparecerá aqui depois do primeiro treino.
       </EmptyState>
     );
-  }
-  const completed = sessions.filter(s => s.completed);
-  const last = sessions[0];
-  const goal = demoExercise.series * last.repetitions;
-  return (
-    <>
-      <View style={exercises.stats}>
-        <Stat value={completed.length} label="Sessões concluídas" />
-        <Stat
-          value={sessions.length - completed.length}
-          label="Sessões interrompidas"
-        />
-        <Stat
-          value={sessions.reduce((sum, s) => sum + s.total, 0)}
-          label="Repetições realizadas"
-        />
-      </View>
-      <Card white title="Última sessão">
-        <Text style={styles.eyebrow}>{formatSessionDate(last.date)}</Text>
-        <Body>
-          {last.total} de {goal} repetições da meta
-        </Body>
-        <View
-          style={exercises.bar}
-          accessible
-          accessibilityRole="progressbar"
-          accessibilityLabel="Repetições da meta"
-          accessibilityValue={{ min: 0, max: goal, now: last.total }}
-        >
-          <View
-            style={[
-              exercises.barFill,
-              { width: `${Math.min(100, (last.total / goal) * 100)}%` },
-            ]}
+  } else {
+    const data = state.data;
+    const prescribed = data.prescribed_repetitions;
+    const performed = Math.min(data.performed_repetitions, prescribed);
+    summary = (
+      <>
+        <View style={exercises.stats}>
+          <Stat value={data.completed_sessions} label="Sessões concluídas" />
+          <Stat
+            value={data.interrupted_sessions}
+            label="Sessões interrompidas"
+          />
+          <Stat
+            value={data.performed_repetitions}
+            label="Repetições realizadas"
           />
         </View>
-        <Badge
-          label={last.completed ? 'Meta do treino concluída' : 'Não concluída'}
-          tone={last.completed ? 'success' : 'warning'}
-        />
-      </Card>
-      <View style={exercises.section}>
-        <SectionTitle>Conquistas</SectionTitle>
-        {completed.length ? (
-          <ListGroup>
-            {completed.map(session => (
-              <ListRow
-                key={session.id}
-                icon="award"
-                title="Meta do treino concluída"
-                description={formatSessionDate(session.date)}
+        {prescribed > 0 ? (
+          <Card white title="Repetições da semana">
+            <Body>
+              {data.performed_repetitions} de {prescribed} repetições prescritas
+            </Body>
+            <View
+              style={exercises.bar}
+              accessible
+              accessibilityRole="progressbar"
+              accessibilityLabel="Repetições prescritas na semana"
+              accessibilityValue={{ min: 0, max: prescribed, now: performed }}
+            >
+              <View
+                style={[
+                  exercises.barFill,
+                  { width: `${(performed / prescribed) * 100}%` },
+                ]}
               />
-            ))}
-          </ListGroup>
-        ) : (
-          <Body>Conclua um treino completo para registrar uma conquista.</Body>
-        )}
-        <Text style={styles.demo}>
-          Conquistas acompanham a meta prescrita, sem incentivar repetições
-          extras.
-        </Text>
-      </View>
+            </View>
+          </Card>
+        ) : null}
+      </>
+    );
+  }
+  return (
+    <>
+      <Text style={exercises.period}>{weekLabel}</Text>
+      {summary}
     </>
   );
 }
@@ -246,8 +343,14 @@ function Stat({ value, label }: { value: number; label: string }) {
 }
 
 const exercises = StyleSheet.create({
-  section: { gap: 12 },
-  stats: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  section: { gap: spacing.md },
+  image: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
+  period: {
+    color: colors.textMuted,
+    ...typography.bodySmall,
+    fontFamily: fonts.regular,
+  },
+  stats: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   stat: {
     flexGrow: 1,
     flexBasis: 100,

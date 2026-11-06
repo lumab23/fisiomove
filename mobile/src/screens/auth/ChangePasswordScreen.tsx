@@ -1,30 +1,41 @@
 import { useEffect, useState } from 'react';
-import {
-  AccessibilityInfo,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { AccessibilityInfo, StyleSheet, Text, View } from 'react-native';
 
 import { friendlyErrorMessage } from '../../api/errors';
 import { useAuth } from '../../auth/AuthContext';
-import { validatePassword } from '../../auth/validation';
-import { AppHeader } from '../../components/AppHeader';
+import { PASSWORD_MIN_LENGTH, validatePassword } from '../../auth/validation';
+import { AuthLayout, authText } from '../../components/AuthLayout';
 import { FormField } from '../../components/FormField';
+import { Icon } from '../../components/Icon';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { InlineError } from '../../components/ScreenStates';
-import {
-  colors,
-  fonts,
-  layout,
-  radii,
-  spacing,
-  typography,
-} from '../../theme/theme';
+import { colors, fonts, layout, spacing, typography } from '../../theme/theme';
+
+/**
+ * Mirrors the checks performed on submit: the minimum length from
+ * `validatePassword`, the difference from the provisional password and the
+ * confirmation. The maximum length is still enforced on submit.
+ */
+export function passwordChecklist(
+  currentPassword: string,
+  newPassword: string,
+  confirmation: string,
+) {
+  return [
+    {
+      label: `Pelo menos ${PASSWORD_MIN_LENGTH} caracteres`,
+      met: newPassword.length >= PASSWORD_MIN_LENGTH,
+    },
+    {
+      label: 'Diferente da senha provisória',
+      met: newPassword.length > 0 && newPassword !== currentPassword,
+    },
+    {
+      label: 'As duas senhas são iguais',
+      met: confirmation.length > 0 && newPassword === confirmation,
+    },
+  ];
+}
 
 export function ChangePasswordScreen() {
   const { changePassword, busy, logout } = useAuth();
@@ -63,89 +74,107 @@ export function ChangePasswordScreen() {
     }
   };
 
+  const checklist = passwordChecklist(
+    currentPassword,
+    newPassword,
+    confirmation,
+  );
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <AppHeader brand title="Crie uma nova senha" />
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.intro}>
-            <Text style={styles.subtitle}>
-              Por segurança, troque a senha temporária antes de continuar.
-            </Text>
-          </View>
-          <View style={styles.card}>
-            <FormField
-              label="Senha temporária"
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              secureTextEntry
-              autoComplete="current-password"
-              editable={!busy}
-            />
-            <FormField
-              label="Nova senha"
-              value={newPassword}
-              onChangeText={setNewPassword}
-              secureTextEntry
-              autoComplete="new-password"
-              editable={!busy}
-            />
-            <FormField
-              label="Confirme a nova senha"
-              value={confirmation}
-              onChangeText={setConfirmation}
-              secureTextEntry
-              autoComplete="new-password"
-              returnKeyType="done"
-              onSubmitEditing={submit}
-              editable={!busy}
-            />
-            <Text style={styles.hint}>Use entre 12 e 128 caracteres.</Text>
-            {error ? <InlineError message={error} /> : null}
-            <PrimaryButton
-              label="Salvar nova senha"
-              loading={busy}
-              onPress={submit}
-            />
-          </View>
-          <Text style={styles.exit} onPress={logout} accessibilityRole="button">
-            Sair e entrar com outra conta
-          </Text>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+    <AuthLayout>
+      <View style={styles.intro}>
+        <Text accessibilityRole="header" style={authText.title}>
+          Crie sua senha
+        </Text>
+        <Text style={authText.body}>
+          Por segurança, troque a senha provisória antes de continuar.
+        </Text>
+      </View>
+      <View style={styles.form}>
+        <FormField
+          label="Senha provisória"
+          value={currentPassword}
+          onChangeText={setCurrentPassword}
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="current-password"
+          revealable
+          editable={!busy}
+        />
+        <FormField
+          label="Nova senha"
+          value={newPassword}
+          onChangeText={setNewPassword}
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="new-password"
+          revealable
+          editable={!busy}
+        />
+        <FormField
+          label="Repita a senha"
+          value={confirmation}
+          onChangeText={setConfirmation}
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="new-password"
+          revealable
+          returnKeyType="done"
+          onSubmitEditing={submit}
+          editable={!busy}
+        />
+        <View style={styles.checklist}>
+          {checklist.map(item => (
+            <View
+              key={item.label}
+              accessible
+              accessibilityLabel={`${item.label}: ${
+                item.met ? 'cumprido' : 'pendente'
+              }`}
+              style={styles.checkRow}
+            >
+              <Icon
+                name={item.met ? 'check' : 'circle'}
+                size={24}
+                color={item.met ? colors.success : colors.textMuted}
+              />
+              <Text style={[styles.checkText, item.met && styles.checkMet]}>
+                {item.label}
+              </Text>
+            </View>
+          ))}
+        </View>
+        {error ? <InlineError message={error} /> : null}
+        <PrimaryButton
+          label="Salvar e começar"
+          loading={busy}
+          onPress={submit}
+        />
+      </View>
+      <Text style={styles.exit} onPress={logout} accessibilityRole="button">
+        Sair e entrar com outra conta
+      </Text>
+    </AuthLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  safeArea: { backgroundColor: colors.background, flex: 1 },
-  content: {
-    flexGrow: 1,
-    gap: spacing.xl,
-    justifyContent: 'center',
-    paddingHorizontal: layout.pageGutter,
-    paddingVertical: spacing.xl,
+  intro: { gap: spacing.md },
+  form: { gap: spacing.lg },
+  checklist: { gap: spacing.sm },
+  checkRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: layout.compactControlHeight,
   },
-  intro: { gap: spacing.sm },
-  subtitle: {
+  checkText: {
     color: colors.textMuted,
-    ...typography.body,
+    ...typography.bodySmall,
+    flexShrink: 1,
     fontFamily: fonts.regular,
   },
-  card: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radii.xl,
-    gap: spacing.lg,
-    padding: spacing.xl,
-  },
-  hint: { color: colors.textMuted, ...typography.caption },
+  checkMet: { color: colors.success, fontFamily: fonts.bold },
   exit: {
     color: colors.primary,
     ...typography.bodySmall,

@@ -101,12 +101,15 @@ export function ListRow({
   description,
   onPress,
   accessibilityHint,
+  titleLanguage,
 }: {
   icon: IconName;
   title: string;
   description?: string;
   onPress?: () => void;
   accessibilityHint?: string;
+  /** e.g. `"en"` for a title kept in its original language. */
+  titleLanguage?: string;
 }) {
   const content = (
     <>
@@ -114,7 +117,9 @@ export function ListRow({
         <Icon name={icon} size={22} color={colors.primary} />
       </View>
       <View style={styles.rowText}>
-        <Text style={styles.rowTitle}>{title}</Text>
+        <Text accessibilityLanguage={titleLanguage} style={styles.rowTitle}>
+          {title}
+        </Text>
         {description && (
           <Text style={styles.rowDescription}>{description}</Text>
         )}

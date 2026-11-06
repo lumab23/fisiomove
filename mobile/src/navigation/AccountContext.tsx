@@ -1,10 +1,11 @@
 import { createContext, useContext } from 'react';
+
+/** Authenticated account shown on the profile; provided by the navigator. */
 export const AccountContext = createContext<{
-  action?: () => void;
-  label: string;
   email?: string;
-  professionalDemo: boolean;
-}>({ label: 'Acessar minha conta', professionalDemo: true });
+  signOut?: () => void;
+}>({});
+
 export function useAccount() {
   return useContext(AccountContext);
 }

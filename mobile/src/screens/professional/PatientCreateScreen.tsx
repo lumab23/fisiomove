@@ -1,81 +1,124 @@
 import { useState } from 'react';
 import { Screen } from '../../components/Screen';
 import { FormField } from '../../components/FormField';
-import { Button } from '../../ui';
-import { useDemo } from '../../demo/DemoContext';
-import { validatePatient } from '../../demo/model';
+import { InlineError } from '../../components/ScreenStates';
+import { useScreenMessage } from '../../components/ScreenMessage';
+import { appDependencies } from '../../app/dependencies';
+import type { PatientCreate } from '../../contracts/domain';
+import { Body, Button } from '../../ui';
 import { useFrontendNavigation } from '../../navigation/frontendTypes';
+import { apiErrorMessage } from './shared';
+
+type Errors = { name?: string; email?: string; phone?: string };
+
+/** Mirrors the API limits (`PatientCreate`); the server still validates. */
+export function validatePatientForm(
+  name: string,
+  email: string,
+  phone: string,
+): Errors {
+  const errors: Errors = {};
+  const trimmed = name.trim();
+  if (trimmed.length < 2 || trimmed.length > 200) {
+    errors.name = 'Informe o nome completo.';
+  }
+  if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    errors.email = 'Confira o e-mail. Exemplo: nome@provedor.com';
+  }
+  const phoneLength = phone.trim().length;
+  if (phoneLength && (phoneLength < 3 || phoneLength > 32)) {
+    errors.phone = 'Confira o telefone.';
+  }
+  return errors;
+}
+
 export function PatientCreateScreen() {
   const navigation = useFrontendNavigation();
-  const { state, dispatch } = useDemo();
+  const { show } = useScreenMessage();
   const [name, setName] = useState('');
-  const [identification, setIdentification] = useState('');
-  const [contact, setContact] = useState('');
-  const [errors, setErrors] = useState<ReturnType<typeof validatePatient>>({});
-  const submit = () => {
-    const next = validatePatient(name, identification, contact, state.patients);
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [errors, setErrors] = useState<Errors>({});
+  const [failure, setFailure] = useState('');
+  const [saving, setSaving] = useState(false);
+  const submit = async () => {
+    const next = validatePatientForm(name, email, phone);
     setErrors(next);
-    if (Object.keys(next).length) {
-      dispatch({
-        type: 'message',
-        value: 'Confira os campos destacados para continuar.',
-      });
+    setFailure('');
+    if (Object.keys(next).length || saving) {
       return;
     }
-    dispatch({
-      type: 'create',
-      patient: {
-        id: `patient-${Date.now()}`,
-        name: name.trim(),
-        identification: identification.trim(),
-        contact: contact.trim(),
-        repetitions: 8,
-        published: false,
-        note: '',
-      },
-    });
-    navigation.replace('WorkoutConfiguration');
+    const payload: PatientCreate = {
+      full_name: name.trim(),
+      email: email.trim() || null,
+      phone: phone.trim() || null,
+    };
+    setSaving(true);
+    try {
+      const patient = await appDependencies.patients.create(payload);
+      show('Paciente cadastrado.');
+      navigation.replace('PatientDetails', { patientId: patient.id });
+    } catch (cause) {
+      setFailure(
+        apiErrorMessage(cause, {
+          email_conflict: 'Este e-mail já é usado por outra conta.',
+        }),
+      );
+      setSaving(false);
+    }
   };
   return (
     <Screen
-      back="Fisioterapeuta"
+      professional
+      back="Pacientes"
       title="Cadastrar paciente"
-      footer={<Button label="Cadastrar e configurar treino" onPress={submit} />}
+      footer={
+        <Button
+          label={saving ? 'Cadastrando…' : 'Cadastrar paciente'}
+          disabled={saving}
+          onPress={submit}
+        />
+      }
     >
+      <Body>
+        O e-mail é opcional agora, mas é necessário para liberar o acesso ao
+        aplicativo.
+      </Body>
+      {failure ? <InlineError message={failure} /> : null}
       <FormField
-        label="NOME"
+        label="Nome completo"
         value={name}
         onChangeText={value => {
           setName(value);
           setErrors(current => ({ ...current, name: undefined }));
         }}
-        placeholder="Nome completo"
         autoCapitalize="words"
-        maxLength={100}
+        maxLength={200}
         error={errors.name}
       />
       <FormField
-        label="IDENTIFICAÇÃO"
-        value={identification}
+        label="E-mail (opcional)"
+        value={email}
         onChangeText={value => {
-          setIdentification(value);
-          setErrors(current => ({ ...current, identification: undefined }));
+          setEmail(value);
+          setErrors(current => ({ ...current, email: undefined }));
         }}
-        placeholder="Paciente 002"
-        maxLength={40}
-        error={errors.identification}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+        maxLength={254}
+        error={errors.email}
       />
       <FormField
-        label="CONTATO"
-        value={contact}
+        label="Telefone (opcional)"
+        value={phone}
         onChangeText={value => {
-          setContact(value);
-          setErrors(current => ({ ...current, contact: undefined }));
+          setPhone(value);
+          setErrors(current => ({ ...current, phone: undefined }));
         }}
-        placeholder="(85) 90000-0000"
         keyboardType="phone-pad"
-        maxLength={24}
-        error={errors.contact}
+        maxLength={32}
+        error={errors.phone}
       />
     </Screen>
   );

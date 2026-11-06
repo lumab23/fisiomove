@@ -247,3 +247,168 @@ test('mantém erro 5xx como retryable com backoff', async () => {
     attempts: 1,
   });
 });
+
+describe('rascunho local por treino', () => {
+  const OTHER_REVISION = '77777777-7777-4777-8777-777777777777';
+  const SECOND_CLIENT = '88888888-8888-4888-8888-888888888888';
+
+  function setupWithIds(ids: string[]) {
+    let instant = new Date('2026-11-06T12:00:00Z');
+    const store = new SessionSyncStore(memoryStorage());
+    const api = { create: jest.fn() };
+    const service = new SessionSyncService(
+      api as unknown as SessionService,
+      store,
+      () => instant,
+      () => ids.shift() ?? CLIENT,
+    );
+    return {
+      api,
+      service,
+      advance(ms: number) {
+        instant = new Date(instant.getTime() + ms);
+      },
+    };
+  }
+
+  test('encontra o rascunho mais recente da mesma revisão, só do dono', async () => {
+    const { api, service, advance } = setupWithIds([CLIENT, SECOND_CLIENT]);
+    await service.prepare(OWNER, WORKOUT, REVISION);
+    advance(60_000);
+    const latest = await service.prepare(OWNER, WORKOUT, REVISION);
+
+    await expect(service.findDraft(OWNER, WORKOUT, REVISION)).resolves.toEqual(
+      latest,
+    );
+    await expect(
+      service.findDraft(OWNER, WORKOUT, OTHER_REVISION),
+    ).resolves.toBeNull();
+    await expect(
+      service.findDraft(OTHER_OWNER, WORKOUT, REVISION),
+    ).resolves.toBeNull();
+    expect(api.create).not.toHaveBeenCalled();
+  });
+
+  test('descarta só o rascunho indicado e preserva resultados pendentes', async () => {
+    const { api, service } = setupWithIds([SECOND_CLIENT]);
+    await service.enqueue(OWNER, payload);
+    const draft = await service.prepare(OWNER, WORKOUT, REVISION);
+
+    await expect(
+      service.discardDraft(OTHER_OWNER, draft.client_session_id),
+    ).resolves.toBe(false);
+    await expect(
+      service.getDraft(OWNER, draft.client_session_id),
+    ).resolves.toEqual(draft);
+
+    await expect(
+      service.discardDraft(OWNER, draft.client_session_id),
+    ).resolves.toBe(true);
+    await expect(
+      service.findDraft(OWNER, WORKOUT, REVISION),
+    ).resolves.toBeNull();
+    await expect(
+      service.discardDraft(OWNER, draft.client_session_id),
+    ).resolves.toBe(false);
+    expect(await service.list(OWNER)).toHaveLength(1);
+    expect(api.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('rascunhos de revisão antiga', () => {
+  const NEW_REVISION = '77777777-7777-4777-8777-777777777777';
+  const OTHER_WORKOUT = '99999999-9999-4999-8999-999999999999';
+  const OLD_DRAFT = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const CURRENT_DRAFT = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  const OTHER_WORKOUT_DRAFT = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+
+  test('remove só rascunhos do mesmo treino com outra revisão', async () => {
+    const ids = [OLD_DRAFT, CURRENT_DRAFT, OTHER_WORKOUT_DRAFT];
+    const api = { create: jest.fn() };
+    const service = new SessionSyncService(
+      api as unknown as SessionService,
+      new SessionSyncStore(memoryStorage()),
+      () => new Date('2026-11-06T12:00:00Z'),
+      () => ids.shift() ?? CLIENT,
+    );
+    await service.enqueue(OWNER, payload);
+    await service.prepare(OWNER, WORKOUT, REVISION);
+    const current = await service.prepare(OWNER, WORKOUT, NEW_REVISION);
+    const other = await service.prepare(OWNER, OTHER_WORKOUT, REVISION);
+
+    await expect(
+      service.discardOutdatedDrafts(OTHER_OWNER, WORKOUT, NEW_REVISION),
+    ).resolves.toBe(0);
+    await expect(
+      service.discardOutdatedDrafts(OWNER, WORKOUT, NEW_REVISION),
+    ).resolves.toBe(1);
+
+    await expect(service.getDraft(OWNER, OLD_DRAFT)).resolves.toBeNull();
+    await expect(service.getDraft(OWNER, CURRENT_DRAFT)).resolves.toEqual(
+      current,
+    );
+    await expect(service.getDraft(OWNER, OTHER_WORKOUT_DRAFT)).resolves.toEqual(
+      other,
+    );
+    expect(await service.list(OWNER)).toHaveLength(1);
+    expect(api.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('escritas concorrentes com a sincronização', () => {
+  const FINISHED = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+  const DISCARDED = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+
+  test('rede lenta não desfaz finishDraft nem discardDraft feitos no meio', async () => {
+    const ids = [FINISHED, DISCARDED];
+    const api = { create: jest.fn() };
+    const service = new SessionSyncService(
+      api as unknown as SessionService,
+      new SessionSyncStore(memoryStorage()),
+      () => new Date('2026-10-25T12:06:00Z'),
+      () => ids.shift() ?? CLIENT,
+    );
+    let release!: () => void;
+    api.create
+      .mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            release = () => resolve({ id: 'result' });
+          }),
+      )
+      .mockResolvedValue({ id: 'result' });
+    await service.enqueue(OWNER, payload);
+    await service.prepare(OWNER, WORKOUT, REVISION);
+    await service.prepare(OWNER, WORKOUT, REVISION);
+
+    const syncing = service.sync(OWNER);
+    while (api.create.mock.calls.length === 0) {
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
+    }
+    // The first request is still in flight.
+    await service.finishDraft(OWNER, FINISHED, {
+      status: 'interrupted',
+      finished_at: '2026-10-25T12:07:00Z',
+      active_duration_ms: 0,
+      low_confidence_summary: null,
+      feedback_summary: null,
+      items: [],
+    });
+    await expect(service.discardDraft(OWNER, DISCARDED)).resolves.toBe(true);
+    release();
+    const report = await syncing;
+
+    // The discarded draft does not come back and the finished one is not lost.
+    await expect(service.getDraft(OWNER, DISCARDED)).resolves.toBeNull();
+    await expect(service.getDraft(OWNER, FINISHED)).resolves.toBeNull();
+    const sentIds = api.create.mock.calls.map(
+      ([sentPayload]) => sentPayload.client_session_id,
+    );
+    const stillPending = (await service.list(OWNER)).map(
+      item => item.payload.client_session_id,
+    );
+    expect(sentIds).toContain(CLIENT);
+    expect([...sentIds, ...stillPending]).toContain(FINISHED);
+    expect(report.sent_client_session_ids).toContain(CLIENT);
+  });
+});

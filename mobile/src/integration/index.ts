@@ -19,13 +19,39 @@ export type {
 export { selectSessionSyncStatus } from '../sync/status';
 export { failureState, resolvedState } from './asyncState';
 export type { AsyncState } from './asyncState';
+export {
+  currentWeek,
+  useMyProgress,
+  useMySessions,
+  useMyWorkouts,
+  useLinkedPhysiotherapist,
+  usePatientProfile,
+} from './usePatientData';
+export type { Resource } from './usePatientData';
+export {
+  maxPageSize,
+  useApprovedExercises,
+  useCatalogExercise,
+  useLibraryExercise,
+  useLibrarySearch,
+  useOwnPhysiotherapistProfile,
+  usePatient,
+  usePatientNotes,
+  usePatientProgress,
+  usePatients,
+  usePatientSessions,
+  usePatientWorkouts,
+  useWorkout,
+} from './useProfessionalData';
 
 import { appDependencies } from '../app/dependencies';
 
 export const mobileServices = {
   exercises: appDependencies.exercises,
+  exerciseLibrary: appDependencies.exerciseLibrary,
   workouts: appDependencies.workouts,
   patients: appDependencies.patients,
+  profile: appDependencies.profile,
   notes: appDependencies.notes,
   sessions: appDependencies.sessions,
   progress: appDependencies.progress,

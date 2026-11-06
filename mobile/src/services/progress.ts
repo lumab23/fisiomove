@@ -1,7 +1,7 @@
 import type { ApiClient } from '../api/ApiClient';
 import { queryString } from '../api/query';
 import type { ISODateTime, UUID } from '../contracts/common';
-import type { Achievement, ProgressSummary } from '../contracts/domain';
+import type { ProgressSummary } from '../contracts/domain';
 
 export interface ProgressPeriod {
   period_start: ISODateTime;
@@ -22,13 +22,5 @@ export class ProgressService {
     return this.api.get(
       `/patients/${patientId}/progress${queryString(period)}`,
     );
-  }
-
-  myAchievements(): Promise<Achievement[]> {
-    return this.api.get('/me/achievements');
-  }
-
-  patientAchievements(patientId: UUID): Promise<Achievement[]> {
-    return this.api.get(`/patients/${patientId}/achievements`);
   }
 }

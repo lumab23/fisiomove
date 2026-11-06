@@ -1,78 +1,114 @@
 import { useState } from 'react';
-import { Pressable } from 'react-native';
-import { Screen, Notice } from '../../components/Screen';
+import { Screen } from '../../components/Screen';
 import { EmptyState } from '../../components/ScreenStates';
 import { FormField } from '../../components/FormField';
-import { Body, Button, Card, Link } from '../../ui';
-import { useDemo } from '../../demo/DemoContext';
-import {
-  resetToPatientTabs,
-  useFrontendNavigation,
-} from '../../navigation/frontendTypes';
+import type { Patient } from '../../contracts/domain';
+import { usePatients } from '../../integration/useProfessionalData';
+import { Body, Button, ListGroup, ListRow } from '../../ui';
+import { useScreenMessage } from '../../components/ScreenMessage';
+import { useFrontendNavigation } from '../../navigation/frontendTypes';
+import { ResourceView, useReloadOnReturn } from './shared';
+
+function accessText(patient: Patient) {
+  if (!patient.is_active) {
+    return 'Cadastro desativado';
+  }
+  if (!patient.has_access || !patient.access_is_active) {
+    return 'Acesso ao app não liberado';
+  }
+  return patient.must_change_password
+    ? 'Aguardando o primeiro acesso'
+    : 'Acesso ao app ativo';
+}
+
 export function PatientListScreen() {
-  const { state, dispatch } = useDemo();
+  const patients = usePatients();
+  const { clear } = useScreenMessage();
   const navigation = useFrontendNavigation();
   const [search, setSearch] = useState('');
-  const patients = state.patients.filter(patient =>
-    `${patient.name} ${patient.identification}`
-      .toLocaleLowerCase()
-      .includes(search.toLocaleLowerCase().trim()),
-  );
+  useReloadOnReturn(patients.reload);
+  const total =
+    patients.state.status === 'success' || patients.state.status === 'empty'
+      ? patients.state.data.total
+      : null;
   return (
     <Screen
       professional
       title="Pacientes"
-      subtitle={`${state.patients.length} paciente${state.patients.length === 1 ? '' : 's'} cadastrado${state.patients.length === 1 ? '' : 's'}`}
+      subtitle={
+        total === null
+          ? undefined
+          : `${total} paciente${total === 1 ? '' : 's'} cadastrado${total === 1 ? '' : 's'}`
+      }
       footer={
-        <>
-          <Button
-            label="Cadastrar paciente"
-            onPress={() => navigation.navigate('PatientCreate')}
-          />
-          <Link
-            label="‹  Área do paciente"
-            onPress={() => resetToPatientTabs(navigation)}
-          />
-        </>
+        <Button
+          label="Cadastrar paciente"
+          onPress={() => navigation.navigate('PatientCreate')}
+        />
       }
     >
-      <Notice />
-      <FormField
-        label="Buscar paciente"
-        value={search}
-        onChangeText={setSearch}
-        placeholder="Nome ou identificação"
-        autoCorrect={false}
-      />
-      {patients.length ? (
-        patients.map(patient => (
-          <Pressable
-            key={patient.id}
-            accessibilityRole="button"
-            accessibilityLabel={`Abrir ficha de ${patient.name}`}
-            onPress={() => {
-              dispatch({ type: 'select', id: patient.id });
-              dispatch({ type: 'message', value: '' });
-              navigation.navigate('PatientDetails');
-            }}
-          >
-            <Card title={`${patient.name}  ›`}>
-              <Body>
-                {patient.published
-                  ? '1 exercício atribuído'
-                  : 'Treino em rascunho'}
-              </Body>
-            </Card>
-          </Pressable>
-        ))
-      ) : (
-        <EmptyState
-          title="Nenhum paciente encontrado"
-          message="Ajuste a busca ou cadastre um paciente."
-          actionLabel="Limpar busca"
-          onAction={() => setSearch('')}
-        />
-      )}
+      <ResourceView
+        resource={patients}
+        loadingLabel="Carregando pacientes"
+        empty={
+          <EmptyState
+            title="Nenhum paciente cadastrado"
+            message="Cadastre um paciente para montar o treino e liberar o acesso ao aplicativo."
+          />
+        }
+      >
+        {page => {
+          const term = search.toLocaleLowerCase('pt-BR').trim();
+          const found = page.items.filter(patient =>
+            `${patient.full_name} ${patient.email ?? ''}`
+              .toLocaleLowerCase('pt-BR')
+              .includes(term),
+          );
+          return (
+            <>
+              <FormField
+                label="Buscar paciente"
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Nome ou e-mail"
+                autoCorrect={false}
+                autoCapitalize="none"
+              />
+              {found.length ? (
+                <ListGroup>
+                  {found.map(patient => (
+                    <ListRow
+                      key={patient.id}
+                      icon="user"
+                      title={patient.full_name}
+                      description={accessText(patient)}
+                      accessibilityHint={`Abre a ficha. ${accessText(patient)}.`}
+                      onPress={() => {
+                        clear();
+                        navigation.navigate('PatientDetails', {
+                          patientId: patient.id,
+                        });
+                      }}
+                    />
+                  ))}
+                </ListGroup>
+              ) : (
+                <EmptyState
+                  title="Nenhum paciente encontrado"
+                  message="Confira a busca ou limpe o campo para ver todos."
+                  actionLabel="Limpar busca"
+                  onAction={() => setSearch('')}
+                />
+              )}
+              {page.total > page.items.length ? (
+                <Body>
+                  {`Mostrando os ${page.items.length} cadastros mais recentes de ${page.total}.`}
+                </Body>
+              ) : null}
+            </>
+          );
+        }}
+      </ResourceView>
     </Screen>
   );
 }

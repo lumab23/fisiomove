@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   AppState,
-  Image,
   Pressable,
   StatusBar,
   StyleSheet,
@@ -13,40 +12,136 @@ import {
   useFocusEffect,
   useIsFocused,
   usePreventRemove,
+  useRoute,
+  type RouteProp,
 } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import { useReduceMotion } from '../../accessibility/useReduceMotion';
+import { friendlyErrorMessage } from '../../api/errors';
 import { Icon, type IconName } from '../../components/Icon';
-import { useDemo } from '../../demo/DemoContext';
-import { demoExercise } from '../../demo/model';
+import { Screen } from '../../components/Screen';
+import { InlineError } from '../../components/ScreenStates';
+import {
+  currentWorkoutItem,
+  useActiveSession,
+  type ActiveSession,
+} from '../../features/session/ActiveSession';
+import { useSessionResult } from '../../features/session/useSessionResult';
 import { LocalPoseCamera } from '../../features/vision/LocalPoseCamera';
-import { useFrontendNavigation } from '../../navigation/frontendTypes';
-import { colors, fonts, radii, spacing } from '../../theme/theme';
-import { Button } from '../../ui';
+import {
+  resetToPatientTabs,
+  useFrontendNavigation,
+  type FrontendStackParamList,
+} from '../../navigation/frontendTypes';
+import {
+  colors,
+  fonts,
+  layout,
+  radii,
+  spacing,
+  typography,
+} from '../../theme/theme';
+import { Button, EmptyState } from '../../ui';
+import {
+  exerciseSourceText,
+  exerciseText,
+  originalLanguageSeal,
+  sideLabels,
+  textLanguage,
+} from './workoutText';
 
+/** Screen refresh while active or resting; not a clinical value. */
+const CLOCK_REFRESH_MS = 1000;
+
+/**
+ * Execution of the published workout: reads the in-memory session;
+ * repetitions are counted by touch (DEC-008). Pause and rest are internal
+ * states (Q-T3); leaving the screen or the app pauses (RN20).
+ */
 export function PatientExerciseScreen() {
   const navigation = useFrontendNavigation();
-  const { state, dispatch } = useDemo();
-  const { active } = state;
+  const { clientSessionId } =
+    useRoute<RouteProp<FrontendStackParamList, 'PatientExercise'>>().params;
+  const { session } = useActiveSession(clientSessionId);
+  if (!session) {
+    return (
+      <Screen back="Voltar" title="Treino">
+        <EmptyState
+          title="Não encontramos o treino em andamento"
+          action={{
+            label: 'Voltar aos exercícios',
+            onPress: () => resetToPatientTabs(navigation, 'workout'),
+          }}
+        >
+          Abra seus exercícios e toque em Continuar treino.
+        </EmptyState>
+      </Screen>
+    );
+  }
+  return <Execution session={session} />;
+}
+
+function Execution({ session }: { session: ActiveSession }) {
+  const navigation = useFrontendNavigation();
+  const { start, tick, countRepetition, pause, resume } = useActiveSession();
+  const { snapshot, draft } = session;
+  const clientSessionId = draft.client_session_id;
   const focused = useIsFocused();
+  const reduceMotion = useReduceMotion();
   const pulse = useRef(new Animated.Value(1)).current;
-  usePreventRemove(focused, () => navigation.navigate('ConfirmExit'));
+  const result = useSessionResult(session.execution, draft);
+  const [finished, setFinished] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  usePreventRemove(focused && !finished, () =>
+    navigation.navigate('ConfirmExit', { clientSessionId }),
+  );
+  useEffect(() => {
+    if (finished) {
+      navigation.replace('PatientCompletion', { clientSessionId });
+    }
+  }, [clientSessionId, finished, navigation]);
+
+  useEffect(() => {
+    start();
+  }, [start]);
+  const running = snapshot.status === 'active' || snapshot.status === 'resting';
+  useEffect(() => {
+    if (!focused || !running) {
+      return;
+    }
+    const timer = setInterval(tick, CLOCK_REFRESH_MS);
+    return () => clearInterval(timer);
+  }, [focused, running, tick]);
+
+  // Leaving the screen or the app pauses counting and time (RN20).
   useFocusEffect(
     useCallback(() => {
       StatusBar.setBarStyle('light-content');
       const subscription = AppState.addEventListener('change', next => {
         if (next !== 'active') {
-          navigation.navigate('SessionPause');
+          pause();
         }
       });
       return () => {
         StatusBar.setBarStyle('dark-content');
         subscription.remove();
+        pause();
       };
-    }, [navigation]),
+    }, [pause]),
   );
+
+  const progress = snapshot.items[snapshot.current_item_index];
+  const item = currentWorkoutItem(session);
+  const count = progress?.repetitions_in_current_set ?? 0;
+  const goal = progress?.repetitions ?? item.repetitions;
+  const sets = progress?.sets ?? item.sets;
+  const setNumber = Math.min((progress?.completed_sets ?? 0) + 1, sets);
+  const source = exerciseSourceText(item);
+  const text = exerciseText(item);
+
   useEffect(() => {
-    if (active.count === 0) {
+    if (count === 0 || reduceMotion !== false) {
       return;
     }
     pulse.setValue(1.15);
@@ -55,96 +150,81 @@ export function PatientExerciseScreen() {
       friction: 5,
       useNativeDriver: true,
     }).start();
-  }, [active.count, pulse]);
+  }, [count, pulse, reduceMotion]);
 
-  const seriesDone = active.count >= active.goal;
-  const finishSeries = () => {
-    if (active.series === 1) {
-      navigation.navigate('SessionRest');
-      return;
+  const complete = async () => {
+    setError(null);
+    try {
+      await result.complete();
+      setFinished(true);
+    } catch (cause) {
+      setError(friendlyErrorMessage(cause));
     }
-    dispatch({
-      type: 'finish',
-      completed: true,
-      id: active.id,
-      date: new Date().toISOString(),
-    });
-    navigation.navigate('PatientCompletion');
   };
+
+  // Opening "Como fazer" pauses the session; the patient resumes manually.
+  const openGuidance = () => {
+    pause();
+    navigation.navigate('MovementGuidance', { clientSessionId });
+  };
+
+  const paused = snapshot.status === 'paused';
+  const restSeconds = Math.ceil(snapshot.rest_remaining_ms / 1000);
 
   return (
     <View style={exercise.root}>
       <View style={exercise.cameraArea}>
         <LocalPoseCamera
           immersive
-          side="right"
+          side={item.side}
           active={focused}
           style={StyleSheet.absoluteFill}
         />
-        <Svg
-          pointerEvents="none"
-          style={exercise.topShade}
-          width="100%"
-          height="100%"
-        >
-          <Defs>
-            <LinearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor="#000" stopOpacity="0.55" />
-              <Stop offset="1" stopColor="#000" stopOpacity="0" />
-            </LinearGradient>
-          </Defs>
-          <Rect width="100%" height="100%" fill="url(#shade)" />
-        </Svg>
         <SafeAreaView edges={['top', 'left', 'right']} style={exercise.top}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Como fazer o movimento"
-            accessibilityHint="Abre as instruções do exercício"
-            onPress={() => navigation.navigate('MovementGuidance')}
-            style={({ pressed }) => [
-              exercise.demo,
-              pressed && exercise.pressed,
-            ]}
-          >
-            <Image
-              source={require('../../assets/person.png')}
-              resizeMode="contain"
-              style={exercise.demoImage}
-              accessible={false}
-            />
-            <Text style={exercise.demoLabel}>Como fazer</Text>
-          </Pressable>
           <View style={exercise.titleBlock}>
-            <Text accessibilityRole="header" style={exercise.title}>
-              {demoExercise.name}
+            <Text style={exercise.itemLabel}>
+              Exercício {snapshot.current_item_index + 1} de{' '}
+              {snapshot.items.length}
             </Text>
-            <Text style={exercise.subtitle}>{demoExercise.side}</Text>
+            <Text
+              accessibilityRole="header"
+              accessibilityLanguage={textLanguage(text.original)}
+              style={exercise.title}
+            >
+              {text.name}
+            </Text>
+            {text.original ? (
+              <Text style={exercise.subtitle}>{originalLanguageSeal}</Text>
+            ) : null}
+            <Text style={exercise.subtitle}>{sideLabels[item.side]}</Text>
+          </View>
+          <View style={exercise.controls}>
+            {paused ? (
+              <FloatingControl icon="play" label="Continuar" onPress={resume} />
+            ) : (
+              <FloatingControl icon="pause" label="Pausar" onPress={pause} />
+            )}
+            <FloatingControl
+              icon="info"
+              label="Como fazer"
+              onPress={openGuidance}
+            />
+            <FloatingControl
+              icon="close"
+              label="Encerrar"
+              onPress={() =>
+                navigation.navigate('ConfirmExit', { clientSessionId })
+              }
+            />
           </View>
         </SafeAreaView>
-        <View style={exercise.controls}>
-          <FloatingControl
-            icon="pause"
-            label="Pausar"
-            onPress={() => navigation.navigate('SessionPause')}
-          />
-          <FloatingControl
-            icon="info"
-            label="Instruções"
-            onPress={() => navigation.navigate('MovementGuidance')}
-          />
-          <FloatingControl
-            icon="close"
-            label="Encerrar"
-            onPress={() => navigation.navigate('ConfirmExit')}
-          />
-        </View>
       </View>
 
       <SafeAreaView edges={['bottom', 'left', 'right']} style={exercise.panel}>
         <View style={exercise.counterRow}>
           <View
             accessible
-            accessibilityLabel={`Repetição ${active.count} de ${active.goal}`}
+            accessibilityLabel={`Repetição ${count} de ${goal}`}
             accessibilityLiveRegion="polite"
           >
             <Text style={exercise.counterLabel}>Repetição</Text>
@@ -152,14 +232,14 @@ export function PatientExerciseScreen() {
               <Animated.Text
                 style={[exercise.count, { transform: [{ scale: pulse }] }]}
               >
-                {active.count}
+                {count}
               </Animated.Text>
-              <Text style={exercise.goal}> de {active.goal}</Text>
+              <Text style={exercise.goal}> de {goal}</Text>
             </View>
           </View>
           <View style={exercise.seriesPill}>
             <Text style={exercise.seriesText}>
-              Série {active.series} de {demoExercise.series}
+              Série {setNumber} de {sets}
             </Text>
           </View>
         </View>
@@ -168,33 +248,50 @@ export function PatientExerciseScreen() {
           accessible
           accessibilityRole="progressbar"
           accessibilityLabel="Progresso da série"
-          accessibilityValue={{ min: 0, max: active.goal, now: active.count }}
+          accessibilityValue={{ min: 0, max: goal, now: count }}
         >
           <View
-            style={[
-              exercise.barFill,
-              { width: `${(active.count / active.goal) * 100}%` },
-            ]}
+            style={[exercise.barFill, { width: `${(count / goal) * 100}%` }]}
           />
         </View>
-        {seriesDone ? (
-          <Button
-            icon="check"
-            label={active.series === 1 ? 'Concluir série 1' : 'Concluir treino'}
-            onPress={finishSeries}
-          />
-        ) : (
+        {item.professional_guidance ? (
+          <Text
+            style={exercise.guidance}
+            numberOfLines={3}
+            accessibilityLabel={`Orientação do profissional: ${item.professional_guidance}`}
+          >
+            {item.professional_guidance}
+          </Text>
+        ) : null}
+        {source ? <Text style={exercise.source}>{source}</Text> : null}
+        {error ? <InlineError message={error} /> : null}
+        {snapshot.status === 'active' ? (
           <Button
             icon="check"
             label="Contar repetição"
             accessibilityHint="Toque ao terminar cada repetição"
-            onPress={() => dispatch({ type: 'repeat' })}
+            onPress={countRepetition}
           />
-        )}
-        <Text style={exercise.hint}>
-          {seriesDone
-            ? 'Série completa. Respire e siga quando estiver pronto.'
-            : 'Toque ao terminar cada repetição.'}
+        ) : null}
+        {paused ? (
+          <Button icon="play" label="Continuar exercício" onPress={resume} />
+        ) : null}
+        {snapshot.status === 'completed' ? (
+          <Button
+            icon="check"
+            label="Concluir treino"
+            disabled={result.saving}
+            onPress={complete}
+          />
+        ) : null}
+        <Text style={exercise.hint} accessibilityLiveRegion="polite">
+          {snapshot.status === 'resting'
+            ? `Descanso: ${restSeconds} s`
+            : paused
+              ? 'Treino pausado. A contagem está parada.'
+              : snapshot.status === 'completed'
+                ? 'Você fez tudo o que foi prescrito.'
+                : 'Toque ao terminar cada repetição.'}
         </Text>
       </SafeAreaView>
     </View>
@@ -225,16 +322,10 @@ function FloatingControl({
   );
 }
 
-const shadowText = {
-  textShadowColor: 'rgba(0,0,0,0.6)',
-  textShadowRadius: 4,
-  textShadowOffset: { width: 0, height: 1 },
-};
-
+// Text over the camera always sits on `cameraOverlay` (contrast ≥ 4.5:1).
 const exercise = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.cameraSurface },
   cameraArea: { flex: 1, overflow: 'hidden' },
-  topShade: { position: 'absolute', top: 0, left: 0, right: 0, height: 180 },
   top: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -242,57 +333,46 @@ const exercise = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
   },
-  demo: {
-    width: 88,
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.92)',
+  titleBlock: {
+    flex: 1,
+    gap: spacing.xs,
+    padding: spacing.md,
     borderRadius: radii.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
+    backgroundColor: colors.cameraOverlay,
   },
-  demoImage: { width: 64, height: 76 },
-  demoLabel: {
-    color: colors.primary,
+  itemLabel: {
+    color: colors.onPrimary,
     fontFamily: fonts.bold,
-    fontSize: 13,
-    lineHeight: 18,
+    ...typography.caption,
   },
-  titleBlock: { flex: 1, gap: 2, paddingTop: spacing.xs },
   title: {
     color: colors.onPrimary,
     fontFamily: fonts.bold,
-    fontSize: 22,
-    lineHeight: 28,
-    ...shadowText,
+    ...typography.title,
   },
   subtitle: {
     color: colors.onPrimary,
     fontFamily: fonts.regular,
-    fontSize: 16,
-    lineHeight: 22,
-    ...shadowText,
+    ...typography.bodySmall,
   },
-  controls: {
-    position: 'absolute',
-    right: spacing.md,
-    top: '30%',
-    gap: spacing.lg,
-  },
-  control: { alignItems: 'center', gap: spacing.xs, minWidth: 64 },
+  controls: { gap: spacing.md },
+  control: { alignItems: 'center', gap: spacing.xs },
   controlCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.94)',
+    width: layout.controlHeight,
+    height: layout.controlHeight,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   controlLabel: {
     color: colors.onPrimary,
     fontFamily: fonts.bold,
-    fontSize: 13,
-    lineHeight: 18,
-    ...shadowText,
+    ...typography.caption,
+    backgroundColor: colors.cameraOverlay,
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.sm,
+    overflow: 'hidden',
   },
   pressed: { opacity: 0.7 },
   panel: {
@@ -315,21 +395,18 @@ const exercise = StyleSheet.create({
   counterLabel: {
     color: colors.textMuted,
     fontFamily: fonts.bold,
-    fontSize: 15,
-    lineHeight: 20,
+    ...typography.bodySmall,
   },
   countLine: { flexDirection: 'row', alignItems: 'baseline' },
   count: {
     color: colors.primary,
     fontFamily: fonts.bold,
-    fontSize: 48,
-    lineHeight: 56,
+    ...typography.display,
   },
   goal: {
     color: colors.text,
     fontFamily: fonts.bold,
-    fontSize: 24,
-    lineHeight: 30,
+    ...typography.title,
   },
   seriesPill: {
     backgroundColor: colors.surfaceMuted,
@@ -341,11 +418,10 @@ const exercise = StyleSheet.create({
   seriesText: {
     color: colors.primary,
     fontFamily: fonts.bold,
-    fontSize: 16,
-    lineHeight: 22,
+    ...typography.bodySmall,
   },
   bar: {
-    height: 8,
+    height: spacing.sm,
     borderRadius: radii.pill,
     backgroundColor: colors.surfaceMuted,
     overflow: 'hidden',
@@ -355,11 +431,20 @@ const exercise = StyleSheet.create({
     borderRadius: radii.pill,
     backgroundColor: colors.accent,
   },
+  guidance: {
+    color: colors.text,
+    fontFamily: fonts.regular,
+    ...typography.bodySmall,
+  },
+  source: {
+    color: colors.textMuted,
+    fontFamily: fonts.regular,
+    ...typography.caption,
+  },
   hint: {
     color: colors.textMuted,
     fontFamily: fonts.regular,
-    fontSize: 15,
-    lineHeight: 21,
+    ...typography.bodySmall,
     textAlign: 'center',
   },
 });

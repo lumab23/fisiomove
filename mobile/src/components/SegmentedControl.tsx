@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, fonts, radii } from '../theme/theme';
+import { colors, fonts, layout, radii } from '../theme/theme';
 
 export function SegmentedControl<T extends string>({
   options,
@@ -77,7 +77,7 @@ const segmented = StyleSheet.create({
   compactOption: {
     flexGrow: 0,
     flexBasis: 'auto',
-    minHeight: 44,
+    minHeight: layout.compactControlHeight,
     borderRadius: radii.pill,
     borderWidth: 1,
     borderColor: colors.border,

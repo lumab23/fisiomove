@@ -63,6 +63,16 @@ export const layout = {
   compactControlHeight: 48,
 } as const;
 
+// Decorative motion of the welcome mascot. Never used near form fields and
+// skipped entirely when the system asks to reduce motion.
+export const motion = {
+  breathMs: 4000,
+  breathScale: 1.04,
+  stretchEveryMs: 12000,
+  stretchMs: 900,
+  stretchHoldMs: 1200,
+} as const;
+
 export const fonts = {
   regular: 'AtkinsonHyperlegible-Regular',
   bold: 'AtkinsonHyperlegible-Bold',

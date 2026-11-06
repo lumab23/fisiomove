@@ -1,13 +1,27 @@
 import { useCallback, useRef, useState } from 'react';
 
 import { useSessionSync } from '../../sync/SessionSyncContext';
-import type { PendingSession, SessionDraft } from '../../sync/types';
-import type { SessionController } from './SessionController';
+import type {
+  PendingSession,
+  SessionCompletion,
+  SessionDraft,
+} from '../../sync/types';
+
+/**
+ * Anything that can close a session: `SessionController` (camera rule) or
+ * `SessionExecution` (repetitions counted by touch, DEC-008).
+ */
+export interface SessionResultSource {
+  completion(): SessionCompletion;
+  interrupt(): SessionCompletion;
+}
+
+const noCamera = async () => undefined;
 
 export function useSessionResult(
-  controller: SessionController,
-  draft: SessionDraft,
-  stopCamera: () => Promise<void>,
+  source: SessionResultSource,
+  draft: Pick<SessionDraft, 'client_session_id'>,
+  stopCamera: () => Promise<void> = noCamera,
 ) {
   const { finishDraft } = useSessionSync();
   const [saving, setSaving] = useState(false);
@@ -15,7 +29,7 @@ export function useSessionResult(
   const finalized = useRef(false);
 
   const save = useCallback(
-    async (completion: ReturnType<SessionController['completion']>) => {
+    async (completion: SessionCompletion) => {
       if (finalizing.current || finalized.current) {
         throw new Error('O resultado desta sessão já está sendo finalizado.');
       }
@@ -52,14 +66,8 @@ export function useSessionResult(
     [draft.client_session_id, finishDraft, stopCamera],
   );
 
-  const complete = useCallback(
-    () => save(controller.completion()),
-    [controller, save],
-  );
-  const interrupt = useCallback(
-    () => save(controller.interrupt()),
-    [controller, save],
-  );
+  const complete = useCallback(() => save(source.completion()), [source, save]);
+  const interrupt = useCallback(() => save(source.interrupt()), [source, save]);
 
   return { saving, complete, interrupt };
 }

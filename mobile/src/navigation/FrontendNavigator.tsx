@@ -1,26 +1,27 @@
 import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { AccountContext } from '../demo/AccountAccess';
+import { AccountContext } from './AccountContext';
 import { colors } from '../theme/theme';
-import type { FrontendStackParamList } from './frontendTypes';
+import {
+  professionalTabRoutes,
+  type FrontendStackParamList,
+} from './frontendTypes';
 import { PatientTabs } from './PatientTabs';
+
 import { PhysiotherapistInfoScreen } from '../screens/patient/PhysiotherapistInfoScreen';
 import {
   CalibrationScreen,
   CameraPermissionScreen,
   PatientPreparationScreen,
-  VoicePermissionScreen,
 } from '../screens/patient/PreparationScreens';
 import { PatientExerciseScreen } from '../screens/patient/PatientExerciseScreen';
 import {
-  CameraAdjustmentScreen,
   ConfirmExitScreen,
   MovementGuidanceScreen,
   PatientCompletionScreen,
   SessionInterruptedScreen,
-  SessionPauseScreen,
-  SessionRestScreen,
 } from '../screens/patient/SessionScreens';
+import { ActiveSessionProvider } from '../features/session/ActiveSession';
 import { PatientListScreen } from '../screens/professional/PatientListScreen';
 import { PatientCreateScreen } from '../screens/professional/PatientCreateScreen';
 import { PatientDetailsScreen } from '../screens/professional/PatientDetailsScreen';
@@ -28,28 +29,39 @@ import {
   WorkoutConfigurationScreen,
   WorkoutReviewScreen,
 } from '../screens/professional/WorkoutScreens';
-import {
-  NoteEditorScreen,
-  NoteReviewScreen,
-} from '../screens/professional/NoteScreens';
+import { NoteEditorScreen } from '../screens/professional/NoteScreens';
 import { PatientMonitoringScreen } from '../screens/professional/PatientMonitoringScreen';
+import { ProfessionalProfileScreen } from '../screens/professional/ProfessionalProfileScreen';
+import { ProfessionalSettingsScreen } from '../screens/professional/ProfessionalSettingsScreen';
+import {
+  ExerciseLibraryDetailScreen,
+  ExerciseLibraryScreen,
+} from '../screens/professional/ExerciseLibraryScreens';
+import { CatalogExerciseTranslationScreen } from '../screens/professional/ExerciseTranslation';
 
 const Stack = createNativeStackNavigator<FrontendStackParamList>();
-export const frontendScreens = {
+/**
+ * Patient stack: tabs, the linked physiotherapist's details and the session
+ * execution of the published workout (pause and rest are internal states of
+ * `PatientExercise`, Q-T3). "Como fazer" opens over the execution and pauses it.
+ * The live camera with its framing status is part of `PatientExercise`, so
+ * there is no separate camera adjustment screen. Voice commands stay out of
+ * the flow (DEC-009).
+ */
+export const patientScreens = {
   PatientTabs: PatientTabs,
   PhysiotherapistInfo: PhysiotherapistInfoScreen,
   PatientPreparation: PatientPreparationScreen,
   CameraPermission: CameraPermissionScreen,
-  VoicePermission: VoicePermissionScreen,
   Calibration: CalibrationScreen,
   PatientExercise: PatientExerciseScreen,
-  SessionRest: SessionRestScreen,
-  SessionPause: SessionPauseScreen,
-  CameraAdjustment: CameraAdjustmentScreen,
   MovementGuidance: MovementGuidanceScreen,
   ConfirmExit: ConfirmExitScreen,
   SessionInterrupted: SessionInterruptedScreen,
   PatientCompletion: PatientCompletionScreen,
+} as const;
+/** Physiotherapist stack; every screen reads the API (phases 4, 7 and 8). */
+export const physiotherapistScreens = {
   PatientList: PatientListScreen,
   PatientCreate: PatientCreateScreen,
   PatientDetails: PatientDetailsScreen,
@@ -57,29 +69,26 @@ export const frontendScreens = {
   WorkoutReview: WorkoutReviewScreen,
   PatientMonitoring: PatientMonitoringScreen,
   NoteEditor: NoteEditorScreen,
-  NoteReview: NoteReviewScreen,
+  ProfessionalSettings: ProfessionalSettingsScreen,
+  ProfessionalProfile: ProfessionalProfileScreen,
+  ExerciseLibrary: ExerciseLibraryScreen,
+  ExerciseLibraryDetail: ExerciseLibraryDetailScreen,
+  CatalogExerciseTranslation: CatalogExerciseTranslationScreen,
 } as const;
+export type FrontendFlow = 'patient' | 'physiotherapist';
 export function FrontendNavigator({
-  onAccount,
-  accountLabel = 'Acessar minha conta',
+  flow,
   accountEmail,
-  professionalDemo = true,
-  initialRouteName = 'PatientTabs',
+  onSignOut,
 }: {
-  onAccount?: () => void;
-  accountLabel?: string;
+  flow: FrontendFlow;
   accountEmail?: string;
-  professionalDemo?: boolean;
-  initialRouteName?: 'PatientTabs' | 'PatientList';
+  onSignOut?: () => void;
 }) {
-  return (
+  const screens = flow === 'patient' ? patientScreens : physiotherapistScreens;
+  const navigator = (
     <AccountContext.Provider
-      value={{
-        action: onAccount,
-        label: accountLabel,
-        email: accountEmail,
-        professionalDemo,
-      }}
+      value={{ email: accountEmail, signOut: onSignOut }}
     >
       <NavigationContainer
         theme={{
@@ -92,7 +101,7 @@ export function FrontendNavigator({
         }}
       >
         <Stack.Navigator
-          initialRouteName={initialRouteName}
+          initialRouteName={flow === 'patient' ? 'PatientTabs' : 'PatientList'}
           screenOptions={{
             headerShown: false,
             animation: 'slide_from_right',
@@ -101,21 +110,26 @@ export function FrontendNavigator({
             contentStyle: { backgroundColor: colors.background },
           }}
         >
-          {Object.entries(frontendScreens).map(([name, component]) => (
+          {Object.entries(screens).map(([name, component]) => (
             <Stack.Screen
               key={name}
               name={name as keyof FrontendStackParamList}
               component={component}
               options={{
-                animation:
-                  name === 'PatientList' || name === 'PatientMonitoring'
-                    ? 'fade'
-                    : undefined,
+                animation: professionalTabRoutes.includes(name)
+                  ? 'fade'
+                  : undefined,
               }}
             />
           ))}
         </Stack.Navigator>
       </NavigationContainer>
     </AccountContext.Provider>
+  );
+  // The session in memory belongs to the signed-in patient only.
+  return flow === 'patient' ? (
+    <ActiveSessionProvider>{navigator}</ActiveSessionProvider>
+  ) : (
+    navigator
   );
 }

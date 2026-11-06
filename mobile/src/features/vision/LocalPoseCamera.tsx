@@ -45,7 +45,8 @@ const detectorModel = models.keypointDetection.YOLO26_POSE.SIZE_384.DEFAULT;
 setTelemetryEnabled(false);
 
 interface LocalPoseCameraProps {
-  side: Exclude<Side, 'bilateral'>;
+  /** `bilateral` asks for both arms to be visible (Q-T1). */
+  side: Side;
   active: boolean;
   onObservation?: (observation: RawPoseObservation) => void;
   immersive?: boolean;
@@ -336,7 +337,10 @@ export function LocalPoseCamera({
           <ImmersiveStatus
             error={inferenceError ?? resizerError ?? detector.error?.message}
             ready={detector.isReady && resizer !== null}
-            visible={countVisibleArmPoints(latest, side) === 3}
+            bothArms={side === 'bilateral'}
+            visible={
+              countVisibleArmPoints(latest, side) === requiredArmPoints(side)
+            }
           />
         ) : null}
         {immersive ? null : (
@@ -345,7 +349,7 @@ export function LocalPoseCamera({
               {inferenceError ??
                 resizerError ??
                 detector.error?.message ??
-                `${side === 'left' ? 'Lado esquerdo' : 'Lado direito'} · ${countVisibleArmPoints(latest, side)}/3 pontos`}
+                `${sideBadge[side]} · ${countVisibleArmPoints(latest, side)}/${requiredArmPoints(side)} pontos`}
             </Text>
             <Text style={styles.badge}>
               {latest
@@ -356,7 +360,11 @@ export function LocalPoseCamera({
         )}
         {latest &&
           Object.entries(displayLandmarks).map(([id, point]) => {
-            if (!point || !id.startsWith(`${side}_`)) return null;
+            if (
+              !point ||
+              !armPrefixes(side).some(prefix => id.startsWith(`${prefix}_`))
+            )
+              return null;
             const position = previewPoint(latest, point, previewSize);
             return (
               <View
@@ -376,10 +384,12 @@ export function LocalPoseCamera({
 function ImmersiveStatus({
   error,
   ready,
+  bothArms,
   visible,
 }: {
   error?: string | null;
   ready: boolean;
+  bothArms: boolean;
   visible: boolean;
 }) {
   const text = error
@@ -387,8 +397,12 @@ function ImmersiveStatus({
     : !ready
       ? 'Preparando a câmera…'
       : visible
-        ? 'Braço visível'
-        : 'Mostre o braço inteiro para a câmera';
+        ? bothArms
+          ? 'Braços visíveis'
+          : 'Braço visível'
+        : bothArms
+          ? 'Mostre os dois braços inteiros para a câmera'
+          : 'Mostre o braço inteiro para a câmera';
   return (
     <Text
       accessibilityLiveRegion="polite"
@@ -523,18 +537,32 @@ function mapOrientation(orientation: CameraOrientation): FrameOrientation {
   }
 }
 
+const sideBadge: Record<Side, string> = {
+  left: 'Lado esquerdo',
+  right: 'Lado direito',
+  bilateral: 'Os dois lados',
+};
+const armParts = ['shoulder', 'elbow', 'wrist'] as const;
+
+function armPrefixes(side: Side): readonly ('left' | 'right')[] {
+  return side === 'bilateral' ? ['left', 'right'] : [side];
+}
+
+function requiredArmPoints(side: Side): number {
+  return armPrefixes(side).length * armParts.length;
+}
+
+/** Shoulder, elbow and wrist of the selected arm, or of both arms. */
 function countVisibleArmPoints(
   observation: RawPoseObservation | null,
-  side: Exclude<Side, 'bilateral'>,
+  side: Side,
 ): number {
   if (!observation) return 0;
-  const prefix = side === 'left' ? 'left' : 'right';
-  return ['shoulder', 'elbow', 'wrist'].filter(
-    part =>
-      observation.landmarks[
-        `${prefix}_${part}` as keyof RawPoseObservation['landmarks']
-      ],
-  ).length;
+  return armPrefixes(side)
+    .flatMap(prefix => armParts.map(part => `${prefix}_${part}`))
+    .filter(
+      id => observation.landmarks[id as keyof RawPoseObservation['landmarks']],
+    ).length;
 }
 
 interface DisplayLandmarks {

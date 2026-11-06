@@ -3,7 +3,7 @@ import type { AuthenticationSession } from '../auth/AuthenticationSession';
 import { ApiError, apiErrorFromResponse } from './errors';
 
 export interface ApiRequestOptions {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   signal?: AbortSignal;
   authenticated?: boolean;
@@ -32,12 +32,46 @@ export class ApiClient {
     return this.request<T>(path, { ...options, method: 'POST', body });
   }
 
+  put<T>(
+    path: string,
+    body: unknown,
+    options: Omit<ApiRequestOptions, 'method' | 'body'> = {},
+  ) {
+    return this.request<T>(path, { ...options, method: 'PUT', body });
+  }
+
   patch<T>(
     path: string,
     body: unknown,
     options: Omit<ApiRequestOptions, 'method' | 'body'> = {},
   ) {
     return this.request<T>(path, { ...options, method: 'PATCH', body });
+  }
+
+  /**
+   * Source for `<Image>` of a server-relative API path (e.g. an exercise
+   * image, DEC-010), with the current bearer token. Only paths under the API
+   * prefix are accepted, so the token never goes to another host.
+   */
+  imageSource(
+    path: string,
+  ): { uri: string; headers: Record<string, string> } | null {
+    if (
+      !path.startsWith(`${this.config.apiPrefix}/`) ||
+      /\/\/|\.\.|[?#\\\s]/.test(path)
+    ) {
+      return null;
+    }
+    const headers: Record<string, string> = {};
+    if (this.authentication.accessToken) {
+      headers.Authorization = `Bearer ${this.authentication.accessToken}`;
+    }
+    return { uri: `${this.config.apiOrigin}${path}`, headers };
+  }
+
+  /** Renews the access token (shared with concurrent requests). */
+  async refreshAuthentication(): Promise<void> {
+    await this.authentication.refresh();
   }
 
   async request<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {

@@ -27,3 +27,13 @@ export function response(status: number, body?: unknown): Response {
       .mockResolvedValue(body === undefined ? '' : JSON.stringify(body)),
   } as unknown as Response;
 }
+
+export function pageOf<T>(items: T[]) {
+  return {
+    items,
+    page: 1,
+    page_size: 20,
+    total: items.length,
+    pages: items.length ? 1 : 0,
+  };
+}

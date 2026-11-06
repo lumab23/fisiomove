@@ -1,10 +1,11 @@
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../auth/AuthContext';
-import { DemoProvider } from '../demo/DemoContext';
 import { ChangePasswordScreen } from '../screens/auth/ChangePasswordScreen';
 import { AuthLoadingScreen } from '../screens/auth/AuthLoadingScreen';
+import { FirstAccessScreen } from '../screens/auth/FirstAccessScreen';
 import { LoginScreen } from '../screens/auth/LoginScreen';
+import { WelcomeScreen } from '../screens/auth/WelcomeScreen';
 import { colors } from '../theme/theme';
 import { selectAuthenticatedFlow } from './flow';
 import { FrontendNavigator } from './FrontendNavigator';
@@ -29,7 +30,9 @@ export function RootNavigator() {
         <AuthStack.Navigator
           screenOptions={{ headerShown: false, animation: 'slide_from_right' }}
         >
+          <AuthStack.Screen name="Welcome" component={WelcomeScreen} />
           <AuthStack.Screen name="Login" component={LoginScreen} />
+          <AuthStack.Screen name="FirstAccess" component={FirstAccessScreen} />
         </AuthStack.Navigator>
       </NavigationContainer>
     );
@@ -49,18 +52,15 @@ export function RootNavigator() {
       </NavigationContainer>
     );
   }
-  // Phase one is explicitly a UI demo. Auth/API services remain independently available.
+  const signOut = () => {
+    logout().catch(() => undefined);
+  };
+  // Both flows read the API; there is no demonstration data at runtime.
   return (
-    <DemoProvider>
-      <FrontendNavigator
-        initialRouteName={flow === 'patient' ? 'PatientTabs' : 'PatientList'}
-        onAccount={() => {
-          logout().catch(() => undefined);
-        }}
-        accountLabel="Sair da conta"
-        accountEmail={user.email}
-        professionalDemo={flow !== 'patient'}
-      />
-    </DemoProvider>
+    <FrontendNavigator
+      flow={flow}
+      accountEmail={user.email}
+      onSignOut={signOut}
+    />
   );
 }

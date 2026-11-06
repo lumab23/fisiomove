@@ -4,6 +4,7 @@ import {
   useRef,
   type ComponentRef,
   type PropsWithChildren,
+  type RefObject,
 } from 'react';
 import {
   AccessibilityInfo,
@@ -36,8 +37,36 @@ import {
   spacing,
   typography,
 } from '../theme/theme';
-import { useFrontendNavigation } from '../navigation/frontendTypes';
-import { useDemo } from '../demo/DemoContext';
+import {
+  professionalTabRoutes,
+  useFrontendNavigation,
+} from '../navigation/frontendTypes';
+import { Icon } from './Icon';
+import { useScreenMessage } from './ScreenMessage';
+
+type ProfessionalTab = 'patients' | 'monitoring' | 'settings';
+
+/**
+ * Tab highlighted for the current route. The library belongs to
+ * "Configurações", except when it was opened from the workout editor to pick
+ * an exercise (`pickFor`): then it is part of the patient's flow.
+ */
+export function professionalTabFor(
+  route: string,
+  params?: object,
+): ProfessionalTab {
+  if (route === 'PatientMonitoring') {
+    return 'monitoring';
+  }
+  if (route === 'ProfessionalSettings' || route === 'ProfessionalProfile') {
+    return 'settings';
+  }
+  if (route === 'ExerciseLibrary' || route === 'ExerciseLibraryDetail') {
+    const pickFor = (params as { pickFor?: unknown } | undefined)?.pickFor;
+    return pickFor ? 'patients' : 'settings';
+  }
+  return 'patients';
+}
 
 export function Screen({
   children,
@@ -47,6 +76,7 @@ export function Screen({
   footer,
   professional = false,
   tab = false,
+  scrollRef,
 }: PropsWithChildren<{
   title?: string;
   subtitle?: string;
@@ -54,32 +84,30 @@ export function Screen({
   footer?: React.ReactNode;
   professional?: boolean;
   tab?: boolean;
+  /** Lets a screen scroll programmatically (e.g. to content shown on top). */
+  scrollRef?: RefObject<ComponentRef<typeof ScrollView> | null>;
 }>) {
   const navigation = useFrontendNavigation();
-  const { state, dispatch } = useDemo();
+  const { message, clear } = useScreenMessage();
   const route = useRoute();
   const isFocused = useIsFocused();
-  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const ownScroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const scroll = scrollRef ?? ownScroll;
   const tabTransition = useRef(new Animated.Value(1)).current;
   useEffect(() => {
-    if (!state.message || !isFocused) return;
-    AccessibilityInfo.announceForAccessibility(state.message);
-    const timeout = setTimeout(
-      () => dispatch({ type: 'message', value: '' }),
-      2800,
-    );
+    if (!message || !isFocused) return;
+    AccessibilityInfo.announceForAccessibility(message.text);
+    const timeout = setTimeout(clear, 2800);
     return () => clearTimeout(timeout);
-  }, [dispatch, isFocused, state.message]);
+  }, [clear, isFocused, message]);
   useFocusEffect(
     useCallback(() => {
       scroll.current?.scrollTo({ y: 0, animated: false });
-    }, []),
+    }, [scroll]),
   );
   useFocusEffect(
     useCallback(() => {
-      const isTab =
-        professional &&
-        (route.name === 'PatientList' || route.name === 'PatientMonitoring');
+      const isTab = professional && professionalTabRoutes.includes(route.name);
       if (!isTab) {
         tabTransition.setValue(1);
         return;
@@ -110,8 +138,7 @@ export function Screen({
         <Animated.View
           style={[
             s.safe,
-            professional &&
-            (route.name === 'PatientList' || route.name === 'PatientMonitoring')
+            professional && professionalTabRoutes.includes(route.name)
               ? {
                   opacity: tabTransition,
                   transform: [{ scale: tabTransition }],
@@ -124,16 +151,13 @@ export function Screen({
             backLabel={back}
             onBack={back ? goBack : undefined}
           />
-          {state.message && isFocused ? (
+          {message && isFocused ? (
             <View
               pointerEvents="none"
-              style={[
-                s.toastWrap,
-                state.message.startsWith('Confira') && s.toastError,
-              ]}
+              style={[s.toastWrap, message.tone === 'error' && s.toastError]}
             >
               <Text accessibilityRole="alert" style={s.toastText}>
-                {state.message}
+                {message.text}
               </Text>
             </View>
           ) : null}
@@ -163,17 +187,36 @@ export function Screen({
 export function ProfessionalTabs() {
   const navigation = useFrontendNavigation();
   const insets = useSafeAreaInsets();
-  const route = navigation.getState().routes[navigation.getState().index].name;
-  const tabs = [
+  const state = navigation.getState();
+  const current = state.routes[state.index];
+  const route = current.name;
+  // Keeps the selected patient when switching to "Acompanhamento".
+  const params = current.params as { patientId?: string } | undefined;
+  const patientId = params?.patientId;
+  const activeTab = professionalTabFor(route, current.params);
+  const tabs: {
+    key: ProfessionalTab;
+    label: string;
+    route: 'PatientList' | 'PatientMonitoring' | 'ProfessionalSettings';
+    icon: TabIconName;
+  }[] = [
     {
+      key: 'patients',
       label: 'Pacientes',
-      route: 'PatientList' as const,
-      icon: 'people' as const,
+      route: 'PatientList',
+      icon: 'people',
     },
     {
+      key: 'monitoring',
       label: 'Acompanhamento',
-      route: 'PatientMonitoring' as const,
-      icon: 'chart' as const,
+      route: 'PatientMonitoring',
+      icon: 'chart',
+    },
+    {
+      key: 'settings',
+      label: 'Configurações',
+      route: 'ProfessionalSettings',
+      icon: 'settings',
     },
   ];
   return (
@@ -191,11 +234,8 @@ export function ProfessionalTabs() {
         style={StyleSheet.absoluteFill}
       />
       <View style={s.tabs}>
-        {tabs.map(({ label, route: targetRoute, icon }) => {
-          const active =
-            icon === 'chart'
-              ? route === 'PatientMonitoring'
-              : route !== 'PatientMonitoring';
+        {tabs.map(({ key, label, route: targetRoute, icon }) => {
+          const active = key === activeTab;
           const color = active ? colors.primary : colors.textMuted;
           return (
             <Pressable
@@ -203,7 +243,11 @@ export function ProfessionalTabs() {
               accessibilityRole="tab"
               accessibilityLabel={label}
               accessibilityState={{ selected: active }}
-              onPress={() => navigation.navigate(targetRoute)}
+              onPress={() =>
+                targetRoute === 'PatientMonitoring' && patientId
+                  ? navigation.navigate(targetRoute, { patientId })
+                  : navigation.navigate(targetRoute)
+              }
               style={s.tab}
             >
               <TabIcon name={icon} color={color} />
@@ -218,7 +262,12 @@ export function ProfessionalTabs() {
   );
 }
 
-function TabIcon({ name, color }: { name: 'people' | 'chart'; color: string }) {
+type TabIconName = 'people' | 'chart' | 'settings';
+
+function TabIcon({ name, color }: { name: TabIconName; color: string }) {
+  if (name === 'settings') {
+    return <Icon name="settings" size={22} color={color} />;
+  }
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
       {name === 'people' ? (

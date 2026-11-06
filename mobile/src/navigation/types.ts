@@ -1,6 +1,8 @@
 import type { UUID } from '../contracts/common';
 
 export type AuthStackParamList = {
+  Welcome: undefined;
+  FirstAccess: undefined;
   Login: undefined;
   ChangePassword: undefined;
 };
@@ -9,11 +11,8 @@ export type PatientStackParamList = {
   PatientHome: undefined;
   PatientWorkout: { workoutId?: UUID } | undefined;
   PatientPreparation: { workoutId: UUID; workoutRevisionId: UUID };
-  PatientExercise: {
-    workoutId: UUID;
-    workoutRevisionId: UUID;
-    clientSessionId: UUID;
-  };
+  /** The workout and its revision come from the local draft. */
+  PatientExercise: { clientSessionId: UUID };
   PatientCompletion: { clientSessionId: UUID };
   PatientProgress: undefined;
 };

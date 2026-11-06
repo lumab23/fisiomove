@@ -1,12 +1,13 @@
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Icon, type IconName } from '../../components/Icon';
+import { StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../../components/Screen';
-import { useAccount } from '../../demo/AccountAccess';
-import { useDemo, useDemoPatient } from '../../demo/DemoContext';
-import { demoPhysiotherapist } from '../../demo/model';
-import { usePatientTabNavigation } from '../../navigation/frontendTypes';
+import { ErrorState, LoadingState } from '../../components/ScreenStates';
+import {
+  useLinkedPhysiotherapist,
+  usePatientProfile,
+} from '../../integration/usePatientData';
+import { useAccount } from '../../navigation/AccountContext';
 import { colors, fonts, radii, spacing } from '../../theme/theme';
-import { Badge, ListGroup, ListRow, SectionTitle, styles } from '../../ui';
+import { EmptyState, ListGroup, ListRow, SectionTitle, styles } from '../../ui';
 
 export function initialsOf(name: string) {
   return name
@@ -34,101 +35,101 @@ export function Avatar({ name, size = 56 }: { name: string; size?: number }) {
   );
 }
 
-export function PatientProfileScreen() {
-  const navigation = usePatientTabNavigation();
-  const patient = useDemoPatient();
-  const { dispatch } = useDemo();
-  const account = useAccount();
+// Shown when the linked professional has no name yet or there is no link.
+export function PhysiotherapistEmptyState() {
   return (
-    <Screen tab title="Perfil">
-      <View style={[styles.white, profile.identity]}>
-        <Avatar name={patient.name} size={64} />
-        <View style={profile.identityText}>
-          <Text accessibilityRole="header" style={profile.name}>
-            {patient.name}
-          </Text>
-          <Text style={profile.muted}>
-            {account.email ?? 'Conta de demonstração'}
-          </Text>
-        </View>
-      </View>
-
-      <View style={profile.section}>
-        <SectionTitle>Meu fisioterapeuta</SectionTitle>
-        <View style={[styles.white, profile.contact]}>
-          <View style={profile.contactHeader}>
-            <Avatar name={demoPhysiotherapist.name} />
-            <View style={profile.identityText}>
-              <Text style={profile.name}>{demoPhysiotherapist.name}</Text>
-              <Text style={profile.muted}>{demoPhysiotherapist.specialty}</Text>
-              <Badge label="Dados de exemplo" />
-            </View>
-          </View>
-          <View style={profile.actions}>
-            <ContactAction
-              icon="message"
-              label="Conversar"
-              onPress={() =>
-                Alert.alert(
-                  'Conversa ainda indisponível',
-                  'O contato direto será liberado quando houver um canal autorizado pelo profissional. Por enquanto, use o contato combinado com a clínica.',
-                )
-              }
-            />
-            <ContactAction
-              icon="info"
-              label="Informações"
-              onPress={() => navigation.navigate('PhysiotherapistInfo')}
-            />
-          </View>
-        </View>
-      </View>
-
-      <View style={profile.section}>
-        <SectionTitle>Outros acessos</SectionTitle>
-        <ListGroup>
-          {account.professionalDemo && (
-            <ListRow
-              icon="briefcase"
-              title="Área profissional (demo)"
-              onPress={() => {
-                dispatch({ type: 'message', value: '' });
-                navigation.navigate('PatientList');
-              }}
-            />
-          )}
-          {account.action && (
-            <ListRow
-              icon={account.email ? 'logOut' : 'logIn'}
-              title={account.email ? account.label : 'Entrar com minha conta'}
-              onPress={account.action}
-            />
-          )}
-        </ListGroup>
-      </View>
-    </Screen>
+    <EmptyState title="Dados do fisioterapeuta">
+      As informações do seu fisioterapeuta ainda não aparecem no aplicativo. Se
+      precisar falar com ele, use o contato combinado com a clínica.
+    </EmptyState>
   );
 }
 
-function ContactAction({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: IconName;
-  label: string;
-  onPress: () => void;
-}) {
+/** Linked physiotherapist: only the name exists (no register, photo, etc.). */
+export function LinkedPhysiotherapistCard() {
+  const { state, reload } = useLinkedPhysiotherapist();
+  if (state.status === 'idle' || state.status === 'loading') {
+    return <LoadingState label="Carregando dados do fisioterapeuta" />;
+  }
+  if (state.status === 'failure') {
+    return (
+      <ErrorState
+        title="Não foi possível carregar os dados do fisioterapeuta"
+        message={state.message}
+        onRetry={reload}
+      />
+    );
+  }
+  const name = state.status === 'success' ? state.data.full_name : null;
+  if (!name) {
+    return <PhysiotherapistEmptyState />;
+  }
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={({ pressed }) => [profile.action, pressed && profile.pressed]}
+    <View
+      accessible
+      accessibilityLabel={`Seu fisioterapeuta: ${name}`}
+      style={[styles.white, profile.identity]}
     >
-      <Icon name={icon} size={22} color={colors.primary} />
-      <Text style={profile.actionText}>{label}</Text>
-    </Pressable>
+      <Avatar name={name} />
+      <View style={profile.identityText}>
+        <Text style={profile.name}>{name}</Text>
+        <Text style={profile.muted}>Seu fisioterapeuta</Text>
+      </View>
+    </View>
+  );
+}
+
+export function PatientProfileScreen() {
+  const { state, reload } = usePatientProfile();
+  const account = useAccount();
+  let identity: React.ReactNode;
+  if (state.status === 'idle' || state.status === 'loading') {
+    identity = <LoadingState label="Carregando seu perfil" />;
+  } else if (state.status === 'failure') {
+    identity = (
+      <ErrorState
+        title="Não foi possível carregar seu perfil"
+        message={state.message}
+        onRetry={reload}
+      />
+    );
+  } else {
+    identity = (
+      <View style={[styles.white, profile.identity]}>
+        <Avatar name={state.data.full_name} size={64} />
+        <View style={profile.identityText}>
+          <Text accessibilityRole="header" style={profile.name}>
+            {state.data.full_name}
+          </Text>
+          {account.email ? (
+            <Text style={profile.muted}>{account.email}</Text>
+          ) : null}
+        </View>
+      </View>
+    );
+  }
+  return (
+    <Screen tab title="Perfil">
+      {identity}
+
+      <View style={profile.section}>
+        <SectionTitle>Meu fisioterapeuta</SectionTitle>
+        <LinkedPhysiotherapistCard />
+      </View>
+
+      {account.signOut ? (
+        <View style={profile.section}>
+          <SectionTitle>Outros acessos</SectionTitle>
+          <ListGroup>
+            <ListRow
+              icon="logOut"
+              title="Sair da conta"
+              onPress={account.signOut}
+            />
+          </ListGroup>
+        </View>
+      ) : null}
+    </Screen>
   );
 }
 
@@ -160,29 +161,4 @@ const profile = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: { color: colors.primary, fontFamily: fonts.bold },
-  contact: { borderRadius: radii.xl, padding: spacing.lg, gap: spacing.lg },
-  contactHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
-  },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  action: {
-    flexGrow: 1,
-    flexBasis: 120,
-    minHeight: 64,
-    borderRadius: radii.lg,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-  },
-  actionText: {
-    color: colors.primary,
-    fontFamily: fonts.bold,
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  pressed: { opacity: 0.7 },
 });

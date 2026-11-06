@@ -30,6 +30,22 @@ interface SessionSyncContextValue {
   syncNow(): Promise<SyncReport>;
   prepare(workoutId: UUID, workoutRevisionId: UUID): Promise<SessionDraft>;
   getDraft(clientSessionId: UUID): Promise<SessionDraft | null>;
+  /** Local draft of the same workout revision, if any (no API call). */
+  findDraft(
+    workoutId: UUID,
+    workoutRevisionId: UUID,
+  ): Promise<SessionDraft | null>;
+  /** Removes an unfinished local draft; pending results are kept. */
+  discardDraft(clientSessionId: UUID): Promise<boolean>;
+  /** Removes drafts of this workout left by an older revision. */
+  discardOutdatedDrafts(
+    workoutId: UUID,
+    currentRevisionId: UUID,
+  ): Promise<number>;
+  /**
+   * Saves the result locally and starts sending it. Resolves once the result
+   * is saved, even if reading the local queue afterwards fails (`loadError`).
+   */
   finishDraft(
     clientSessionId: UUID,
     completion: SessionCompletion,
@@ -93,6 +109,8 @@ export function SessionSyncProvider({ children }: PropsWithChildren) {
       if (ownerIdRef.current === currentOwner) {
         setSyncing(false);
         setPending(currentPending);
+        // A successful read of the queue supersedes an earlier load failure.
+        setLoadError(null);
       }
     }
   }, []);
@@ -143,6 +161,26 @@ export function SessionSyncProvider({ children }: PropsWithChildren) {
           clientSessionId,
         );
       },
+      async findDraft(workoutId, workoutRevisionId) {
+        return appDependencies.sessionSync.findDraft(
+          requireOwner(),
+          workoutId,
+          workoutRevisionId,
+        );
+      },
+      async discardDraft(clientSessionId) {
+        return appDependencies.sessionSync.discardDraft(
+          requireOwner(),
+          clientSessionId,
+        );
+      },
+      async discardOutdatedDrafts(workoutId, currentRevisionId) {
+        return appDependencies.sessionSync.discardOutdatedDrafts(
+          requireOwner(),
+          workoutId,
+          currentRevisionId,
+        );
+      },
       async finishDraft(clientSessionId, completion) {
         const currentOwner = requireOwner();
         const result = await appDependencies.sessionSync.finishDraft(
@@ -150,7 +188,9 @@ export function SessionSyncProvider({ children }: PropsWithChildren) {
           clientSessionId,
           completion,
         );
-        await refresh();
+        // The result is already saved: a failed reload only sets `loadError`;
+        // rejecting here would make the screen retry a draft that is gone.
+        await refresh().catch(() => undefined);
         syncOwner(currentOwner).catch(() => undefined);
         return result;
       },

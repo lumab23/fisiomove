@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import {
-  AccessibilityInfo,
   Animated,
   AppState,
   Easing,
@@ -9,6 +8,8 @@ import {
 } from 'react-native';
 import { NavigationContext } from '@react-navigation/native';
 import Svg, { Ellipse, Path } from 'react-native-svg';
+
+import { useReduceMotion } from '../accessibility/useReduceMotion';
 
 export type MascotKind = 'pink' | 'home' | 'gold';
 
@@ -75,7 +76,7 @@ const personalities: Record<
 
 const NoNavigation = createContext<undefined>(undefined);
 
-function useScreenFocused() {
+export function useScreenFocused() {
   const navigation = useContext(NavigationContext ?? NoNavigation);
   const [focused, setFocused] = useState(() => navigation?.isFocused() ?? true);
   useEffect(() => {
@@ -93,26 +94,7 @@ function useScreenFocused() {
   return focused;
 }
 
-function useReduceMotion() {
-  const [reduce, setReduce] = useState<boolean | null>(null);
-  useEffect(() => {
-    let mounted = true;
-    AccessibilityInfo.isReduceMotionEnabled()
-      .then(value => mounted && setReduce(value))
-      .catch(() => undefined);
-    const subscription = AccessibilityInfo.addEventListener(
-      'reduceMotionChanged',
-      setReduce,
-    );
-    return () => {
-      mounted = false;
-      subscription.remove();
-    };
-  }, []);
-  return reduce;
-}
-
-function useAppActive() {
+export function useAppActive() {
   const [active, setActive] = useState(AppState.currentState === 'active');
   useEffect(() => {
     const subscription = AppState.addEventListener('change', next =>
@@ -142,9 +124,12 @@ function to(
 export function AnimatedMascot({
   kind = 'pink',
   width = VIEW_W,
+  still = false,
 }: {
   kind?: MascotKind;
   width?: number;
+  /** Draws the resting pose only: no idle loop and no tap reaction. */
+  still?: boolean;
 }) {
   const scale = width / VIEW_W;
   const height = VIEW_H * scale;
@@ -152,7 +137,7 @@ export function AnimatedMascot({
   const focused = useScreenFocused();
   const appActive = useAppActive();
   const reduceMotion = useReduceMotion();
-  const animate = focused && appActive && reduceMotion === false;
+  const animate = !still && focused && appActive && reduceMotion === false;
 
   const blink = useRef(new Animated.Value(1)).current;
   const squint = useRef(new Animated.Value(1)).current;
@@ -310,7 +295,7 @@ export function AnimatedMascot({
     <Pressable
       accessible={false}
       importantForAccessibility="no-hide-descendants"
-      onPress={() => react.current()}
+      onPress={still ? undefined : () => react.current()}
       style={{ width, height }}
     >
       <Animated.View

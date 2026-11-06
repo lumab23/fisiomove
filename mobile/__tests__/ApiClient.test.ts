@@ -81,3 +81,22 @@ test('não renova nem repete uma requisição cancelada durante troca de conta',
   expect(refresh).not.toHaveBeenCalled();
   expect(fetcher).toHaveBeenCalledTimes(1);
 });
+
+test('envia PUT com corpo JSON', async () => {
+  const fetcher = jest
+    .fn()
+    .mockResolvedValue(response(200, { full_name: 'Dra. Teste' }));
+  const session = new AuthenticationSession(config, memoryStorage(), fetcher);
+
+  await new ApiClient(config, session, fetcher).put(
+    '/me/physiotherapist-profile',
+    { full_name: 'Dra. Teste' },
+    { authenticated: false },
+  );
+
+  const [url, options] = fetcher.mock.calls[0];
+  expect(url).toBe('http://api.test/api/v1/me/physiotherapist-profile');
+  expect(options.method).toBe('PUT');
+  expect(options.body).toBe('{"full_name":"Dra. Teste"}');
+  expect(options.headers['Content-Type']).toBe('application/json');
+});

@@ -22,7 +22,7 @@ src/
 │   ├── exercise-engine/ # geometria, regras aprovadas e calibração local
 │   └── session/         # execução, feedback e componente de sessão
 ├── navigation/   # stacks e parâmetros tipados
-├── screens/      # telas M01 e destinos técnicos temporários
+├── screens/      # autenticação, paciente e fisioterapeuta
 ├── services/     # exercícios, treinos, pacientes, notas e resultados
 ├── storage/      # armazenamento criptografado
 ├── sync/         # preparação, fila e reenvio de sessões
@@ -96,9 +96,48 @@ Android; senhas nunca são persistidas. O cliente:
 - mantém usuário com senha temporária exclusivamente na tela de troca;
 - seleciona o stack usando o `role` devolvido por `/auth/me`.
 
-As únicas telas definitivas desta entrega são login, carregamento/restauração e
-troca de senha temporária. Os destinos autenticados mostram explicitamente que
-o conteúdo será implementado por Amanda ou Kaylany.
+O app abre no Login; não há modo demonstração nem cadastro público. Depois da
+autenticação, o `role` define o fluxo:
+
+- paciente: abas Início, Exercícios e Perfil, lidas de `/me/*`;
+- fisioterapeuta: três abas fixas — Pacientes (vinculados, cadastro,
+  liberação de acesso e nova senha provisória, treinos, observações com
+  visibilidade), Acompanhamento (sessões e progresso da semana corrente) e
+  Configurações ("Meu perfil", "Biblioteca de referência" e "Sair da conta",
+  sem confirmação).
+
+A senha provisória aparece uma única vez, na ficha do paciente, com o aviso de
+entregá-la por canal seguro. Ela fica só na memória da tela, é descartada ao
+sair dela e nunca vai para parâmetros de rota, logs ou armazenamento. Se o
+paciente esquecer a senha, o fisioterapeuta gera uma nova senha provisória
+(`reset_temporary_password`).
+
+Treinos usam somente exercícios de `GET /exercises`; o lado é limitado a
+`allowed_sides`, e séries, repetições e descanso começam vazios e são digitados
+pelo fisioterapeuta. O catálogo vazio não bloqueia o editor: cada item tem
+"Buscar na biblioteca de referência", que abre a biblioteca em modo de escolha
+(`pickFor`). No detalhe, o fisioterapeuta escolhe os lados permitidos (nenhum
+vem marcado) e toca "Adicionar e usar neste treino"
+(`POST /exercise-library/{external_id}/catalog`, DEC-006); o editor volta com
+`popTo(..., { merge: true })`, sem perder o rascunho, e preenche só o
+exercício. Cada item tem ainda "Orientação para o paciente (opcional)",
+enviada como `professional_guidance`. Exercícios vindos da biblioteca mostram
+"Fonte: OpenExerciseBase (CC BY-NC 4.0)" no editor, na revisão e no app do
+paciente (`exercise_snapshot.source`).
+
+Imagens e português (DEC-010, DEC-011): itens do catálogo trazem `images`
+(URLs relativas da API) e `localization` (pt-BR). `ExerciseImageGallery`
+(`src/components`) monta a URL com `ApiClient.imageSource` (só aceita caminhos
+sob `/api/v1`, para o token não ir a outro host) e renova a sessão uma vez se a
+imagem falhar. A busca e o detalhe da biblioteca continuam com as URLs do
+provedor. Ao adicionar ao catálogo, o fisioterapeuta pode preencher "Nome em
+português" e "Passos em português" (um passo por linha; ambos ou nenhum). A
+tela `CatalogExerciseTranslation` (aberta pelo editor, pela revisão ou pelo
+detalhe da biblioteca de um item já no catálogo) mostra o original em inglês e
+grava `PUT /exercises/{id}/localization`. O paciente vê pt-BR quando existe;
+senão o original com "Texto original em inglês" e `accessibilityLanguage="en"`.
+Para o snapshot receber a tradução e as imagens, o treino precisa ser salvo de
+novo (o editor reenvia os itens) e publicado.
 
 ## Serviços para Amanda
 
@@ -113,13 +152,16 @@ const patients = await mobileServices.patients.list({ page: 1, page_size: 20 });
 ```
 
 Estão disponíveis serviços tipados para catálogo, treinos, pacientes, acesso
-temporário, observações, histórico, detalhes de sessão, progresso e conquistas.
+temporário, observações, histórico, detalhes de sessão, progresso e biblioteca
+de referência (busca, detalhe e `addToCatalog`).
 Listas vazias preservam `items: []` e os metadados de paginação. Use
 `resolvedState` e `failureState` para distinguir carregando, sucesso, vazio,
 offline, sessão expirada, acesso negado, validação, conflito e erro inesperado.
 
-Os parâmetros de navegação estão em `src/navigation/types.ts`. Substitua cada
-destino técnico pelo componente real mantendo o nome e o contrato da rota.
+As telas leem a API pelos hooks de `src/integration` (`usePatientData.ts` e
+`useProfessionalData.ts`), que já devolvem `AsyncState`. Os parâmetros de
+navegação estão em `src/navigation/types.ts` e `frontendTypes.ts` e levam
+apenas IDs.
 
 ## Contratos para Kaylany
 
@@ -224,7 +266,11 @@ a aparelhos e à integração M02/M05–M07. O contrato de resultado está em
 - pacientes: lista, detalhe, criação, edição e acesso temporário;
 - observações: lista, criação e edição;
 - sessões: envio idempotente, histórico próprio/profissional e detalhe;
-- progresso e conquistas: consultas próprias e por paciente autorizado.
+- progresso: consultas próprias e por paciente autorizado;
+- biblioteca de referência: busca, detalhe e adição ao catálogo com pt-BR
+  opcional (fisioterapeuta);
+- exercícios do catálogo: imagens autenticadas e tradução pt-BR
+  (`PUT /exercises/{id}/localization`).
 
 ## Qualidade
 
@@ -249,15 +295,22 @@ isolamento entre contas.
   exercício selecionado;
 - validação empírica M05/M08 não foi realizada: protocolo e relatório identificam
   explicitamente os campos ainda pendentes;
-- o catálogo real continuará vazio até existir exercício clinicamente aprovado;
+- o catálogo só recebe exercícios adicionados da biblioteca pelo fisioterapeuta
+  (uso acadêmico, DEC-006); eles não têm regra de câmera (`supported_parameters`
+  vazio) e não alimentam o `MovementEngine`;
 - a calibração deve permanecer local e seguir `docs/modules/calibration.md`.
 
-## Front-end navegável baseado no PDF
+## Telas e dados
 
-A demonstração visual abre sem backend e cobre os fluxos do paciente e do
-fisioterapeuta. Consulte `../docs/mobile/pdf-screen-audit.md` para a auditoria e
-`../docs/mobile/frontend-guide.md` para executar e testar. O login integrado
-continua disponível pela opção de acesso à conta na demonstração.
+Não existe mais modo demonstração: sem backend, o app mostra o Login e, depois
+dele, estados de erro com opção de tentar novamente. Dado sem fonte real aparece
+como estado vazio, nunca como exemplo fictício (DEC-001). Para apresentar com
+dados, use o backend local com o seed fictício descrito em `../backend/README.md`
+(que depende de um exercício aprovado em ambiente não produtivo). A execução do
+treino usa o treino publicado real: valores do `WorkoutItem`, contagem por toque
+(DEC-008), resultado enviado por `finishDraft` e status de envio na conclusão.
+Captura real no aparelho ainda não está validada (KI-006). Pendências do paciente:
+`../docs/mobile/pendencias-ux-paciente.md`.
 
 ## Origem HTTPS de release
 
@@ -339,5 +392,5 @@ Debug usa `ios/FisioMove/Info-Debug.plist`, com descrição de uso em português
 desabilitada; ambos mantêm `NSAllowsArbitraryLoads=false`. Ao adicionar chaves
 compartilhadas, mantenha os dois plists alinhados. Consulte a
 [documentação de ATS da Apple](https://developer.apple.com/documentation/bundleresources/information-property-list/nsapptransportsecurity/nsallowslocalnetworking).
-Teste a API pela opção de acesso à conta; a demonstração visual continua local.
-Imagens da câmera permanecem no aparelho.
+O app abre no Login e usa a API configurada acima. Imagens da câmera permanecem
+no aparelho.

@@ -1,7 +1,11 @@
 import type { ApiClient } from '../api/ApiClient';
 import { queryString } from '../api/query';
 import type { PageParams, UUID } from '../contracts/common';
-import type { Exercise, ExercisePage } from '../contracts/domain';
+import type {
+  Exercise,
+  ExerciseLocalizationUpdate,
+  ExercisePage,
+} from '../contracts/domain';
 
 export class ExerciseService {
   constructor(private readonly api: ApiClient) {}
@@ -12,5 +16,16 @@ export class ExerciseService {
 
   get(exerciseId: UUID): Promise<Exercise> {
     return this.api.get(`/exercises/${exerciseId}`);
+  }
+
+  /**
+   * Creates or replaces the pt-BR text (physiotherapist, DEC-011). Published
+   * workouts keep their snapshot until the items are saved and published again.
+   */
+  updateLocalization(
+    exerciseId: UUID,
+    payload: ExerciseLocalizationUpdate,
+  ): Promise<Exercise> {
+    return this.api.put(`/exercises/${exerciseId}/localization`, payload);
   }
 }

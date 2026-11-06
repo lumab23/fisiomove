@@ -23,6 +23,8 @@ interface RunningSync {
 
 export class SessionSyncService {
   private readonly running = new Map<UUID, RunningSync>();
+  /** Tail of the queue that serializes store writes per owner. */
+  private readonly writes = new Map<UUID, Promise<void>>();
 
   constructor(
     private readonly sessions: SessionService,
@@ -36,17 +38,17 @@ export class SessionSyncService {
     workoutId: UUID,
     workoutRevisionId: UUID,
   ): Promise<SessionDraft> {
-    const state = await this.store.load(ownerUserId);
-    const draft: SessionDraft = {
-      owner_user_id: ownerUserId,
-      client_session_id: this.idFactory(),
-      workout_id: workoutId,
-      workout_revision_id: workoutRevisionId,
-      started_at: this.now().toISOString(),
-    };
-    state.drafts.push(draft);
-    await this.store.save(state);
-    return draft;
+    return this.update(ownerUserId, state => {
+      const draft: SessionDraft = {
+        owner_user_id: ownerUserId,
+        client_session_id: this.idFactory(),
+        workout_id: workoutId,
+        workout_revision_id: workoutRevisionId,
+        started_at: this.now().toISOString(),
+      };
+      state.drafts.push(draft);
+      return draft;
+    });
   }
 
   async finishDraft(
@@ -54,41 +56,39 @@ export class SessionSyncService {
     clientSessionId: UUID,
     completion: SessionCompletion,
   ): Promise<PendingSession> {
-    const state = await this.store.load(ownerUserId);
-    const draft = state.drafts.find(
-      item => item.client_session_id === clientSessionId,
-    );
-    if (!draft || draft.owner_user_id !== ownerUserId) {
-      throw new ApiError(
-        'not_found',
-        'A sessão preparada não pertence ao usuário autenticado.',
-        404,
-        'session_draft_not_found',
+    return this.update(ownerUserId, state => {
+      const draft = state.drafts.find(
+        item => item.client_session_id === clientSessionId,
       );
-    }
-    const payload: SessionResultInput = {
-      client_session_id: draft.client_session_id,
-      workout_id: draft.workout_id,
-      workout_revision_id: draft.workout_revision_id,
-      started_at: draft.started_at,
-      ...completion,
-    };
-    state.drafts = state.drafts.filter(
-      item => item.client_session_id !== clientSessionId,
-    );
-    const pending = this.addPending(state, ownerUserId, payload);
-    await this.store.save(state);
-    return pending;
+      if (!draft || draft.owner_user_id !== ownerUserId) {
+        throw new ApiError(
+          'not_found',
+          'A sessão preparada não pertence ao usuário autenticado.',
+          404,
+          'session_draft_not_found',
+        );
+      }
+      const payload: SessionResultInput = {
+        client_session_id: draft.client_session_id,
+        workout_id: draft.workout_id,
+        workout_revision_id: draft.workout_revision_id,
+        started_at: draft.started_at,
+        ...completion,
+      };
+      state.drafts = state.drafts.filter(
+        item => item.client_session_id !== clientSessionId,
+      );
+      return this.addPending(state, ownerUserId, payload);
+    });
   }
 
   async enqueue(
     ownerUserId: UUID,
     payload: SessionResultInput,
   ): Promise<PendingSession> {
-    const state = await this.store.load(ownerUserId);
-    const pending = this.addPending(state, ownerUserId, payload);
-    await this.store.save(state);
-    return pending;
+    return this.update(ownerUserId, state =>
+      this.addPending(state, ownerUserId, payload),
+    );
   }
 
   async list(ownerUserId: UUID): Promise<PendingSession[]> {
@@ -103,6 +103,64 @@ export class SessionSyncService {
     return (
       state.drafts.find(draft => draft.client_session_id === clientSessionId) ??
       null
+    );
+  }
+
+  /**
+   * Most recent local draft of this owner for the same workout revision.
+   * Local only: never calls the API.
+   */
+  async findDraft(
+    ownerUserId: UUID,
+    workoutId: UUID,
+    workoutRevisionId: UUID,
+  ): Promise<SessionDraft | null> {
+    const state = await this.store.load(ownerUserId);
+    const matches = state.drafts.filter(
+      draft =>
+        draft.owner_user_id === ownerUserId &&
+        draft.workout_id === workoutId &&
+        draft.workout_revision_id === workoutRevisionId,
+    );
+    return (
+      matches.sort((left, right) =>
+        right.started_at.localeCompare(left.started_at),
+      )[0] ?? null
+    );
+  }
+
+  /**
+   * Removes a local draft that will not be finished (DEC-009). Pending
+   * results are never touched. Returns whether a draft was removed.
+   */
+  async discardDraft(
+    ownerUserId: UUID,
+    clientSessionId: UUID,
+  ): Promise<boolean> {
+    return (
+      (await this.removeDrafts(
+        ownerUserId,
+        draft => draft.client_session_id === clientSessionId,
+      )) > 0
+    );
+  }
+
+  /**
+   * Removes drafts of this workout prepared for another revision: the
+   * physiotherapist published a new one and they can no longer be finished.
+   * Drafts of other workouts and pending results are kept. Returns how many
+   * drafts were removed.
+   */
+  async discardOutdatedDrafts(
+    ownerUserId: UUID,
+    workoutId: UUID,
+    currentRevisionId: UUID,
+  ): Promise<number> {
+    return this.removeDrafts(
+      ownerUserId,
+      draft =>
+        draft.workout_id === workoutId &&
+        draft.workout_revision_id !== currentRevisionId,
     );
   }
 
@@ -132,64 +190,136 @@ export class SessionSyncService {
     ownerUserId: UUID,
     clientSessionId: UUID,
   ): Promise<SyncReport> {
-    const state = await this.store.load(ownerUserId);
-    const pending = state.pending.find(
-      item => item.payload.client_session_id === clientSessionId,
-    );
-    if (pending) {
-      pending.state = 'pending';
-      pending.next_attempt_at = null;
-      pending.updated_at = this.now().toISOString();
-      await this.store.save(state);
-    }
+    await this.update(ownerUserId, state => {
+      const pending = state.pending.find(
+        item => item.payload.client_session_id === clientSessionId,
+      );
+      if (pending) {
+        pending.state = 'pending';
+        pending.next_attempt_at = null;
+        pending.updated_at = this.now().toISOString();
+      }
+    });
     return this.sync(ownerUserId);
   }
 
+  /**
+   * Sends pending results one at a time. The store is never held during the
+   * request: each write reloads the latest state inside the owner queue, so a
+   * draft discarded or a result finished meanwhile is not overwritten.
+   */
   private async performSync(
     ownerUserId: UUID,
     signal: AbortSignal,
   ): Promise<SyncReport> {
-    const state = await this.store.load(ownerUserId);
     let sent = 0;
     const sentClientSessionIds: UUID[] = [];
-    for (const pending of [...state.pending]) {
-      if (signal.aborted || !this.canAttempt(pending)) {
-        continue;
-      }
-      pending.state = 'syncing';
-      pending.updated_at = this.now().toISOString();
-      await this.store.save(state);
-      try {
-        await this.sessions.create(pending.payload, { signal });
-        state.pending = state.pending.filter(
+    const attempted = new Set<UUID>();
+    while (!signal.aborted) {
+      const next = await this.update(ownerUserId, state => {
+        const candidate = state.pending.find(
           item =>
-            item.payload.client_session_id !==
-            pending.payload.client_session_id,
+            !attempted.has(item.payload.client_session_id) &&
+            this.canAttempt(item),
         );
-        sent += 1;
-        sentClientSessionIds.push(pending.payload.client_session_id);
-        await this.store.save(state);
-      } catch (error) {
+        if (signal.aborted || !candidate) {
+          return null;
+        }
+        candidate.state = 'syncing';
+        candidate.updated_at = this.now().toISOString();
+        return candidate.payload;
+      });
+      if (!next) {
+        break;
+      }
+      const clientSessionId = next.client_session_id;
+      attempted.add(clientSessionId);
+      let failure: { error: unknown } | null = null;
+      try {
         if (signal.aborted) {
-          pending.state = 'pending';
-          pending.next_attempt_at = null;
-          pending.updated_at = this.now().toISOString();
-          await this.store.save(state);
-          break;
+          throw new Error('request aborted');
         }
-        this.recordFailure(pending, error);
-        await this.store.save(state);
-        if (error instanceof ApiError && error.kind === 'session_expired') {
-          break;
+        await this.sessions.create(next, { signal });
+      } catch (error) {
+        failure = { error };
+      }
+      const stop = await this.update(ownerUserId, state => {
+        const current = state.pending.find(
+          item => item.payload.client_session_id === clientSessionId,
+        );
+        if (!failure) {
+          state.pending = state.pending.filter(item => item !== current);
+          sent += 1;
+          sentClientSessionIds.push(clientSessionId);
+          return false;
         }
+        if (signal.aborted) {
+          if (current) {
+            current.state = 'pending';
+            current.next_attempt_at = null;
+            current.updated_at = this.now().toISOString();
+          }
+          return true;
+        }
+        if (current) {
+          this.recordFailure(current, failure.error);
+        }
+        return (
+          failure.error instanceof ApiError &&
+          failure.error.kind === 'session_expired'
+        );
+      });
+      if (stop) {
+        break;
       }
     }
+    const state = await this.store.load(ownerUserId);
     return {
       sent,
       remaining: state.pending.length,
       blocked: state.pending.filter(item => item.state === 'blocked').length,
       sent_client_session_ids: sentClientSessionIds,
     };
+  }
+
+  private async removeDrafts(
+    ownerUserId: UUID,
+    shouldRemove: (draft: SessionDraft) => boolean,
+  ): Promise<number> {
+    return this.update(ownerUserId, state => {
+      const before = state.drafts.length;
+      state.drafts = state.drafts.filter(draft => !shouldRemove(draft));
+      return before - state.drafts.length;
+    });
+  }
+
+  /**
+   * Load, change and save the owner's state with no other write in between.
+   * Writes of the same owner run in call order; a failed write does not
+   * block the next one.
+   */
+  private update<T>(
+    ownerUserId: UUID,
+    change: (state: SessionSyncState) => T,
+  ): Promise<T> {
+    const previous = this.writes.get(ownerUserId) ?? Promise.resolve();
+    const result = previous.then(async () => {
+      const state = await this.store.load(ownerUserId);
+      const value = change(state);
+      await this.store.save(state);
+      return value;
+    });
+    const tail = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    this.writes.set(ownerUserId, tail);
+    tail.then(() => {
+      if (this.writes.get(ownerUserId) === tail) {
+        this.writes.delete(ownerUserId);
+      }
+    });
+    return result;
   }
 
   private addPending(
