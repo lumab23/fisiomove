@@ -79,3 +79,26 @@ def test_metadata_and_error_logs_do_not_include_credentials(application) -> None
     parsed = json.loads(JsonFormatter().format(record))
     assert parsed["error_type"] == "RuntimeError"
     assert "password" not in parsed
+
+
+def test_private_cache_is_only_kept_for_image_responses(application) -> None:
+    from fastapi import Response
+
+    @application.get("/json-private-probe")
+    def json_private_probe(response: Response) -> dict[str, bool]:
+        response.headers["Cache-Control"] = "private, max-age=86400"
+        return {"personal": True}
+
+    @application.get("/image-private-probe")
+    def image_private_probe() -> Response:
+        return Response(
+            content=b"\x89PNG\r\n\x1a\n",
+            media_type="image/png",
+            headers={"Cache-Control": "private, max-age=86400"},
+        )
+
+    with TestClient(application) as client:
+        json_response = client.get("/json-private-probe")
+        image_response = client.get("/image-private-probe")
+    assert json_response.headers["cache-control"] == "no-store"
+    assert image_response.headers["cache-control"] == "private, max-age=86400"

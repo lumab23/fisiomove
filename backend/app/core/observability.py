@@ -63,6 +63,24 @@ class RequestMetadataMiddleware:
             if message["type"] == "http.response.start":
                 status = message["status"]
                 response_started = True
+                cache_control = b"no-store"
+                response_headers = message.get("headers", [])
+                is_image = any(
+                    key.lower() == b"content-type"
+                    and value.lower().startswith(b"image/")
+                    for key, value in response_headers
+                )
+                for key, value in response_headers:
+                    # Only a private cache set by the route on a 200 *image*
+                    # response survives (stored exercise images, no personal
+                    # data); JSON and everything else stays `no-store`.
+                    if (
+                        key.lower() == b"cache-control"
+                        and status == 200
+                        and is_image
+                        and value.lower().startswith(b"private,")
+                    ):
+                        cache_control = value
                 headers = [
                     (key, value)
                     for key, value in message.get("headers", [])
@@ -77,7 +95,7 @@ class RequestMetadataMiddleware:
                     [
                         (b"x-request-id", request_id.encode()),
                         (b"x-content-type-options", b"nosniff"),
-                        (b"cache-control", b"no-store"),
+                        (b"cache-control", cache_control),
                     ]
                 )
                 message = {**message, "headers": headers}

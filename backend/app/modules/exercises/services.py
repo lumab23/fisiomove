@@ -6,8 +6,17 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import ApiError
 from app.modules.auth.models import User, UserRole, utc_now
-from app.modules.exercises.models import Exercise, ExerciseApprovalEvent
-from app.modules.exercises.schemas import ExercisePage, ExerciseResponse
+from app.modules.exercises.models import (
+    Exercise,
+    ExerciseApprovalEvent,
+    ExerciseImage,
+)
+from app.modules.exercises.schemas import (
+    ExerciseLocalizationUpdate,
+    ExercisePage,
+    ExerciseResponse,
+    format_steps,
+)
 
 
 class ExerciseService:
@@ -52,12 +61,66 @@ class ExerciseService:
         )
 
 
-class ExerciseGovernanceService:
-    """Internal support for an institutionally authorized approval workflow.
+class ExerciseImageService:
+    def __init__(self, session: Session) -> None:
+        self.session = session
 
-    No public API calls this service. Recording evidence here is an audit action;
-    the organization remains responsible for verifying the underlying clinical
-    approval before invoking it.
+    def get(self, exercise_id: UUID, position: int) -> tuple[bytes, str, str]:
+        """(bytes, content type, sha256) of one stored image.
+
+        Served for any catalog exercise, including withdrawn ones: published
+        snapshots keep their image URLs and must keep working (DEC-010). The
+        material is the public CC BY-NC reference, not patient data.
+        """
+        row = self.session.execute(
+            select(ExerciseImage.data, ExerciseImage.content_type, ExerciseImage.sha256)
+            .where(
+                ExerciseImage.exercise_id == exercise_id,
+                ExerciseImage.position == position,
+            )
+            .limit(1)
+        ).first()
+        if row is None:
+            raise ApiError(
+                status_code=404,
+                code="exercise_image_not_found",
+                message="The exercise image was not found.",
+            )
+        return row[0], row[1], row[2]
+
+
+class ExerciseLocalizationService:
+    """pt-BR name and steps (DEC-011): any active physiotherapist, authorship kept.
+
+    The original text, `rule_version` and the approval are never touched.
+    """
+
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def update(
+        self, actor: User, exercise_id: UUID, payload: ExerciseLocalizationUpdate
+    ) -> ExerciseResponse:
+        exercise = ExerciseService(self.session).get(exercise_id)
+        exercise.name_pt_br = payload.name
+        exercise.instructions_pt_br = format_steps(payload.instructions)
+        exercise.translated_by_id = actor.id
+        exercise.translated_at = utc_now()
+        self.session.flush()
+        self.session.expire(exercise, ["translator", "translator_profile"])
+        return ExerciseResponse.model_validate(exercise)
+
+
+class ExerciseGovernanceService:
+    """Records approval evidence and appends one audit event per decision.
+
+    The only public caller is `CatalogImportService`
+    (`POST /exercise-library/{external_id}/catalog`): under DEC-006 a
+    physiotherapist adds reference material to the catalog for academic use, and
+    the approval is recorded in their name. That approval means "chosen by the
+    physiotherapist for academic use", not clinical validation; review it before
+    any clinical or commercial use. Every other approval or revocation remains an
+    internal action whose underlying evidence the organization must verify.
     """
 
     def __init__(self, session: Session) -> None:

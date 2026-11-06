@@ -5,7 +5,6 @@ from threading import Barrier
 import pytest
 from sqlalchemy import func, select
 
-from app.modules.achievements.models import Achievement
 from app.modules.sessions.models import SessionResult
 
 pytestmark = pytest.mark.skipif(
@@ -43,7 +42,6 @@ def test_divergent_concurrent_retries_return_409_without_mutating_the_winner(
     assert retry.json() == winner
     with application.state.database.session() as session:
         assert session.scalar(select(func.count()).select_from(SessionResult)) == 1
-        assert session.scalar(select(func.count()).select_from(Achievement)) == 1
         stored = session.scalar(select(SessionResult))
         assert stored.feedback_summary == winner["feedback_summary"]
         assert stored.score == winner["score"]

@@ -7,19 +7,29 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db_session
 from app.modules.auth.dependencies import require_role
 from app.modules.auth.models import User, UserRole
+from app.modules.patients.authorization import get_own_patient
 from app.modules.patients.schemas import (
     PatientAccessRequest,
     PatientAccessResponse,
     PatientCreate,
     PatientPage,
     PatientResponse,
+    PatientSelfProfile,
     PatientUpdate,
 )
 from app.modules.patients.services import PatientService
 
 router = APIRouter(prefix="/patients", tags=["patients"])
+me_router = APIRouter(tags=["patients"])
 Physiotherapist = Annotated[User, Depends(require_role(UserRole.PHYSIOTHERAPIST))]
+PatientUser = Annotated[User, Depends(require_role(UserRole.PATIENT))]
 DatabaseSession = Annotated[Session, Depends(get_db_session, scope="function")]
+
+
+@me_router.get("/me/profile", response_model=PatientSelfProfile)
+def get_my_profile(user: PatientUser, session: DatabaseSession) -> PatientSelfProfile:
+    patient = get_own_patient(session, user)
+    return PatientSelfProfile(full_name=patient.full_name)
 
 
 @router.post("", response_model=PatientResponse, status_code=status.HTTP_201_CREATED)

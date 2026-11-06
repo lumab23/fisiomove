@@ -81,6 +81,46 @@ class Settings(BaseSettings):
         validation_alias="AUTH_AUDIENCE",
     )
 
+    exercise_library_enabled: bool = Field(
+        default=True, validation_alias="EXERCISE_LIBRARY_ENABLED"
+    )
+    exercise_library_list_url: str = Field(
+        default="https://www.openexercisedatabase.at/api/exercises",
+        validation_alias="EXERCISE_LIBRARY_LIST_URL",
+    )
+    exercise_library_detail_base_url: str = Field(
+        default=(
+            "https://raw.githubusercontent.com/OpenExerciseBase/"
+            "OpenExerciseBase-Database/main/exercises"
+        ),
+        validation_alias="EXERCISE_LIBRARY_DETAIL_BASE_URL",
+    )
+    exercise_library_image_base_url: str = Field(
+        default=(
+            "https://raw.githubusercontent.com/OpenExerciseBase/"
+            "OpenExerciseBase-Database/main/images"
+        ),
+        validation_alias="EXERCISE_LIBRARY_IMAGE_BASE_URL",
+    )
+    exercise_library_timeout_seconds: float = Field(
+        default=5.0, gt=0, le=30, validation_alias="EXERCISE_LIBRARY_TIMEOUT_SECONDS"
+    )
+    exercise_library_cache_seconds: int = Field(
+        default=300, ge=0, le=3600, validation_alias="EXERCISE_LIBRARY_CACHE_SECONDS"
+    )
+
+    @field_validator(
+        "exercise_library_list_url",
+        "exercise_library_detail_base_url",
+        "exercise_library_image_base_url",
+    )
+    @classmethod
+    def validate_exercise_library_url(cls, value: str) -> str:
+        # urllib also opens file:// and ftp:// URLs; only HTTPS is acceptable here.
+        if not value.startswith("https://"):
+            raise ValueError("Exercise library URLs must use https://")
+        return value.rstrip("/")
+
     @field_validator("auth_secret_key")
     @classmethod
     def validate_auth_secret_key(cls, value: SecretStr) -> SecretStr:

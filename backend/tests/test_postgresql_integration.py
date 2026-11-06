@@ -12,13 +12,12 @@ from alembic.autogenerate import compare_metadata
 from alembic.config import Config
 from alembic.migration import MigrationContext
 from fastapi.testclient import TestClient
-from sqlalchemy import func, inspect, select
+from sqlalchemy import func, inspect, select, text
 from sqlalchemy.exc import IntegrityError
 
 from app.core.config import Environment, Settings
 from app.db.base import Base
 from app.main import create_app
-from app.modules.achievements.models import Achievement
 from app.modules.auth.models import User, UserRole
 from app.modules.auth.security import PasswordManager
 from app.modules.exercises.models import Exercise, ExerciseApprovalEvent
@@ -403,9 +402,6 @@ def test_postgresql_migrations_api_and_concurrent_revisions(postgres_url: str) -
                 assert (
                     session.scalar(select(func.count()).select_from(SessionResult)) == 1
                 )
-                assert (
-                    session.scalar(select(func.count()).select_from(Achievement)) == 1
-                )
                 assert session.scalar(select(SessionResult.score)) == 6
                 assert (
                     session.scalar(
@@ -470,11 +466,12 @@ def test_postgresql_migrations_api_and_concurrent_revisions(postgres_url: str) -
             assert progress.json()["completed_sessions"] == 1
             assert progress.json()["interrupted_sessions"] == 1
             assert progress.json()["score"] == 8
-            achievements = client.get(
-                "/api/v1/me/achievements", headers=patient_headers
+            assert (
+                client.get(
+                    "/api/v1/me/achievements", headers=patient_headers
+                ).status_code
+                == 404
             )
-            assert achievements.status_code == 200
-            assert len(achievements.json()) == 1
 
             deactivated = client.patch(
                 f"/api/v1/patients/{patient_id}",
@@ -506,6 +503,11 @@ def test_postgresql_migrations_api_and_concurrent_revisions(postgres_url: str) -
                 session.flush()
         with database.session() as session:
             assert session.get(User, professional.id) is not None
+        assert "achievements" not in inspect(database.engine).get_table_names()
+        command.downgrade(config, "20261106_0010")
+        assert "achievements" in inspect(database.engine).get_table_names()
+        with database.engine.connect() as connection:
+            assert connection.scalar(text("SELECT count(*) FROM achievements")) == 0
         command.downgrade(config, "20261022_0007")
         assert "score" not in {
             column["name"]

@@ -75,6 +75,10 @@ class PatientResponse(BaseModel):
     updated_at: datetime
 
 
+class PatientSelfProfile(BaseModel):
+    full_name: str
+
+
 class PatientPage(BaseModel):
     items: list[PatientResponse]
     page: int

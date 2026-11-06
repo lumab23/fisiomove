@@ -218,6 +218,26 @@ class AccountProvisioningService:
             )
         )
 
+    def add_physiotherapist(self, email: str, temporary_password: str) -> User:
+        """Create an additional physiotherapist; each one only sees own patients."""
+        normalized_email = normalize_email(email)
+        validate_password(temporary_password)
+        if self._users.get_by_email(normalized_email) is not None:
+            raise ApiError(
+                status_code=409,
+                code="email_conflict",
+                message="An account already uses this email.",
+            )
+        return self._users.add(
+            User(
+                email=normalized_email,
+                password_hash=self._passwords.hash(temporary_password),
+                role=UserRole.PHYSIOTHERAPIST,
+                is_active=True,
+                must_change_password=True,
+            )
+        )
+
 
 class PatientAccountService:
     """Internal patient access operations for B03 to call after authorization."""

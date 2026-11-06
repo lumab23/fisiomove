@@ -19,6 +19,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="create the first physiotherapist account",
     )
     create.add_argument("--email", required=True)
+    add = subparsers.add_parser(
+        "add-physiotherapist",
+        help="create an additional physiotherapist account",
+    )
+    add.add_argument("--email", required=True)
     return parser
 
 
@@ -34,9 +39,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     database = Database(settings.database_url, echo=settings.db_echo)
     try:
         with database.session() as session:
-            user = AccountProvisioningService(session).create_initial_physiotherapist(
-                args.email, password
-            )
+            service = AccountProvisioningService(session)
+            if args.command == "add-physiotherapist":
+                user = service.add_physiotherapist(args.email, password)
+            else:
+                user = service.create_initial_physiotherapist(args.email, password)
             print(f"Created physiotherapist {user.email} ({user.id}).")
         return 0
     except (ApiError, ValidationError, ValueError) as exc:
