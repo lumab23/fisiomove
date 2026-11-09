@@ -15,6 +15,7 @@ import {
   PatientPreparationScreen,
 } from '../screens/patient/PreparationScreens';
 import { PatientExerciseScreen } from '../screens/patient/PatientExerciseScreen';
+import { DemoAutoCountScreen } from '../screens/patient/DemoAutoCountScreen';
 import {
   ConfirmExitScreen,
   MovementGuidanceScreen,
@@ -55,6 +56,7 @@ export const patientScreens = {
   CameraPermission: CameraPermissionScreen,
   Calibration: CalibrationScreen,
   PatientExercise: PatientExerciseScreen,
+  DemoAutoCount: DemoAutoCountScreen,
   MovementGuidance: MovementGuidanceScreen,
   ConfirmExit: ConfirmExitScreen,
   SessionInterrupted: SessionInterruptedScreen,

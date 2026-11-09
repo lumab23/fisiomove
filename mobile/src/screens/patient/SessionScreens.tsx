@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRoute, type RouteProp } from '@react-navigation/native';
 import { friendlyErrorMessage } from '../../api/errors';
+import { appDependencies } from '../../app/dependencies';
 import { ExerciseImageGallery } from '../../components/ExerciseImageGallery';
 import { Screen } from '../../components/Screen';
 import { InlineError } from '../../components/ScreenStates';
@@ -39,7 +40,6 @@ import {
   exerciseName,
   exerciseSourceText,
   exerciseText,
-  originalLanguageSeal,
   sideLabels,
   textLanguage,
 } from './workoutText';
@@ -110,10 +110,7 @@ function MovementGuidance({ session }: { session: ActiveSession }) {
         </Text>
         <Body>{sideLabels[item.side]}</Body>
       </Card>
-      <ExerciseImageGallery
-        images={exerciseImages(item.exercise_snapshot)}
-        exerciseName={content.name}
-      />
+      <SessionExerciseImages item={item} name={content.name} />
       {guidance.length ? (
         <Card white title="Orientação do profissional">
           {guidance.map(text => (
@@ -121,19 +118,75 @@ function MovementGuidance({ session }: { session: ActiveSession }) {
           ))}
         </Card>
       ) : null}
-      <SectionTitle>Passos</SectionTitle>
-      {/* Untranslated library text stays in English (KI-012, DEC-011). */}
-      {content.original ? <Badge label={originalLanguageSeal} /> : null}
       {content.steps ? (
-        <Text accessibilityLanguage={language} style={styles.body}>
-          {content.steps}
-        </Text>
+        <>
+          <SectionTitle>Como fazer</SectionTitle>
+          <Text accessibilityLanguage={language} style={styles.body}>
+            {content.steps}
+          </Text>
+        </>
+      ) : content.original ? (
+        <Body>
+          As instruções em português ainda não foram revisadas pelo
+          fisioterapeuta. Peça orientação para este exercício.
+        </Body>
       ) : (
         <Body>Este exercício não tem passos escritos.</Body>
       )}
       {source ? <Text style={styles.demo}>{source}</Text> : null}
     </Screen>
   );
+}
+
+/** Reuse the image saved with the prescription; fetch it for older snapshots. */
+function SessionExerciseImages({
+  item,
+  name,
+}: {
+  item: ReturnType<typeof currentWorkoutItem>;
+  name: string;
+}) {
+  const [images, setImages] = useState(() =>
+    exerciseImages(item.exercise_snapshot),
+  );
+
+  useEffect(() => {
+    let active = true;
+    const snapshotImages = exerciseImages(item.exercise_snapshot);
+    setImages(snapshotImages);
+    const fromLibrary = exerciseSourceText(item) !== null;
+    if (snapshotImages.length > 0 || !fromLibrary) {
+      return () => {
+        active = false;
+      };
+    }
+    if (!appDependencies.exercises) {
+      setImages([]);
+      return () => {
+        active = false;
+      };
+    }
+
+    Promise.resolve()
+      .then(() => appDependencies.exercises.get(item.exercise_id))
+      .then(
+        exercise => {
+          if (active) setImages(exercise ? exerciseImages(exercise) : []);
+        },
+        () => {
+          if (active) setImages([]);
+        },
+      );
+    return () => {
+      active = false;
+    };
+  }, [item]);
+
+  return images.length ? (
+    <ExerciseImageGallery images={images} exerciseName={name} />
+  ) : exerciseSourceText(item) ? (
+    <Body>Imagem não disponível para este exercício.</Body>
+  ) : null;
 }
 
 export function ConfirmExitScreen() {

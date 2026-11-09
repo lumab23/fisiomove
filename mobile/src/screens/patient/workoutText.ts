@@ -73,9 +73,9 @@ function hasLibrarySource(snapshot: Record<string, JsonValue>) {
 }
 
 /**
- * Name, steps and language of what the patient reads: the pt-BR text when it
- * exists; otherwise the original. `original` is true only for library text
- * kept in English, which gets the seal and `accessibilityLanguage="en"`.
+ * Name, steps and language of what the patient reads. Library steps are only
+ * returned after a physiotherapist saves the pt-BR localization. `original`
+ * marks a library name kept in English for accessibility.
  */
 export function exerciseText(item: Snapshot): {
   name: string;
@@ -93,13 +93,18 @@ export function exerciseText(item: Snapshot): {
   }
   return {
     name: filled(snapshot.name) ? snapshot.name : 'Exercício',
-    steps: filled(snapshot.instructions) ? snapshot.instructions : null,
+    // Do not present library instructions in English as if they were patient
+    // guidance. A physiotherapist must save the audited pt-BR localization.
+    steps:
+      hasLibrarySource(snapshot) || !filled(snapshot.instructions)
+        ? null
+        : snapshot.instructions,
     original: hasLibrarySource(snapshot),
   };
 }
 
-/** Seal for library text shown in the original language (KI-012). */
-export const originalLanguageSeal = 'Texto original em inglês';
+/** Label used in the professional catalog to distinguish the source name. */
+export const originalLanguageSeal = 'Referência da biblioteca';
 
 /** Name of the published snapshot, in pt-BR when translated. */
 export function exerciseName(item: Snapshot) {
@@ -128,7 +133,7 @@ export function attributionText(
   if (!localization) {
     return sourceLabel(source);
   }
-  return `Adaptado de ${shortSourceName(source)} (${source.license}). Nome e passos traduzidos para o português por ${localization.translated_by_name} em ${dateBr(localization.translated_at)}; o original em inglês foi preservado.`;
+  return `Adaptado de ${shortSourceName(source)} (${source.license}). Nome e passos traduzidos para o português por ${localization.translated_by_name} em ${dateBr(localization.translated_at)}.`;
 }
 
 /** Short attribution, e.g. "Fonte: OpenExerciseBase (CC BY-NC 4.0)". */

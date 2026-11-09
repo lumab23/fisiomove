@@ -528,6 +528,39 @@ test('workout values start empty and sides come from allowed_sides', async () =>
   expect(hasText('Rascunho salvo')).toBe(true);
 });
 
+test('a library exercise needs reviewed Portuguese text before saving', async () => {
+  services.exercises.list.mockResolvedValue(
+    pageOf([
+      {
+        ...exercise,
+        source: {
+          source: 'OpenExerciseBase (Test Institute)',
+          external_id: 'EX-test-1',
+          source_url: 'https://example.com/EX-test-1.json',
+          license: 'CC BY-NC 4.0',
+          license_url: 'https://creativecommons.org/licenses/by-nc/4.0/',
+          attribution: 'Attribution for test data.',
+        },
+        localization: null,
+      },
+    ]),
+  );
+  await openPatient();
+  await press('Criar treino');
+  await press('Exercício aprovado de teste');
+  await press('Lado esquerdo');
+  await fill('Séries', '2');
+  await fill('Repetições por série', '8');
+  await fill('Descanso entre séries (segundos)', '30');
+  expect(pressables('Escrever tradução em português')).toHaveLength(1);
+
+  await press('Salvar rascunho');
+  expect(
+    hasText('Adicione e revise a tradução em português antes de salvar.'),
+  ).toBe(true);
+  expect(services.workouts.create).not.toHaveBeenCalled();
+});
+
 test('pending parameter contracts and unsupported sides get clear messages', async () => {
   services.workouts.create
     .mockRejectedValueOnce(
@@ -826,7 +859,7 @@ test('library details show original steps, AI origin and no prescription values'
     true,
   );
   expect(hasText(usageNotice)).toBe(true);
-  expect(hasText('Texto original em inglês')).toBe(true);
+  expect(hasText('Texto de referência')).toBe(true);
   expect(hasText('Conteúdo gerado por IA')).toBe(true);
   expect(hasText('Situação de revisão na fonte: accepted_with_edits')).toBe(
     true,
@@ -976,7 +1009,7 @@ test.each([
   );
 });
 
-test('the editor picks a library exercise and keeps the draft without filling values', async () => {
+test('the editor requires Portuguese before saving an exercise from the library', async () => {
   services.exercises.list.mockResolvedValue(pageOf([]));
   services.workouts.create.mockResolvedValue(draftWorkout);
   await openPatient();
@@ -1021,20 +1054,10 @@ test('the editor picks a library exercise and keeps the draft without filling va
   await fill('Descanso entre séries (segundos)', '0');
   await fill('Orientação para o paciente (opcional)', '  Faça devagar.  ');
   await press('Salvar rascunho');
-  expect(services.workouts.create).toHaveBeenCalledWith('patient-1', {
-    instructions: 'Texto geral de teste.',
-    items: [
-      {
-        position: 1,
-        exercise_id: 'exercise-imported',
-        side: 'right',
-        sets: 2,
-        repetitions: 8,
-        rest_duration_ms: 0,
-        professional_guidance: 'Faça devagar.',
-      },
-    ],
-  });
+  expect(
+    hasText('Adicione e revise a tradução em português antes de salvar.'),
+  ).toBe(true);
+  expect(services.workouts.create).not.toHaveBeenCalled();
 });
 
 test('an exercise already in the catalog is used without adding it again', async () => {
@@ -1135,7 +1158,7 @@ test('the translation of a catalog exercise is edited with the original beside i
   await press('Reference Item Test');
   await press('Tradução em português');
   expect(services.exercises.get).toHaveBeenCalledWith('exercise-imported');
-  expect(hasText('Original em inglês')).toBe(true);
+  expect(hasText('Texto de referência')).toBe(true);
   expect(hasText('1. First step text.')).toBe(true);
   expect(hasText(republish)).toBe(true);
 
@@ -1194,7 +1217,7 @@ test('the editor shows the pt-BR text, the original and the first API image', as
   await press('Item de referência de teste (original: Reference Item Test)');
   expect(hasText('Em português (o paciente vê este texto)')).toBe(true);
   expect(hasText('2. Segundo passo de teste.')).toBe(true);
-  expect(hasText('Original em inglês')).toBe(true);
+  expect(hasText('Referência da fonte')).toBe(true);
   const english = app.root.findAll(
     node =>
       node.props.accessibilityLanguage === 'en' &&
@@ -1255,7 +1278,7 @@ test('the review shows the snapshot pt-BR name, the original and the image', asy
   await openPatient();
   await press('Treino · Rascunho');
   expect(hasText('Item de referência de teste')).toBe(true);
-  expect(hasText('Nome original em inglês: Reference Item Test')).toBe(true);
+  expect(hasText('Nome da biblioteca: Reference Item Test')).toBe(true);
   expect(
     app.root.findAllByType(Image).map(node => node.props.accessibilityLabel),
   ).toEqual(['Imagem 1 de 1 do exercício Item de referência de teste']);

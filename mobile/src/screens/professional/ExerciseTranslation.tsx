@@ -139,7 +139,7 @@ export function OriginalExerciseText({
   instructions: string;
 }) {
   return (
-    <Card white title="Original em inglês">
+    <Card white title="Texto de referência">
       <Badge label={originalLanguageSeal} />
       <Text accessibilityLanguage="en" style={t.name}>
         {name}
@@ -183,8 +183,8 @@ export function CatalogExerciseText({
         <>
           <Text style={t.label}>
             {localization
-              ? 'Original em inglês'
-              : 'Sem tradução: o paciente vê o original em inglês'}
+              ? 'Referência da fonte'
+              : 'Tradução em português pendente'}
           </Text>
           {localization ? (
             <Text accessibilityLanguage="en" style={t.name}>
@@ -285,8 +285,8 @@ function TranslationForm({ exercise }: { exercise: Exercise }) {
     >
       {failure ? <InlineError message={failure} /> : null}
       <Body>
-        O texto original em inglês continua guardado e a fonte indica que houve
-        tradução. A tradução vale para este exercício em todo o catálogo.
+        O conteúdo de referência continua preservado e a origem da tradução é
+        registrada. A tradução vale para este exercício em todo o catálogo.
       </Body>
       <Body>{republishNotice}</Body>
       {current ? (

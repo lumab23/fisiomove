@@ -19,6 +19,7 @@ import {
 import { colors, fonts, radii, spacing, typography } from '../../theme/theme';
 import {
   Body,
+  Button,
   Card,
   EmptyState,
   ListGroup,
@@ -33,7 +34,6 @@ import {
   exerciseImages,
   exerciseSourceText,
   exerciseText,
-  originalLanguageSeal,
   prescriptionText,
   textLanguage,
 } from './workoutText';
@@ -68,6 +68,13 @@ export function PatientExercisesScreen() {
         value={section}
         onChange={setSection}
       />
+      {__DEV__ && section === 'workout' ? (
+        <Button
+          secondary
+          label="Testar contagem automática"
+          onPress={() => navigation.navigate('DemoAutoCount')}
+        />
+      ) : null}
       {section === 'workout' && <MyWorkout />}
       {section === 'history' && (
         <History onStart={() => setSection('workout')} />
@@ -121,7 +128,6 @@ function MyWorkout() {
                     title={text.name}
                     titleLanguage={textLanguage(text.original)}
                     description={[
-                      text.original ? originalLanguageSeal : null,
                       prescriptionText(item),
                       item.professional_guidance,
                       exerciseSourceText(item),

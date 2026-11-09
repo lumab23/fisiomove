@@ -1,10 +1,8 @@
 import type { PoseLandmarkId } from '../vision/types';
 
-export interface ApprovedMovementRule {
+export interface MovementRuleDefinition {
   exercise_code: string;
   rule_version: string;
-  approval_status: 'approved';
-  approved_rule_version: string;
   landmarks: {
     proximal: PoseLandmarkId;
     joint: PoseLandmarkId;
@@ -27,6 +25,22 @@ export interface ApprovedMovementRule {
     maximum_sample_spread_degrees: number;
   };
 }
+
+export interface ApprovedMovementRule extends MovementRuleDefinition {
+  approval_status: 'approved';
+  approved_rule_version: string;
+}
+
+/**
+ * Explicitly non-clinical rule for a local demonstration. It must never be
+ * presented as an approved exercise rule or used to claim clinical validity.
+ */
+export interface DemonstrationMovementRule extends MovementRuleDefinition {
+  mode: 'demonstration';
+  clinically_validated: false;
+}
+
+export type MovementRule = ApprovedMovementRule | DemonstrationMovementRule;
 
 export interface MovementEngineOptions {
   /** Informational signal-processing window, supplied by the integrator. */

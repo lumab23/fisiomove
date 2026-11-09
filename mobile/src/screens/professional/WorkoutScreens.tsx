@@ -81,7 +81,7 @@ type ItemErrors = Partial<
 const positiveInteger = /^\d+$/;
 const nonnegativeNumber = /^\d+([.,]\d{1,3})?$/;
 
-/** Converts the drafts to the API payload, or returns the field errors. */
+/** Converts drafts with patient-facing pt-BR instructions to the API payload. */
 export function buildWorkoutItems(
   drafts: ItemDraft[],
   catalog: Exercise[],
@@ -93,6 +93,9 @@ export function buildWorkoutItems(
     const exercise = catalog.find(entry => entry.id === draft.exerciseId);
     if (!exercise) {
       item.exercise = 'Escolha um exercício do catálogo.';
+    } else if (exercise.source && !exerciseLocalization(exercise)) {
+      item.exercise =
+        'Adicione e revise a tradução em português antes de salvar.';
     }
     if (
       !draft.side ||
@@ -715,7 +718,7 @@ function ReviewItem({
   return (
     <Card white title={exerciseName(item)}>
       {localized && typeof originalName === 'string' ? (
-        <Body>{`Nome original em inglês: ${originalName}`}</Body>
+        <Body>{`Nome da biblioteca: ${originalName}`}</Body>
       ) : null}
       {text.original ? <Badge label={originalLanguageSeal} /> : null}
       <ExerciseImageGallery

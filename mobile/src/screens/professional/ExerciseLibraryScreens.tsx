@@ -456,7 +456,7 @@ export function ExerciseLibraryDetailScreen() {
               ) : null}
             </Card>
             <SectionTitle>Passos</SectionTitle>
-            <Badge label="Texto original em inglês" />
+            <Badge label="Texto de referência" />
             {data.instructions.length ? (
               [...data.instructions]
                 .sort((a, b) => a.step_number - b.step_number)

@@ -1,7 +1,7 @@
 import type { PoseFrame } from '../vision/types';
 import { assessSelectedArm } from '../vision/poseAssessment';
 import type {
-  ApprovedMovementRule,
+  MovementRule,
   MovementEngineOptions,
   MovementPhase,
   MovementUpdate,
@@ -18,12 +18,16 @@ export class MovementEngine {
   private readonly recentAngles: number[] = [];
 
   constructor(
-    private readonly rule: ApprovedMovementRule,
+    private readonly rule: MovementRule,
     private readonly options: MovementEngineOptions,
   ) {
     if (
-      rule.approval_status !== 'approved' ||
-      rule.rule_version !== rule.approved_rule_version
+      ('mode' in rule &&
+        (rule.mode !== 'demonstration' ||
+          rule.clinically_validated !== false)) ||
+      (!('mode' in rule) &&
+        (rule.approval_status !== 'approved' ||
+          rule.rule_version !== rule.approved_rule_version))
     ) {
       throw new Error('A regra do exercício não possui aprovação compatível.');
     }
@@ -191,7 +195,7 @@ function isWithin(value: number, range: readonly [number, number]): boolean {
   return value >= range[0] && value <= range[1];
 }
 
-function validateRule(rule: ApprovedMovementRule): void {
+function validateRule(rule: MovementRule): void {
   const validRange = (range: readonly [number, number]) =>
     Number.isFinite(range[0]) &&
     Number.isFinite(range[1]) &&

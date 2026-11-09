@@ -17,7 +17,6 @@ import {
 import { usePatientTabNavigation } from '../../navigation/frontendTypes';
 import { colors, fonts, radii, spacing } from '../../theme/theme';
 import {
-  Badge,
   Button,
   EmptyState,
   Link,
@@ -31,7 +30,6 @@ import {
   exerciseImages,
   exerciseSourceText,
   exerciseText,
-  originalLanguageSeal,
   prescriptionText,
   textLanguage,
 } from './workoutText';
@@ -126,9 +124,6 @@ function WorkoutSummary({
             >
               {text.name}
             </Text>
-            {text.original ? (
-              <Badge tone="inverse" label={originalLanguageSeal} />
-            ) : null}
             <ExerciseImageGallery
               inverse
               limit={1}

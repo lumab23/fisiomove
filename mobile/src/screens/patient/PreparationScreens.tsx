@@ -28,21 +28,8 @@ import {
 } from '../../navigation/frontendTypes';
 import type { PatientStackParamList } from '../../navigation/types';
 import { useSessionSync } from '../../sync/SessionSyncContext';
-import {
-  Badge,
-  Body,
-  Button,
-  Card,
-  EmptyState,
-  Mascot,
-  styles,
-} from '../../ui';
-import {
-  exerciseText,
-  originalLanguageSeal,
-  sideLabels,
-  textLanguage,
-} from './workoutText';
+import { Body, Button, Card, EmptyState, Mascot, styles } from '../../ui';
+import { exerciseText, sideLabels, textLanguage } from './workoutText';
 
 type WorkoutRoute = PatientStackParamList['PatientPreparation'];
 
@@ -367,7 +354,6 @@ function Framing({
         >
           {text.name}
         </Text>
-        {text.original ? <Badge label={originalLanguageSeal} /> : null}
         <Body>{sideLabels[item.side]}</Body>
         <Body>
           {bothArms

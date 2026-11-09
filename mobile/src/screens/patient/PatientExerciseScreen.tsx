@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   AppState,
@@ -28,6 +28,11 @@ import {
 } from '../../features/session/ActiveSession';
 import { useSessionResult } from '../../features/session/useSessionResult';
 import { LocalPoseCamera } from '../../features/vision/LocalPoseCamera';
+import { MovementEngine } from '../../features/exercise-engine/MovementEngine';
+import {
+  demoRuleForExercise,
+  poseFrameFromObservation,
+} from '../../features/exercise-engine/demoElbowFlexion';
 import {
   resetToPatientTabs,
   useFrontendNavigation,
@@ -45,7 +50,6 @@ import { Button, EmptyState } from '../../ui';
 import {
   exerciseSourceText,
   exerciseText,
-  originalLanguageSeal,
   sideLabels,
   textLanguage,
 } from './workoutText';
@@ -133,12 +137,47 @@ function Execution({ session }: { session: ActiveSession }) {
 
   const progress = snapshot.items[snapshot.current_item_index];
   const item = currentWorkoutItem(session);
+  const demoRule = useMemo(
+    () =>
+      demoRuleForExercise(item.exercise_snapshot, item.rule_version, item.side),
+    [item.exercise_snapshot, item.rule_version, item.side],
+  );
+  const movementEngine = useMemo(
+    () =>
+      demoRule
+        ? new MovementEngine(demoRule, { smoothing_window_size: 4 })
+        : null,
+    [demoRule],
+  );
+  const automaticCount = demoRule !== null;
   const count = progress?.repetitions_in_current_set ?? 0;
   const goal = progress?.repetitions ?? item.repetitions;
   const sets = progress?.sets ?? item.sets;
   const setNumber = Math.min((progress?.completed_sets ?? 0) + 1, sets);
   const source = exerciseSourceText(item);
   const text = exerciseText(item);
+
+  useEffect(() => {
+    movementEngine?.setPaused(snapshot.status !== 'active');
+  }, [movementEngine, snapshot.status]);
+
+  const onPoseObservation = useCallback(
+    (observation: Parameters<typeof poseFrameFromObservation>[0]) => {
+      if (snapshot.status !== 'active' || !movementEngine || !demoRule) {
+        return;
+      }
+      const side = item.side;
+      if (side === 'bilateral') return;
+      const update = movementEngine.update(
+        poseFrameFromObservation(observation),
+        side,
+      );
+      if (update.feedback === 'rep_completed') {
+        countRepetition();
+      }
+    },
+    [countRepetition, demoRule, item.side, movementEngine, snapshot.status],
+  );
 
   useEffect(() => {
     if (count === 0 || reduceMotion !== false) {
@@ -177,7 +216,8 @@ function Execution({ session }: { session: ActiveSession }) {
         <LocalPoseCamera
           immersive
           side={item.side}
-          active={focused}
+          active={focused && snapshot.status === 'active'}
+          onObservation={automaticCount ? onPoseObservation : undefined}
           style={StyleSheet.absoluteFill}
         />
         <SafeAreaView edges={['top', 'left', 'right']} style={exercise.top}>
@@ -193,10 +233,12 @@ function Execution({ session }: { session: ActiveSession }) {
             >
               {text.name}
             </Text>
-            {text.original ? (
-              <Text style={exercise.subtitle}>{originalLanguageSeal}</Text>
-            ) : null}
             <Text style={exercise.subtitle}>{sideLabels[item.side]}</Text>
+            {automaticCount ? (
+              <Text style={exercise.demoNotice}>
+                Contagem demonstrativa · não validada clinicamente
+              </Text>
+            ) : null}
           </View>
           <View style={exercise.controls}>
             {paused ? (
@@ -265,7 +307,7 @@ function Execution({ session }: { session: ActiveSession }) {
         ) : null}
         {source ? <Text style={exercise.source}>{source}</Text> : null}
         {error ? <InlineError message={error} /> : null}
-        {snapshot.status === 'active' ? (
+        {snapshot.status === 'active' && !automaticCount ? (
           <Button
             icon="check"
             label="Contar repetição"
@@ -291,7 +333,9 @@ function Execution({ session }: { session: ActiveSession }) {
               ? 'Treino pausado. A contagem está parada.'
               : snapshot.status === 'completed'
                 ? 'Você fez tudo o que foi prescrito.'
-                : 'Toque ao terminar cada repetição.'}
+                : automaticCount
+                  ? 'A contagem aumenta ao completar o movimento demonstrativo.'
+                  : 'Toque ao terminar cada repetição.'}
         </Text>
       </SafeAreaView>
     </View>
@@ -354,6 +398,11 @@ const exercise = StyleSheet.create({
     color: colors.onPrimary,
     fontFamily: fonts.regular,
     ...typography.bodySmall,
+  },
+  demoNotice: {
+    color: colors.warning,
+    fontFamily: fonts.bold,
+    ...typography.caption,
   },
   controls: { gap: spacing.md },
   control: { alignItems: 'center', gap: spacing.xs },

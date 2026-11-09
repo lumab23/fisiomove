@@ -20,8 +20,8 @@ funcionalidade real.
 | Câmera ao vivo | Real (vision-camera, frontal) | Validar em Android |
 | Pose | Real, no aparelho (YOLO26 via ExecuTorch) | Validar desempenho em aparelhos antigos |
 | Contagem de repetições | Manual, por toque, enviada como `completed_repetitions` (DEC-008) | Ligar `MovementEngine` a uma regra aprovada |
-| Demonstração do movimento | "Como fazer" com os passos (pt-BR quando traduzidos, senão o original com selo), todas as imagens da fonte pela API (DEC-010), a orientação do profissional e a fonte | Animação aprovada pelo profissional; ver imagens no iPhone (não verificado) |
-| Idioma dos exercícios da biblioteca | Nome e passos em pt-BR escritos pelo fisioterapeuta (DEC-011); sem tradução, original com "Texto original em inglês" e leitor de tela em inglês | Traduzir os itens já adicionados e republicar os treinos (Q-P6) |
+| Demonstração do movimento | "Como fazer" com os passos em pt-BR revisados pelo fisioterapeuta, imagens da fonte pela API (DEC-010), orientação profissional e fonte | Animação aprovada pelo profissional; validar imagens no iPhone |
+| Idioma dos exercícios da biblioteca | O app exige nome e passos em pt-BR para salvar um treino com exercício da biblioteca; sem tradução, não mostra os passos ingleses ao paciente | Traduzir itens já publicados e republicar os treinos antigos |
 | Configurações da conta | Inexistente | Definir escopo (senha, fonte, voz) |
 | Comandos de voz | Fora do fluxo (DEC-009); controles manuais | Implementar reconhecimento de voz |
 
@@ -41,12 +41,13 @@ usada ao voltar à tela):
 - Exercícios > Meu treino: todos os treinos publicados, itens, orientação do
   profissional (`instructions` e `professional_guidance`).
 - Exercício vindo da biblioteca de referência mostra o nome em pt-BR
-  (`exercise_snapshot.localization`, DEC-011) ou, sem tradução, o original com
-  o selo "Texto original em inglês" e `accessibilityLanguage="en"`; a primeira
+  (`exercise_snapshot.localization`, DEC-011) ou, sem tradução, mantém o nome
+  original para identificação, sem exibir as instruções inglesas ao paciente;
+  usa `accessibilityLanguage="en"`; a primeira
   imagem (pela API, DEC-010) com texto alternativo e legenda de fonte/licença;
   e a atribuição: "Fonte: OpenExerciseBase (CC BY-NC 4.0)" ou, traduzido,
   "Adaptado de … Nome e passos traduzidos para o português por <nome> em
-  <data>; o original em inglês foi preservado." (Início e Exercícios).
+  <data>." (Início e Exercícios).
 - Exercícios > Histórico: as 50 sessões mais recentes (`SessionSummary`), com
   filtro local por status. Sessões mais antigas que isso ainda não aparecem
   (sem paginação na tela).
@@ -72,18 +73,18 @@ e carregam só IDs; o treino, o rascunho e o progresso ficam em memória
 - "Confira o enquadramento" (antes "Calibração") mostra a câmera com o lado do
   primeiro item; não há calibração. O rascunho (`prepare`) só é criado em
   "Começar exercício".
-- Execução: "Exercício X de Y", nome (pt-BR ou original com selo), lado, "Série X de Y",
+- Execução: "Exercício X de Y", nome (pt-BR ou original), lado, "Série X de Y",
   "Repetição N de M", orientação do profissional e atribuição; câmera imersiva
   com status de enquadramento sobre `colors.cameraOverlay`; "Contar repetição"
   (56 pt) só com a série ativa; pausa, "Como fazer" e "Encerrar" sempre
   visíveis; descanso regressivo sem "pular" (Q-P4); sair da tela ou do app
   pausa (RN20); o teto é o prescrito (RN19).
 - "Como fazer" pausa a sessão e mostra os passos em pt-BR
-  (`localization.instructions`) ou `exercise_snapshot.instructions` (com
-  "Texto original em inglês" quando vem da biblioteca sem tradução), todas as
-  imagens do snapshot, a orientação do profissional e a fonte. Não há textos
-  corretivos. Treinos publicados antes da tradução/imagens só as mostram
-  depois que o fisioterapeuta salva os itens de novo e publica (Q-P6).
+  (`localization.instructions`), todas as imagens do snapshot (busca a imagem
+  atual do catálogo se o snapshot antigo não tiver imagens), a orientação do
+  profissional e a fonte. Sem tradução, orienta o paciente a pedir ao
+  fisioterapeuta que revise o texto; a publicação pelo app exige a tradução
+  pt-BR. Não há textos corretivos.
 - Sair antes da primeira repetição descarta o rascunho (DEC-009); depois,
   envia sessão interrompida. Conclusão e interrupção mostram o resumo por item
   e o status de envio (aguardando, enviando, enviado, erro) com "Tentar enviar
@@ -141,19 +142,21 @@ Pendências:
 
 ## 6. Contagem automática de repetições
 
-Hoje o paciente toca em "Contar repetição" a cada repetição. O texto da tela
-deixa isso claro e o progresso só avança com o toque. O toque é enviado como
-`completed_repetitions` e gera pontuação limitada ao prescrito (DEC-008, uso
-acadêmico); a origem manual é dedutível do `rule_version` do snapshot
-(`library-reference-no-camera-rule:v1`). O resumo da conclusão diz que as
-repetições foram contadas pelos toques e não sugere validação do movimento. O motor de movimento
-(`MovementEngine`) e a execução da sessão (`SessionExecution`) já existem e
-estão testados, mas exigem uma regra de movimento aprovada (ângulos, tolerâncias,
-fases), que não pode ser inventada.
+A execução continua manual para os exercícios publicados comuns. Foi adicionada
+uma demonstração local e explicitamente identificada como não validada
+clinicamente para flexão e extensão do cotovelo. Quando o treino contém o item
+marcado exatamente como `demo-elbow-flexion` na versão
+`demo-elbow-flexion:v1`, os landmarks da `LocalPoseCamera` alimentam o
+`MovementEngine` e um ciclo reconhecido atualiza a repetição da sessão. O botão
+manual não aparece nesse item para evitar contagem duplicada. A câmera e a
+inferência permanecem locais; a sessão continua usando a fila de sincronização
+existente.
 
-Para ligar: o fisioterapeuta define e aprova a regra do primeiro exercício; a
-tela passa `onObservation` do `LocalPoseCamera` para o `MovementEngine`, que
-substitui o botão manual (o botão pode ficar como alternativa acessível).
+As faixas de ângulo e tempo dessa demonstração são sintéticas e servem somente
+para verificar a ligação técnica entre câmera, motor e sessão. Não são
+parâmetros clínicos, não foram validadas por fisioterapeuta e não devem ser
+usadas como prescrição. A tela de demonstração para desenvolvimento também
+permite experimentar a contagem sem criar uma sessão.
 
 ## 7. Demonstração do movimento
 

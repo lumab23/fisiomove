@@ -17,6 +17,7 @@ jest.mock('../src/app/dependencies', () => ({
   appDependencies: {
     profile: { mine: jest.fn(), linkedPhysiotherapist: jest.fn() },
     workouts: { listMine: jest.fn(), get: jest.fn() },
+    exercises: { get: jest.fn() },
     sessions: { listMine: jest.fn() },
     progress: { mine: jest.fn() },
     api: {
@@ -98,6 +99,7 @@ jest.mock(
 const services = appDependencies as unknown as {
   profile: { mine: jest.Mock; linkedPhysiotherapist: jest.Mock };
   workouts: { listMine: jest.Mock; get: jest.Mock };
+  exercises: { get: jest.Mock };
   sessions: { listMine: jest.Mock };
   progress: { mine: jest.Mock };
 };
@@ -144,6 +146,7 @@ beforeEach(() => {
   services.profile.linkedPhysiotherapist.mockResolvedValue({ full_name: null });
   services.workouts.listMine.mockResolvedValue(pageOf([workout]));
   services.workouts.get.mockResolvedValue(workout);
+  services.exercises.get.mockRejectedValue(new Error('not used'));
   services.sessions.listMine.mockResolvedValue(pageOf([]));
   services.progress.mine.mockRejectedValue(new Error('not used'));
   mockSync.findDraft.mockResolvedValue(null);
@@ -583,8 +586,13 @@ test('"Como fazer" pauses and shows only the snapshot and professional texts', a
   await press('Como fazer');
   expect(hasText('Como fazer')).toBe(true);
   expect(hasText('O treino está pausado.')).toBe(true);
-  expect(hasText('Texto original em inglês')).toBe(true);
-  expect(hasText('1. Raise the arm. 2. Lower the arm.')).toBe(true);
+  expect(hasText('Texto original em inglês')).toBe(false);
+  expect(hasText('1. Raise the arm. 2. Lower the arm.')).toBe(false);
+  expect(
+    hasText(
+      'As instruções em português ainda não foram revisadas pelo fisioterapeuta. Peça orientação para este exercício.',
+    ),
+  ).toBe(true);
   expect(hasText('Mantenha as costas apoiadas.')).toBe(true);
   expect(hasText('Faça devagar.')).toBe(true);
   expect(hasText('Fonte: OpenExerciseBase (CC BY-NC 4.0)')).toBe(true);
@@ -657,7 +665,26 @@ test('"Como fazer" shows the pt-BR text, all API images and the changed attribut
   ).toBe(true);
 });
 
-test('"Como fazer" of an untranslated library item reads the original in English', async () => {
+test('"Como fazer" fetches the library image for an older snapshot', async () => {
+  services.exercises.get.mockResolvedValue({
+    images: [{ position: 1, url: '/api/v1/exercises/exercise-1/images/1' }],
+  });
+  await startGuided();
+  await press('Como fazer');
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+
+  expect(services.exercises.get).toHaveBeenCalledWith(
+    guidedWorkout.items[0].exercise_id,
+  );
+  expect(
+    app.root.findAllByType(Image).map(node => node.props.accessibilityLabel),
+  ).toContain('Imagem 1 de 1 do exercício Test arm raise');
+});
+
+test('"Como fazer" of an untranslated library item hides the English steps', async () => {
   await startGuided();
   await press('Como fazer');
   const english = app.root.findAll(
@@ -666,11 +693,10 @@ test('"Como fazer" of an untranslated library item reads the original in English
       typeof node.type !== 'string',
   );
   expect(english.map(node => [node.props.children].flat().join(''))).toEqual(
-    expect.arrayContaining([
-      'Test arm raise',
-      '1. Raise the arm. 2. Lower the arm.',
-    ]),
+    expect.arrayContaining(['Test arm raise']),
   );
+  expect(hasText('Texto original em inglês')).toBe(false);
+  expect(hasText('1. Raise the arm. 2. Lower the arm.')).toBe(false);
   expect(app.root.findAllByType(Image)).toHaveLength(0);
 });
 

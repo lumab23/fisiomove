@@ -539,7 +539,7 @@ test('home and exercises show the pt-BR name and the first API image', async () 
   ).toBe(2);
 });
 
-test('an untranslated library name gets the English seal and voice', async () => {
+test('an untranslated library name has no English seal and keeps voice metadata', async () => {
   services.workouts.listMine.mockResolvedValue(
     pageOf([
       {
@@ -560,7 +560,7 @@ test('an untranslated library name gets the English seal and voice', async () =>
     ]),
   );
   await render();
-  expect(hasText('Texto original em inglês')).toBe(true);
+  expect(hasText('Texto original em inglês')).toBe(false);
   const english = () =>
     app.root.findAll(
       node =>
@@ -569,7 +569,7 @@ test('an untranslated library name gets the English seal and voice', async () =>
     );
   expect(english().length).toBeGreaterThan(0);
   await pressTab('Exercícios');
-  expect(hasText('Texto original em inglês')).toBe(true);
+  expect(hasText('Texto original em inglês')).toBe(false);
 });
 
 test('a catalog exercise without provenance shows no source line', async () => {

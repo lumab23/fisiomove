@@ -1,5 +1,5 @@
 import type { PoseFrame } from '../vision/types';
-import type { ApprovedMovementRule } from './types';
+import type { MovementRule } from './types';
 
 export type AngleResult =
   | { status: 'measured'; angle_degrees: number; confidence: number }
@@ -9,7 +9,7 @@ export type AngleResult =
 
 export function measureJointAngle(
   frame: PoseFrame,
-  rule: ApprovedMovementRule,
+  rule: MovementRule,
 ): AngleResult {
   const { proximal, joint, distal } = rule.landmarks;
   const first = frame.landmarks[proximal];

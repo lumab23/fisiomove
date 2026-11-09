@@ -31,6 +31,7 @@ export type FrontendStackParamList = {
   CameraPermission: PatientStackParamList['PatientPreparation'];
   Calibration: PatientStackParamList['PatientPreparation'];
   PatientExercise: PatientStackParamList['PatientExercise'];
+  DemoAutoCount: undefined;
   /** "Como fazer" of the current item; opening it pauses the session. */
   MovementGuidance: ActiveSessionParams;
   ConfirmExit: ActiveSessionParams;

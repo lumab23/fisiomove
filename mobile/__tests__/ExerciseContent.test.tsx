@@ -64,11 +64,11 @@ describe('patient text (DEC-011)', () => {
       original: false,
     });
     expect(exerciseSourceText(item)).toBe(
-      'Adaptado de OpenExerciseBase (CC BY-NC 4.0). Nome e passos traduzidos para o português por Dra. Teste em 06/11/2026; o original em inglês foi preservado.',
+      'Adaptado de OpenExerciseBase (CC BY-NC 4.0). Nome e passos traduzidos para o português por Dra. Teste em 06/11/2026.',
     );
   });
 
-  test('falls back to the original, marked as English only for library text', () => {
+  test('does not expose untranslated library instructions to the patient', () => {
     const library = snapshot({
       name: 'Original Test',
       instructions: '1. Original step.',
@@ -77,7 +77,7 @@ describe('patient text (DEC-011)', () => {
     });
     expect(exerciseText(library)).toEqual({
       name: 'Original Test',
-      steps: '1. Original step.',
+      steps: null,
       original: true,
     });
     expect(exerciseSourceText(library)).toBe(
