@@ -219,6 +219,40 @@ test('remove campos extras e rejeita durações incompatíveis antes da fila', a
   });
 });
 
+test('counting_mode segue para a API e resultado antigo da fila continua sem ele (DEC-013)', async () => {
+  const { api, service } = setup();
+  // Old payload, queued before the field existed: sent without it (`manual`).
+  await service.enqueue(OWNER, payload);
+  await service.sync(OWNER);
+  expect(api.create.mock.calls[0][0].items[0]).not.toHaveProperty(
+    'counting_mode',
+  );
+
+  const mixed: SessionResultInput = {
+    ...payload,
+    client_session_id: '77777777-7777-4777-8777-777777777777',
+    items: [{ ...payload.items[0], counting_mode: 'mixed' }],
+  };
+  const queued = await service.enqueue(OWNER, mixed);
+  expect(queued.payload.items[0].counting_mode).toBe('mixed');
+
+  await expect(
+    service.enqueue(OWNER, {
+      ...payload,
+      client_session_id: '88888888-8888-4888-8888-888888888888',
+      items: [
+        {
+          ...payload.items[0],
+          counting_mode: 'camera' as unknown as 'manual',
+        },
+      ],
+    }),
+  ).rejects.toMatchObject({
+    kind: 'validation',
+    code: 'counting_mode_invalid',
+  });
+});
+
 test.each([
   new ApiError('access_denied', 'forbidden', 403, 'account_inactive'),
   new ApiError('not_found', 'missing', 404, 'revision_not_found'),

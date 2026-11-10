@@ -14,6 +14,10 @@ from pydantic import (
 
 Positive = Annotated[int, Field(strict=True, gt=0)]
 Nonnegative = Annotated[int, Field(strict=True, ge=0)]
+# DEC-013: how the repetitions of an item were counted. `manual` is the default so
+# payloads queued offline before the field existed stay valid.
+CountingMode = Literal["manual", "automatic", "mixed"]
+DEFAULT_COUNTING_MODE: CountingMode = "manual"
 
 
 class StrictRequest(BaseModel):
@@ -27,6 +31,7 @@ class SessionItemResultCreate(StrictRequest):
     completed_repetitions: Nonnegative
     active_duration_ms: Nonnegative
     interrupted: StrictBool
+    counting_mode: CountingMode = DEFAULT_COUNTING_MODE
 
 
 class SessionResultCreate(StrictRequest):

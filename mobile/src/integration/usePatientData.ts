@@ -4,6 +4,7 @@ import { ApiError } from '../api/errors';
 import { appDependencies } from '../app/dependencies';
 import type {
   LinkedPhysiotherapist,
+  OwnNotePage,
   PatientSelfProfile,
   ProgressSummary,
   SessionPage,
@@ -125,6 +126,16 @@ export function useMySessions(pageSize: number): Resource<SessionPage> {
     [pageSize],
   );
   return useRefreshOnFocus(useResource(load, emptyPage));
+}
+
+/** Page size of the notes screen (volume of the TCC, KI-010). */
+export const myNotesPageSize = 50;
+const loadMyNotes = () =>
+  appDependencies.notes.mine({ page_size: myNotesPageSize });
+
+/** Notes the physiotherapist marked visible (`GET /me/notes`, DEC-015). */
+export function useMyNotes(): Resource<OwnNotePage> {
+  return useRefreshOnFocus(useResource(loadMyNotes, emptyPage));
 }
 
 export function useMyProgress(

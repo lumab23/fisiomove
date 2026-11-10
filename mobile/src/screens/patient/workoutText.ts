@@ -6,7 +6,18 @@ import type {
   WorkoutItem,
 } from '../../contracts/domain';
 
+/**
+ * Side as the patient reads it: `left/right` is the patient's own arm
+ * (anatomical side, DEC-012).
+ */
 export const sideLabels: Record<Side, string> = {
+  left: 'Seu braço esquerdo',
+  right: 'Seu braço direito',
+  bilateral: 'Os dois braços',
+};
+
+/** Side as the physiotherapist prescribes it (editor, review, library). */
+export const prescribedSideLabels: Record<Side, string> = {
   left: 'Lado esquerdo',
   right: 'Lado direito',
   bilateral: 'Os dois lados',
@@ -166,10 +177,13 @@ export function exerciseSourceText(item: Snapshot) {
 }
 
 /** Prescribed values exactly as published by the physiotherapist. */
-export function prescriptionText(item: WorkoutItem) {
+export function prescriptionText(
+  item: WorkoutItem,
+  labels: Record<Side, string> = sideLabels,
+) {
   const sets = `${item.sets} ${item.sets === 1 ? 'série' : 'séries'}`;
   const repetitions = `${item.repetitions} ${
     item.repetitions === 1 ? 'repetição' : 'repetições'
   }`;
-  return `${sets} · ${repetitions} · ${sideLabels[item.side]}`;
+  return `${sets} · ${repetitions} · ${labels[item.side]}`;
 }

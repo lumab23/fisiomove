@@ -166,13 +166,7 @@ function Preparation({
     >
       <Mascot />
       <Card white>
-        {[
-          'Apoie o celular em um local firme.',
-          'Sente-se de frente para a câmera.',
-          firstItem(workout).side === 'bilateral'
-            ? 'Deixe os dois braços inteiros visíveis.'
-            : 'Deixe o braço inteiro visível.',
-        ].map((instruction, index) => (
+        {preparationSteps(firstItem(workout).side).map((instruction, index) => (
           <View key={instruction} style={styles.step}>
             <Text style={styles.number}>{index + 1}</Text>
             <View style={styles.stepContent}>
@@ -181,9 +175,24 @@ function Preparation({
           </View>
         ))}
       </Card>
+      <Text style={[styles.demo, preparation.centered]}>{privacyText}</Text>
     </Screen>
   );
 }
+
+/** Framing only: no distance, angle or movement instruction (Q-L3, Q-C2). */
+export function preparationSteps(side: Workout['items'][number]['side']) {
+  return [
+    'Vamos usar a câmera da frente, a mesma do lado da tela.',
+    'Deixe o celular em pé, apoiado num lugar firme, na altura do peito.',
+    side === 'bilateral'
+      ? 'Afaste-se até os dois braços inteiros aparecerem na tela.'
+      : 'Afaste-se até o braço inteiro aparecer na tela.',
+    'Prefira um lugar claro, com a luz à sua frente.',
+  ];
+}
+
+export const privacyText = 'Só você vê a imagem; ela não sai do celular.';
 
 export function CameraPermissionScreen() {
   const navigation = useFrontendNavigation();
@@ -271,9 +280,7 @@ export function CameraPermissionScreen() {
           onPress={() => navigation.goBack()}
         />
       </CameraMessage>
-      <Text style={[styles.demo, preparation.centered]}>
-        As imagens ficam só no seu celular e não são enviadas.
-      </Text>
+      <Text style={[styles.demo, preparation.centered]}>{privacyText}</Text>
     </Screen>
   );
 }

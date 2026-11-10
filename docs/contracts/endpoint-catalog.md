@@ -35,6 +35,7 @@
 | B06 | `GET /api/v1/patients/{id}/notes` | paginação | `Page[NoteResponse]` filtrada por visibilidade |
 | B06 | `POST /api/v1/patients/{id}/notes` | `NoteCreate` | `NoteResponse` |
 | B06 | `PATCH /api/v1/notes/{id}` | `NoteUpdate` | `NoteResponse` |
+| DEC-015 | `GET /api/v1/me/notes` | identidade autenticada (`patient`), paginação | `Page[OwnNoteResponse]` (`{ id, content, created_at, updated_at }`), só `patient_visible` |
 | B07 | `POST /api/v1/me/sessions` | `SessionResultCreate` | `SessionResultResponse` idempotente |
 | B08 | `GET /api/v1/me/sessions` | período/paginação | `Page[SessionSummary]` |
 | B08 | `GET /api/v1/me/sessions/{session_id}` | UUID no caminho | `SessionResultResponse` |
@@ -87,10 +88,18 @@ proibidos e atribuição obrigatória em `exercise-library.md`.
 
 ## DTOs de escrita implementados
 
-- `WorkoutCreate`/`WorkoutUpdate`: instruções e lista ordenada de itens conforme `domain-contracts.md`.
+- `WorkoutCreate`/`WorkoutUpdate`: instruções e lista ordenada de itens conforme
+  `domain-contracts.md`; cada item aceita `counting_rule` opcional (DEC-013).
 - `NoteCreate`/`NoteUpdate`: conteúdo e visibilidade conforme `domain-contracts.md`.
 - `SessionResultCreate`: resultado derivado conforme `domain-contracts.md`, sem
-  `score`, calibração, imagens, vídeo ou áudio.
+  `score`, calibração, imagens, vídeo ou áudio; cada item aceita `counting_mode`
+  opcional (padrão `manual`, ver `session-result.md`).
+
+`GET /me/notes` exige papel `patient` com senha trocada: fisioterapeuta recebe
+`403 insufficient_role`, senha temporária `403 password_change_required` e conta
+sem registro de paciente ativo `404 patient_not_found`. Paginação igual à de
+`GET /patients/{id}/notes` (`page >= 1`, `1 <= page_size <= 100`, padrão 20);
+`total` e `pages` contam só as notas visíveis ao paciente.
 
 - `CatalogImportRequest`: `allowed_sides` com 1 a 3 lados distintos, sem padrão.
 

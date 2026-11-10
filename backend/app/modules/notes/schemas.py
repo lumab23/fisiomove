@@ -63,3 +63,32 @@ class NotePage(BaseModel):
     page_size: int
     total: int
     pages: int
+
+
+class OwnNoteResponse(BaseModel):
+    """A `patient_visible` note as read by its own patient (DEC-015).
+
+    Author, patient and visibility are omitted: the reader is always the patient
+    and the visibility is always `patient_visible`.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    content: str
+    created_at: datetime
+    updated_at: datetime
+
+    @field_validator("created_at", "updated_at")
+    @classmethod
+    def utc_dates(cls, value: datetime) -> datetime:
+        return (
+            value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+        )
+
+
+class OwnNotePage(BaseModel):
+    items: list[OwnNoteResponse]
+    page: int
+    page_size: int
+    total: int
+    pages: int

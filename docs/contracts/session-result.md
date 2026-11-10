@@ -21,14 +21,40 @@ como repetição; movimento parcial não fecha uma série. Interrupção conserv
 ciclos completos e séries parciais que já ocorreram. O fim da sessão desativa o
 stream da câmera e libera o microfone se uma integração futura o tiver aberto.
 
-Exceção acadêmica (DEC-008): o app ainda não executa o motor de movimento em
-nenhum item (KI-004), então **toda** repetição é contada por toque do paciente e
-enviada como `completed_repetitions`. Enquanto a contagem automática não existir,
-toda sessão registrada tem origem manual; os itens importados da biblioteca têm
-ainda `rule_version = "library-reference-no-camera-rule:v1"`. Quando a contagem
-automática for ligada, a origem passa a exigir um campo próprio (ex.:
-`counting_mode`). Isso relaxa a RN06 e a RN08 apenas no uso acadêmico (DEC-006) e
-precisa ser revisto antes de qualquer uso clínico.
+Exceção acadêmica (DEC-008): repetições contadas por toque do paciente são
+enviadas como `completed_repetitions` e pontuam normalmente; os itens importados
+da biblioteca têm `rule_version = "library-reference-no-camera-rule:v1"`. Isso
+relaxa a RN06 e a RN08 apenas no uso acadêmico (DEC-006) e precisa ser revisto
+antes de qualquer uso clínico.
+
+### Origem da contagem (`counting_mode`, DEC-013)
+
+O fisioterapeuta pode ativar, por item unilateral do treino,
+`counting_rule = "demo-elbow-flexion:v1"` — regra **demonstrativa, não validada
+clinicamente**. O valor vai no snapshot do item publicado; itens sem a regra têm
+`counting_rule: null` e só aceitam contagem manual. Um treino publicado antes da
+regra existir só passa a oferecê-la depois de editado e republicado com o campo.
+
+Cada item do resultado leva `counting_mode`:
+
+| Valor | Uso |
+| --- | --- |
+| `manual` | padrão; todas as repetições do item contadas por toque |
+| `automatic` | todas as repetições do item contadas pelo motor |
+| `mixed` | o motor contou parte e o paciente passou para "Contar manualmente" |
+
+- O campo é opcional no envio e vale `manual` quando omitido, para que resultados
+  da fila offline gravados antes dele continuem válidos.
+- `automatic` e `mixed` só são aceitos se o item do snapshot da revisão tiver
+  `counting_rule`; caso contrário a API devolve `422 counting_mode_unavailable`
+  com `details = { "field": "counting_mode", "position": <posição> }`.
+- A pontuação não depende da origem: todas as origens pontuam como na DEC-008.
+- `counting_mode` faz parte do conteúdo idempotente: reenviar o mesmo
+  `client_session_id` com outra origem devolve `409 idempotency_conflict`. Para
+  compatibilidade com o hash dos resultados anteriores ao campo, o valor `manual`
+  é desconsiderado no cálculo do hash (omitir ou enviar `manual` é equivalente).
+- Resultados gravados antes do campo são lidos com `counting_mode = "manual"`;
+  não há backfill.
 
 O `SessionExecution` é a máquina de estados local; `SessionController` encaminha
 repetições completas do motor para ela e produz o `SessionCompletion` consumido por

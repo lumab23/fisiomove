@@ -1,7 +1,7 @@
 import { MovementEngine } from '../src/features/exercise-engine/MovementEngine';
 import {
   demoElbowFlexionRule,
-  demoRuleForExercise,
+  demoRuleForItem,
 } from '../src/features/exercise-engine/demoElbowFlexion';
 import type { PoseFrame } from '../src/features/vision/types';
 
@@ -38,30 +38,31 @@ test('counts one full synthetic elbow flexion and extension cycle', () => {
   });
 });
 
-test('only opts the exact explicitly marked exercise into demonstration mode', () => {
-  expect(
-    demoRuleForExercise(
-      {
-        code: 'demo-elbow-flexion',
-        rule_version: 'demo-elbow-flexion:v1',
-      },
-      'demo-elbow-flexion:v1',
-      'left',
-    ),
-  ).toMatchObject({ mode: 'demonstration', clinically_validated: false });
+test('only the item marked with the demonstration counting rule opts in (DEC-013)', () => {
+  expect(demoRuleForItem('demo-elbow-flexion:v1', 'left')).toMatchObject({
+    mode: 'demonstration',
+    clinically_validated: false,
+    landmarks: { joint: 'left_elbow' },
+  });
+  expect(demoRuleForItem('demo-elbow-flexion:v1', 'right')).toMatchObject({
+    landmarks: { joint: 'right_elbow' },
+  });
+  // The trigger is the item, not the exercise code or its rule version.
+  expect(demoRuleForItem(null, 'left')).toBeNull();
+  expect(demoRuleForItem(undefined, 'left')).toBeNull();
+  expect(demoRuleForItem('another-rule:v1', 'left')).toBeNull();
+  expect(demoRuleForItem('demo-elbow-flexion:v1', 'bilateral')).toBeNull();
+});
 
-  expect(
-    demoRuleForExercise(
-      { code: 'another-exercise', rule_version: 'demo-elbow-flexion:v1' },
-      'demo-elbow-flexion:v1',
-      'left',
-    ),
-  ).toBeNull();
-  expect(
-    demoRuleForExercise(
-      { code: 'demo-elbow-flexion', rule_version: 'demo-elbow-flexion:v1' },
-      'demo-elbow-flexion:v1',
-      'bilateral',
-    ),
-  ).toBeNull();
+test('keeps the values approved as an academic demonstration (Q-C1)', () => {
+  expect(demoElbowFlexionRule).toMatchObject({
+    confidence: { minimum_visibility: 0.5, minimum_presence: 0.5 },
+    phases: {
+      initial_angle_degrees: [145, 180],
+      peak_angle_degrees: [40, 100],
+      direction_to_peak: 'decreasing',
+      minimum_cycle_duration_ms: 900,
+      maximum_frame_gap_ms: 700,
+    },
+  });
 });

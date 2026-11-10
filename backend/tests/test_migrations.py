@@ -48,7 +48,7 @@ def test_empty_database_migrates_to_head(tmp_path: Path) -> None:
             revision = connection.scalar(
                 text("SELECT version_num FROM alembic_version")
             )
-        assert revision == "20261106_0014"
+        assert revision == "20261109_0015"
         with engine.connect() as connection:
             from alembic.autogenerate import compare_metadata
             from alembic.migration import MigrationContext
@@ -142,6 +142,7 @@ def test_business_routes_registered_once() -> None:
             "/api/v1/me/workouts": {"get"},
             "/api/v1/patients/{patient_id}/notes": {"get", "post"},
             "/api/v1/notes/{note_id}": {"patch"},
+            "/api/v1/me/notes": {"get"},
             "/api/v1/me/sessions": {"get", "post"},
             "/api/v1/me/sessions/{session_id}": {"get"},
             "/api/v1/patients/{patient_id}/sessions": {"get"},
@@ -306,6 +307,59 @@ def test_image_and_localization_migrations_keep_existing_exercises(
                     {"id": exercise_id},
                 )
                 == "Test only"
+            )
+        command.upgrade(config, "head")
+    finally:
+        engine.dispose()
+
+
+def test_counting_rule_migration_keeps_existing_items_manual(tmp_path: Path) -> None:
+    """0015 adds a NULL `counting_rule`; downgrade drops only the column."""
+    database_url = f"sqlite+pysqlite:///{tmp_path / 'counting.db'}"
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("sqlalchemy.url", database_url)
+    engine = create_engine(database_url)
+    item_id = uuid4().hex
+    try:
+        command.upgrade(config, "20261106_0014")
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO workout_items "
+                    "(id, revision_id, position, exercise_id, rule_version, "
+                    "exercise_snapshot, side, sets, repetitions, rest_duration_ms, "
+                    "parameters) VALUES (:id, :revision, 1, :exercise, 'test-v1', "
+                    "'{}', 'left', 2, 3, 0, '{}')"
+                ),
+                {"id": item_id, "revision": uuid4().hex, "exercise": uuid4().hex},
+            )
+
+        command.upgrade(config, "20261109_0015")
+        columns = {
+            column["name"]: column
+            for column in inspect(engine).get_columns("workout_items")
+        }
+        assert columns["counting_rule"]["nullable"] is True
+        with engine.connect() as connection:
+            assert (
+                connection.scalar(
+                    text("SELECT counting_rule FROM workout_items WHERE id = :id"),
+                    {"id": item_id},
+                )
+                is None
+            )
+
+        command.downgrade(config, "20261106_0014")
+        assert "counting_rule" not in {
+            column["name"] for column in inspect(engine).get_columns("workout_items")
+        }
+        with engine.connect() as connection:
+            assert (
+                connection.scalar(
+                    text("SELECT count(*) FROM workout_items WHERE id = :id"),
+                    {"id": item_id},
+                )
+                == 1
             )
         command.upgrade(config, "head")
     finally:

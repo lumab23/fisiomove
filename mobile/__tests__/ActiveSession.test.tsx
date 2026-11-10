@@ -115,6 +115,7 @@ test('monta o plano com séries, repetições e descanso do WorkoutItem, na orde
       sets: 2,
       repetitions: 3,
       rest_duration_ms: 7000,
+      counting_rule: null,
     },
     {
       workout_item_id: 'item-2',
@@ -122,6 +123,7 @@ test('monta o plano com séries, repetições e descanso do WorkoutItem, na orde
       sets: 1,
       repetitions: 1,
       rest_duration_ms: 0,
+      counting_rule: null,
     },
   ]);
 });

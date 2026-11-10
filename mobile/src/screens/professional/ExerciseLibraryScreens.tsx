@@ -54,7 +54,7 @@ import {
   SectionTitle,
   Title,
 } from '../../ui';
-import { sideLabels } from '../patient/workoutText';
+import { prescribedSideLabels } from '../patient/workoutText';
 import {
   buildTranslation,
   emptyTranslation,
@@ -95,7 +95,7 @@ export function catalogSealText(status: CatalogExerciseStatus | null) {
 }
 
 const sideOptions = (['left', 'right', 'bilateral'] as const).map(
-  side => [side, sideLabels[side]] as const,
+  side => [side, prescribedSideLabels[side]] as const,
 );
 
 const catalogErrors: Record<string, string> = {
@@ -208,6 +208,27 @@ function OriginalText({
   );
 }
 
+/**
+ * pt-BR equivalents of the fixed English notices of the library API
+ * (`USAGE_NOTICE`/`CHANGES_NOTICE`, DEC-014). Another text from the API is
+ * shown as received, marked as English.
+ */
+const libraryNotices: Record<string, string> = {
+  'External reference material. A physiotherapist may add it to the FisioMove catalog for academic use; prescription values are always set by the physiotherapist.':
+    'Material de referência externo. O fisioterapeuta pode adicioná-lo ao catálogo do FisioMove para uso acadêmico; os valores da prescrição são sempre definidos pelo fisioterapeuta.',
+  'Only selected descriptive fields are shown; text is kept in the original language without edits. Performance metrics and variations are omitted.':
+    'Mostramos só alguns campos descritivos; o texto fica no idioma original, sem edições. Métricas de desempenho e variações foram omitidas.',
+};
+
+function LibraryNotice({ children }: { children: string }) {
+  const translated = libraryNotices[children.trim()];
+  return translated ? (
+    <Body>{translated}</Body>
+  ) : (
+    <OriginalText>{children}</OriginalText>
+  );
+}
+
 function openUrl(url: string) {
   Linking.openURL(url).catch(() => undefined);
 }
@@ -225,8 +246,8 @@ function AttributionCard({ attribution }: { attribution: LibraryAttribution }) {
         label="Abrir a fonte dos dados"
         onPress={() => openUrl(attribution.source_url)}
       />
-      <Body>Alterações feitas pelo FisioMove (texto em inglês):</Body>
-      <OriginalText>{attribution.changes}</OriginalText>
+      <Body>Alterações feitas pelo FisioMove:</Body>
+      <LibraryNotice>{attribution.changes}</LibraryNotice>
     </Card>
   );
 }
@@ -357,7 +378,7 @@ export function ExerciseLibraryScreen() {
       >
         {data => (
           <>
-            <OriginalText>{data.usage_notice}</OriginalText>
+            <LibraryNotice>{data.usage_notice}</LibraryNotice>
             <Body>
               {`${data.total} ${data.total === 1 ? 'exercício encontrado' : 'exercícios encontrados'}`}
             </Body>
@@ -419,7 +440,7 @@ export function ExerciseLibraryDetailScreen() {
           <>
             <Title>{data.name}</Title>
             <CatalogSeal status={data.catalog_exercise} />
-            <OriginalText>{data.usage_notice}</OriginalText>
+            <LibraryNotice>{data.usage_notice}</LibraryNotice>
             {isAiGenerated(data.created_by) ? (
               <Card white title="Conteúdo gerado por IA">
                 <Body>

@@ -21,6 +21,7 @@ export { failureState, resolvedState } from './asyncState';
 export type { AsyncState } from './asyncState';
 export {
   currentWeek,
+  useMyNotes,
   useMyProgress,
   useMySessions,
   useMyWorkouts,

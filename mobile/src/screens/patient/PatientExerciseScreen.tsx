@@ -30,9 +30,13 @@ import { useSessionResult } from '../../features/session/useSessionResult';
 import { LocalPoseCamera } from '../../features/vision/LocalPoseCamera';
 import { MovementEngine } from '../../features/exercise-engine/MovementEngine';
 import {
-  demoRuleForExercise,
+  demoRuleForItem,
   poseFrameFromObservation,
 } from '../../features/exercise-engine/demoElbowFlexion';
+import {
+  framingFeedback,
+  type FramingFeedback,
+} from '../../features/vision/cameraOverlay';
 import {
   resetToPatientTabs,
   useFrontendNavigation,
@@ -59,7 +63,9 @@ const CLOCK_REFRESH_MS = 1000;
 
 /**
  * Execution of the published workout: reads the in-memory session;
- * repetitions are counted by touch (DEC-008). Pause and rest are internal
+ * repetitions are counted by touch (DEC-008) or, when the physiotherapist
+ * enabled it for the item, by the demonstration engine with "Contar
+ * manualmente" always available (DEC-013). Pause and rest are internal
  * states (Q-T3); leaving the screen or the app pauses (RN20).
  */
 export function PatientExerciseScreen() {
@@ -87,7 +93,15 @@ export function PatientExerciseScreen() {
 
 function Execution({ session }: { session: ActiveSession }) {
   const navigation = useFrontendNavigation();
-  const { start, tick, countRepetition, pause, resume } = useActiveSession();
+  const {
+    start,
+    tick,
+    countRepetition,
+    countCameraRepetition,
+    switchToManualCounting,
+    pause,
+    resume,
+  } = useActiveSession();
   const { snapshot, draft } = session;
   const clientSessionId = draft.client_session_id;
   const focused = useIsFocused();
@@ -137,19 +151,24 @@ function Execution({ session }: { session: ActiveSession }) {
 
   const progress = snapshot.items[snapshot.current_item_index];
   const item = currentWorkoutItem(session);
+  // DEC-013: the rule comes from the item of the published snapshot.
   const demoRule = useMemo(
-    () =>
-      demoRuleForExercise(item.exercise_snapshot, item.rule_version, item.side),
-    [item.exercise_snapshot, item.rule_version, item.side],
+    () => demoRuleForItem(item.counting_rule, item.side),
+    [item.counting_rule, item.side],
   );
+  const itemId = item.id;
+  // One engine per item, so no partial cycle carries over to the next one.
   const movementEngine = useMemo(
     () =>
-      demoRule
+      demoRule && itemId
         ? new MovementEngine(demoRule, { smoothing_window_size: 4 })
         : null,
-    [demoRule],
+    [demoRule, itemId],
   );
-  const automaticCount = demoRule !== null;
+  // Off once the patient chose "Contar manualmente" for this item.
+  const automaticCount =
+    movementEngine !== null && progress?.manual_counting === false;
+  const [framing, setFraming] = useState<FramingFeedback | null>(null);
   const count = progress?.repetitions_in_current_set ?? 0;
   const goal = progress?.repetitions ?? item.repetitions;
   const sets = progress?.sets ?? item.sets;
@@ -157,26 +176,31 @@ function Execution({ session }: { session: ActiveSession }) {
   const source = exerciseSourceText(item);
   const text = exerciseText(item);
 
+  // Pause, rest and manual counting freeze the engine (RN20, DEC-013).
+  const engineRunning = automaticCount && snapshot.status === 'active';
   useEffect(() => {
-    movementEngine?.setPaused(snapshot.status !== 'active');
-  }, [movementEngine, snapshot.status]);
+    movementEngine?.setPaused(!engineRunning);
+    if (!engineRunning) {
+      setFraming(null);
+    }
+  }, [engineRunning, movementEngine]);
 
   const onPoseObservation = useCallback(
     (observation: Parameters<typeof poseFrameFromObservation>[0]) => {
-      if (snapshot.status !== 'active' || !movementEngine || !demoRule) {
+      const side = item.side;
+      if (!engineRunning || !movementEngine || side === 'bilateral') {
         return;
       }
-      const side = item.side;
-      if (side === 'bilateral') return;
       const update = movementEngine.update(
         poseFrameFromObservation(observation),
         side,
       );
+      setFraming(framingFeedback(update));
       if (update.feedback === 'rep_completed') {
-        countRepetition();
+        countCameraRepetition();
       }
     },
-    [countRepetition, demoRule, item.side, movementEngine, snapshot.status],
+    [countCameraRepetition, engineRunning, item.side, movementEngine],
   );
 
   useEffect(() => {
@@ -218,6 +242,7 @@ function Execution({ session }: { session: ActiveSession }) {
           side={item.side}
           active={focused && snapshot.status === 'active'}
           onObservation={automaticCount ? onPoseObservation : undefined}
+          framing={engineRunning ? framing : null}
           style={StyleSheet.absoluteFill}
         />
         <SafeAreaView edges={['top', 'left', 'right']} style={exercise.top}>
@@ -315,6 +340,16 @@ function Execution({ session }: { session: ActiveSession }) {
             onPress={countRepetition}
           />
         ) : null}
+        {automaticCount && snapshot.status !== 'completed' ? (
+          <Button
+            secondary
+            icon="check"
+            label="Contar manualmente"
+            accessibilityHint="Desliga a contagem pela câmera neste exercício. Depois, toque ao terminar cada repetição."
+            disabled={snapshot.status !== 'active'}
+            onPress={switchToManualCounting}
+          />
+        ) : null}
         {paused ? (
           <Button icon="play" label="Continuar exercício" onPress={resume} />
         ) : null}
@@ -334,7 +369,7 @@ function Execution({ session }: { session: ActiveSession }) {
               : snapshot.status === 'completed'
                 ? 'Você fez tudo o que foi prescrito.'
                 : automaticCount
-                  ? 'A contagem aumenta ao completar o movimento demonstrativo.'
+                  ? 'A câmera conta as repetições. Se preferir, toque em Contar manualmente.'
                   : 'Toque ao terminar cada repetição.'}
         </Text>
       </SafeAreaView>
@@ -399,9 +434,16 @@ const exercise = StyleSheet.create({
     fontFamily: fonts.regular,
     ...typography.bodySmall,
   },
+  // Opaque light badge: readable (≈ 6:1) whatever the camera image behind it.
   demoNotice: {
-    color: colors.warning,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.warningBackground,
+    borderRadius: radii.sm,
+    color: colors.warningText,
     fontFamily: fonts.bold,
+    overflow: 'hidden',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
     ...typography.caption,
   },
   controls: { gap: spacing.md },

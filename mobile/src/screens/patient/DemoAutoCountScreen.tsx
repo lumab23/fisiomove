@@ -4,7 +4,8 @@ import { useIsFocused } from '@react-navigation/native';
 import { LocalPoseCamera } from '../../features/vision/LocalPoseCamera';
 import { MovementEngine } from '../../features/exercise-engine/MovementEngine';
 import {
-  demoRuleForExercise,
+  demoElbowFlexionRule,
+  demoRuleForItem,
   poseFrameFromObservation,
 } from '../../features/exercise-engine/demoElbowFlexion';
 import type {
@@ -17,9 +18,11 @@ import { colors, fonts, spacing, typography } from '../../theme/theme';
 
 type Side = 'left' | 'right';
 
+// State and framing texts only: movement instructions were not approved
+// (Q-C2).
 const feedbackText: Record<MovementFeedback, string> = {
-  ready: 'Comece com o cotovelo estendido.',
-  capture_adjustment: 'Mantenha ombro, cotovelo e punho visíveis.',
+  ready: 'Braço reconhecido.',
+  capture_adjustment: 'Afaste-se até o braço inteiro aparecer na tela.',
   low_confidence: 'Ajuste a iluminação e o enquadramento.',
   movement_in_progress: 'Movimento reconhecido.',
   rep_completed: 'Ciclo completo contado.',
@@ -39,15 +42,7 @@ export function DemoAutoCountScreen() {
   const [side, setSide] = useState<Side>('left');
   const [update, setUpdate] = useState(initialUpdate);
   const rule = useMemo(
-    () =>
-      demoRuleForExercise(
-        {
-          code: 'demo-elbow-flexion',
-          rule_version: 'demo-elbow-flexion:v1',
-        },
-        'demo-elbow-flexion:v1',
-        side,
-      )!,
+    () => demoRuleForItem(demoElbowFlexionRule.rule_version, side)!,
     [side],
   );
   const engine = useMemo(
@@ -75,8 +70,7 @@ export function DemoAutoCountScreen() {
       <Badge label="Demonstração · não validada clinicamente" tone="warning" />
       <Card white title="Flexão e extensão do cotovelo">
         <Body>
-          Mantenha ombro, cotovelo e punho visíveis. Dobre o cotovelo e volte à
-          posição inicial; a contagem aumenta após o ciclo completo.
+          Demonstração local da contagem pela câmera. Nada é salvo nem enviado.
         </Body>
       </Card>
       <View style={styles.camera}>

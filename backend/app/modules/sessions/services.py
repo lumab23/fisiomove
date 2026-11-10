@@ -17,6 +17,7 @@ from app.modules.patients.authorization import get_authorized_patient
 from app.modules.patients.models import Patient
 from app.modules.sessions.models import SessionResult
 from app.modules.sessions.schemas import (
+    DEFAULT_COUNTING_MODE,
     SessionPage,
     SessionResultCreate,
     SessionResultResponse,
@@ -56,9 +57,13 @@ def _normalize_period(value: datetime | None, field: str) -> datetime | None:
 
 
 def _json_hash(payload: SessionResultCreate) -> str:
-    canonical = json.dumps(
-        payload.model_dump(mode="json"), sort_keys=True, separators=(",", ":")
-    )
+    content = payload.model_dump(mode="json")
+    # Results stored before `counting_mode` existed were hashed without it. Leaving
+    # the default out keeps their offline retries idempotent (DEC-013).
+    for item in content["items"]:
+        if item["counting_mode"] == DEFAULT_COUNTING_MODE:
+            del item["counting_mode"]
+    canonical = json.dumps(content, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
@@ -153,6 +158,16 @@ class SessionService:
                     status_code=422,
                     code="session_item_invalid",
                     message="A session item does not belong to the selected revision.",
+                )
+            if (
+                result.counting_mode != DEFAULT_COUNTING_MODE
+                and plan.get("counting_rule") is None
+            ):
+                raise ApiError(
+                    status_code=422,
+                    code="counting_mode_unavailable",
+                    message="Automatic counting was not enabled for this item.",
+                    details={"field": "counting_mode", "position": result.position},
                 )
             max_repetitions = int(plan["sets"]) * int(plan["repetitions"])
             if (

@@ -27,8 +27,10 @@ export function sanitizeSessionResult(
   return sanitized;
 }
 
+const COUNTING_MODES: readonly string[] = ['manual', 'automatic', 'mixed'];
+
 function sanitizeItem(item: SessionItemResultInput): SessionItemResultInput {
-  return {
+  const sanitized: SessionItemResultInput = {
     workout_item_id: item.workout_item_id,
     position: item.position,
     completed_sets: item.completed_sets,
@@ -36,6 +38,12 @@ function sanitizeItem(item: SessionItemResultInput): SessionItemResultInput {
     active_duration_ms: item.active_duration_ms,
     interrupted: item.interrupted,
   };
+  // Results queued before DEC-013 have no `counting_mode`; the API reads them
+  // as `manual`, so the field is only copied when present.
+  if (item.counting_mode !== undefined) {
+    sanitized.counting_mode = item.counting_mode;
+  }
+  return sanitized;
 }
 
 function validateSessionResult(payload: SessionResultInput): void {
@@ -77,6 +85,11 @@ function validateSessionResult(payload: SessionResultInput): void {
       'completed_repetitions_invalid',
     );
     assertNonnegativeInteger(item.active_duration_ms, 'item_duration_invalid');
+    assert(
+      item.counting_mode === undefined ||
+        COUNTING_MODES.includes(item.counting_mode),
+      'counting_mode_invalid',
+    );
     itemDuration += item.active_duration_ms;
   });
   assert(

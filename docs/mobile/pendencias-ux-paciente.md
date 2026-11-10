@@ -16,7 +16,7 @@ funcionalidade real.
 | Iniciar treino | Ativo: "Iniciar"/"Continuar treino" → preparação → câmera → enquadramento → execução com os valores do `WorkoutItem` → conclusão com status de envio | Validar no iPhone com câmera real (KI-006); progresso perdido se o app for encerrado (Q-T2) |
 | Nome do paciente | API (`GET /me/profile`) | — |
 | Fisioterapeuta | Nome via `GET /me/physiotherapist`; estado vazio sem nome ou sem vínculo | — (só o nome existe; Q-P5) |
-| Conversar com o fisioterapeuta | Inexistente | Canal autorizado (WhatsApp ou chat) |
+| Conversar com o fisioterapeuta | "Recados do fisioterapeuta" (só leitura, `GET /me/notes`, DEC-015), aberto pelo Início e pelo Perfil | Validar no iPhone; sem chat nem telefone (DEC-005) |
 | Câmera ao vivo | Real (vision-camera, frontal) | Validar em Android |
 | Pose | Real, no aparelho (YOLO26 via ExecuTorch) | Validar desempenho em aparelhos antigos |
 | Contagem de repetições | Manual, por toque, enviada como `completed_repetitions` (DEC-008) | Ligar `MovementEngine` a uma regra aprovada |
@@ -119,12 +119,26 @@ registro no CREFITO, especialidade nem telefone.
 - Continuam sem "Conversar" nem outros dados do profissional. O
   `AccountContext` guarda só o e-mail e a ação de sair.
 
-## 4. Conversar
+## 4. Conversar → Recados
 
-O botão "Conversar" saiu junto com o modo demonstração; não há chat fictício.
-Caminho mais simples depois do item 3: se o profissional cadastrar um número e
-autorizar o contato, abrir `https://wa.me/<número>` com `Linking.openURL`. Um
-chat próprio exigiria mensagens, notificações e moderação, fora do escopo do MVP.
+Atualizado em 09/11/2026 (passo 12 de
+`docs/plans/2026-11-09-visualizacao-espelhamento-contagem-portugues-contato.md`,
+DEC-015). O paciente lê, só para leitura, as observações que o fisioterapeuta
+marcou como "Paciente pode ver":
+
+- Tela "Recados do fisioterapeuta" (`PatientNotesScreen`, rota `PatientNotes`),
+  aberta por uma linha no Início e outra abaixo do card do fisioterapeuta no
+  Perfil.
+- Dados de `GET /me/notes` (`notes.mine()`, hook `useMyNotes`), mais recentes
+  primeiro, com a data de criação e "Atualizado em …" quando a nota foi
+  editada. Carrega até 50 recados, sem paginação (KI-010), e recarrega ao
+  voltar para a tela.
+- Estados: carregamento, vazio ("Seu fisioterapeuta ainda não deixou
+  recados.") e erro com "Tentar novamente".
+- Não há resposta, chat, telefone nem WhatsApp; DEC-005 continua valendo.
+
+Pendência: conferir a tela no iPhone com recados reais; até agora o fluxo só
+foi exercitado em testes Jest.
 
 ## 5. Câmera e pose
 
@@ -137,26 +151,52 @@ Pendências:
 
 - Validar em Android (o fluxo foi testado só em iOS).
 - Medir desempenho em aparelhos mais antigos; o modelo roda em 384 × 384.
-- No simulador iOS não há câmera; a tela mostra "Nenhuma câmera frontal
-  encontrada".
+- No simulador iOS não há câmera; a tela mostra "Não encontramos a câmera".
+- Visualização (DEC-012, 09/11/2026): imagem da câmera frontal com os 3 pontos
+  do braço prescrito ligados por dois segmentos e a mensagem de status
+  (enquadramento primeiro). Os dados técnicos (ms, quadros descartados,
+  "n/3 pontos") e o detalhe de erros nativos aparecem só em build de
+  desenvolvimento; o paciente vê "Não foi possível analisar a imagem agora.".
+  O lado escolhido e o espelhamento ainda não foram corrigidos (passo 4,
+  depende de medição no aparelho).
 
 ## 6. Contagem automática de repetições
 
-A execução continua manual para os exercícios publicados comuns. Foi adicionada
-uma demonstração local e explicitamente identificada como não validada
-clinicamente para flexão e extensão do cotovelo. Quando o treino contém o item
-marcado exatamente como `demo-elbow-flexion` na versão
-`demo-elbow-flexion:v1`, os landmarks da `LocalPoseCamera` alimentam o
-`MovementEngine` e um ciclo reconhecido atualiza a repetição da sessão. O botão
-manual não aparece nesse item para evitar contagem duplicada. A câmera e a
-inferência permanecem locais; a sessão continua usando a fila de sincronização
-existente.
+Atualizado em 09/11/2026 (DEC-013, plano de 2026-11-09, passos 10 e 11).
 
-As faixas de ângulo e tempo dessa demonstração são sintéticas e servem somente
-para verificar a ligação técnica entre câmera, motor e sessão. Não são
-parâmetros clínicos, não foram validadas por fisioterapeuta e não devem ser
-usadas como prescrição. A tela de demonstração para desenvolvimento também
-permite experimentar a contagem sem criar uma sessão.
+- **Ativação por item.** No editor de treino, cada item tem a opção "Contagem
+  automática demonstrativa (flexão de cotovelo)", desligada por padrão, com o
+  selo "Não validada clinicamente; os valores são de demonstração acadêmica."
+  Ela só pode ser ligada com lado esquerdo ou direito; em "Os dois lados" fica
+  desabilitada com a explicação. O app envia `counting_rule =
+  "demo-elbow-flexion:v1"` ou `null`, carrega o valor ao editar e a revisão do
+  treino mostra quando o item tem a contagem. Treinos publicados antes só
+  passam a oferecê-la depois de editados e republicados (KI-017).
+- **Execução.** A regra é ativada por `item.counting_rule` do snapshot (não mais
+  pelo `code`/`rule_version` do exercício). Os valores da Kaylany ficaram
+  inalterados (confiança 0,5/0,5; 145–180°; 40–100°; decrescente; 900 ms;
+  700 ms; suavização 4). A tela mostra "Contagem demonstrativa · não validada
+  clinicamente" e o botão "Contar manualmente" sempre visível (habilitado
+  durante o exercício). O primeiro toque desliga o motor naquele item, sem
+  contar; depois, "Contar repetição" conta por toque. Pausa, descanso e
+  contagem manual congelam o motor (RN20); a prescrição é o teto (RN19).
+- **Enquadramento.** `low_confidence` e `capture_adjustment` sem ângulo
+  medido substituem "Braço visível" por mensagem de enquadramento (RN05).
+  `capture_adjustment` com ângulo medido (motor aguardando o início do ciclo)
+  não gera texto, porque orientar o movimento exigiria texto não aprovado
+  (Q-C2).
+- **Resultado.** Cada item envia `counting_mode`: `automatic` (só o motor
+  contou), `mixed` (o motor contou e o paciente passou para o toque) ou
+  `manual` (demais casos, inclusive itens sem regra). Resultados antigos da
+  fila, sem o campo, continuam válidos. O resumo da conclusão indica a origem
+  quando algum item não foi só por toque. O histórico (`GET /me/sessions`) não
+  traz itens e não mostra a origem.
+- **Tela de desenvolvimento.** `DemoAutoCountScreen` (`__DEV__`) usa o mesmo
+  gatilho; os textos de instrução de movimento foram neutralizados.
+
+Pendente: uma série contada pela câmera num treino real no iPhone (passo 14,
+KI-006) e o espelhamento do lado (passo 4, bloqueado por medição). As faixas de
+ângulo e tempo continuam sintéticas e não são parâmetros clínicos.
 
 ## 7. Demonstração do movimento
 

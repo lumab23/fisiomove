@@ -521,11 +521,105 @@ test('workout values start empty and sides come from allowed_sides', async () =>
         repetitions: 12,
         rest_duration_ms: 30000,
         professional_guidance: null,
+        counting_rule: null,
       },
     ],
   });
   expect(hasText('Revisar treino')).toBe(true);
   expect(hasText('Rascunho salvo')).toBe(true);
+});
+
+const countingLabel = 'Contagem automática demonstrativa (flexão de cotovelo)';
+const countingNotice =
+  'Não validada clinicamente; os valores são de demonstração acadêmica.';
+
+function countingToggle() {
+  const [toggle] = pressables(countingLabel);
+  if (!toggle) {
+    throw new Error('Missing counting toggle');
+  }
+  return toggle;
+}
+
+test('demonstration counting is off by default, one-sided only and sent per item (DEC-013)', async () => {
+  services.exercises.list.mockResolvedValue(
+    pageOf([{ ...exercise, allowed_sides: ['left', 'bilateral'] }]),
+  );
+  services.workouts.create.mockResolvedValue(draftWorkout);
+  await openPatient();
+  await press('Criar treino');
+  await press('Exercício aprovado de teste');
+  expect(hasText(countingNotice)).toBe(true);
+  expect(countingToggle().props.accessibilityRole).toBe('checkbox');
+  expect(countingToggle().props.accessibilityState).toEqual({
+    checked: false,
+    disabled: true,
+  });
+  expect(hasText('Escolha o lado esquerdo ou direito para ativar.')).toBe(true);
+
+  await press('Os dois lados');
+  expect(countingToggle().props.accessibilityState.disabled).toBe(true);
+  expect(hasText('Disponível só para o lado esquerdo ou direito')).toBe(true);
+
+  await press('Lado esquerdo');
+  expect(countingToggle().props.accessibilityState).toEqual({
+    checked: false,
+    disabled: false,
+  });
+  await act(async () => countingToggle().props.onPress());
+  expect(countingToggle().props.accessibilityState.checked).toBe(true);
+  // Choosing both sides turns it off: the API refuses it there.
+  await press('Os dois lados');
+  expect(countingToggle().props.accessibilityState.checked).toBe(false);
+  await press('Lado esquerdo');
+  expect(countingToggle().props.accessibilityState.checked).toBe(false);
+  await act(async () => countingToggle().props.onPress());
+
+  await fill('Séries', '3');
+  await fill('Repetições por série', '12');
+  await fill('Descanso entre séries (segundos)', '30');
+  await press('Salvar rascunho');
+  expect(services.workouts.create).toHaveBeenCalledWith('patient-1', {
+    instructions: null,
+    items: [
+      expect.objectContaining({
+        side: 'left',
+        counting_rule: 'demo-elbow-flexion:v1',
+      }),
+    ],
+  });
+});
+
+test('editing loads the counting rule and the review shows the seal', async () => {
+  const counted: Workout = {
+    ...draftWorkout,
+    items: [
+      { ...draftWorkout.items[0], counting_rule: 'demo-elbow-flexion:v1' },
+    ],
+  };
+  services.workouts.listForPatient.mockResolvedValue(pageOf([counted]));
+  services.workouts.get.mockResolvedValue(counted);
+  services.workouts.update.mockResolvedValue(counted);
+  await openPatient();
+  await press('Treino · Rascunho');
+  expect(hasText(`${countingLabel}: ativada.`)).toBe(true);
+  expect(hasText(countingNotice)).toBe(true);
+  await press('Editar treino');
+  expect(countingToggle().props.accessibilityState.checked).toBe(true);
+  await press('Salvar rascunho');
+  expect(services.workouts.update).toHaveBeenCalledWith('workout-1', {
+    instructions: null,
+    items: [
+      expect.objectContaining({ counting_rule: 'demo-elbow-flexion:v1' }),
+    ],
+  });
+});
+
+test('a review without the rule does not mention automatic counting', async () => {
+  services.workouts.listForPatient.mockResolvedValue(pageOf([draftWorkout]));
+  await openPatient();
+  await press('Treino · Rascunho');
+  expect(hasText(countingLabel)).toBe(false);
 });
 
 test('a library exercise needs reviewed Portuguese text before saving', async () => {
@@ -793,6 +887,25 @@ test('the reference library lists items with the seal, notice and attribution', 
   await press('Abrir a licença CC BY-NC 4.0');
   expect(open).toHaveBeenCalledWith(attribution.license_url);
   open.mockRestore();
+});
+
+test('the fixed English notices of the library appear in Portuguese', async () => {
+  services.exerciseLibrary.search.mockResolvedValue({
+    ...libraryPage,
+    usage_notice:
+      'External reference material. A physiotherapist may add it to the FisioMove catalog for academic use; prescription values are always set by the physiotherapist.',
+    attribution: {
+      ...attribution,
+      changes:
+        'Only selected descriptive fields are shown; text is kept in the original language without edits. Performance metrics and variations are omitted.',
+    },
+  });
+  await openSettings('Biblioteca de referência');
+  expect(hasText('Material de referência externo.')).toBe(true);
+  expect(hasText('Mostramos só alguns campos descritivos')).toBe(true);
+  expect(hasText('External reference material')).toBe(false);
+  expect(hasText('Only selected descriptive fields')).toBe(false);
+  expect(hasText('texto em inglês')).toBe(false);
 });
 
 test('library search and the upper-limb shortcut filter on the server', async () => {

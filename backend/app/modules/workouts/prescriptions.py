@@ -3,7 +3,7 @@ from copy import deepcopy
 from sqlalchemy.orm import Session
 
 from app.core.errors import ApiError
-from app.modules.exercises.schemas import ExerciseResponse
+from app.modules.exercises.schemas import ExerciseResponse, Side
 from app.modules.exercises.services import ExerciseService
 from app.modules.workouts.models import WorkoutItem
 from app.modules.workouts.schemas import WorkoutItemInput
@@ -35,6 +35,13 @@ def prepare_items(session: Session, items: list[WorkoutItemInput]) -> list[Worko
                 status_code=422,
                 code="unsupported_parameters",
                 message="The exercise does not accept additional parameters.",
+            )
+        if item.counting_rule is not None and item.side is Side.BILATERAL:
+            raise ApiError(
+                status_code=422,
+                code="counting_rule_unsupported_side",
+                message="Automatic counting is only available for one-sided items.",
+                details={"field": "counting_rule", "position": item.position},
             )
         values = item.model_dump()
         values["side"] = item.side.value

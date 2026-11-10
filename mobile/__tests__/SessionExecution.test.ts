@@ -81,3 +81,81 @@ test('movimento recebido durante pausa não altera a máquina de sessão', () =>
   expect(execution.completeRepetition().items[0].completed_repetitions).toBe(0);
   expect(execution.snapshot().active_duration_ms).toBe(0);
 });
+
+// DEC-013: item with the demonstration rule. Test values only.
+const countedPlan = [
+  {
+    ...plan[0],
+    sets: 1,
+    repetitions: 3,
+    counting_rule: 'demo-elbow-flexion:v1' as const,
+  },
+];
+
+test('item sem regra só conta por toque e fica manual', () => {
+  const execution = new SessionExecution(draft, plan, () => 1000);
+  execution.start();
+  expect(execution.snapshot().items[0].manual_counting).toBe(true);
+  expect(execution.completeRepetition('camera').items[0]).toMatchObject({
+    completed_repetitions: 0,
+  });
+  execution.completeRepetition();
+  expect(execution.interrupt().items[0].counting_mode).toBe('manual');
+});
+
+test('com regra, só o motor conta até o toque em "Contar manualmente"', () => {
+  const execution = new SessionExecution(draft, countedPlan, () => 1000);
+  execution.start();
+  // A touch never adds to the engine's count (no double counting).
+  expect(execution.completeRepetition().items[0].completed_repetitions).toBe(0);
+  expect(
+    execution.completeRepetition('camera').items[0].completed_repetitions,
+  ).toBe(1);
+  const switched = execution.switchToManualCounting().items[0];
+  expect(switched).toMatchObject({
+    manual_counting: true,
+    counting_mode: 'mixed',
+  });
+  // From now on the engine is off and touches count.
+  expect(
+    execution.completeRepetition('camera').items[0].completed_repetitions,
+  ).toBe(1);
+  execution.completeRepetition();
+  execution.completeRepetition();
+  // RN19: the prescription is the ceiling.
+  expect(execution.completeRepetition().status).toBe('completed');
+  expect(execution.completion().items[0]).toMatchObject({
+    completed_repetitions: 3,
+    counting_mode: 'mixed',
+  });
+});
+
+test('só o motor contou: automatic; trocar antes de contar: manual', () => {
+  const automatic = new SessionExecution(draft, countedPlan, () => 1000);
+  automatic.start();
+  for (let i = 0; i < 4; i += 1) {
+    automatic.completeRepetition('camera');
+  }
+  expect(automatic.completion().items[0]).toMatchObject({
+    completed_repetitions: 3,
+    counting_mode: 'automatic',
+  });
+
+  const manual = new SessionExecution(draft, countedPlan, () => 1000);
+  manual.start();
+  manual.switchToManualCounting();
+  manual.completeRepetition();
+  expect(manual.interrupt().items[0].counting_mode).toBe('manual');
+});
+
+test('pausa congela o motor e impede trocar a origem (RN20)', () => {
+  const execution = new SessionExecution(draft, countedPlan, () => 1000);
+  execution.start();
+  execution.pause();
+  expect(
+    execution.completeRepetition('camera').items[0].completed_repetitions,
+  ).toBe(0);
+  expect(execution.switchToManualCounting().items[0].manual_counting).toBe(
+    false,
+  );
+});

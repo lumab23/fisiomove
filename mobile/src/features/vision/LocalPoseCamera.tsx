@@ -25,6 +25,7 @@ import {
   createResizer,
   type Resizer,
 } from 'react-native-vision-camera-resizer';
+import Svg, { Line } from 'react-native-svg';
 import { scheduleOnRN } from 'react-native-worklets';
 import type {
   CameraOrientation,
@@ -39,6 +40,15 @@ import {
   type RawPoseObservation,
 } from './RawPoseObservation';
 import { toPreviewCoordinates } from './poseAssessment';
+import {
+  armPrefixes,
+  armSegments,
+  cameraDebugText,
+  cameraErrorMessage,
+  cameraStatus,
+  countVisibleArmPoints,
+  type FramingFeedback,
+} from './cameraOverlay';
 import { colors, fonts, radii, spacing, typography } from '../../theme/theme';
 
 const detectorModel = models.keypointDetection.YOLO26_POSE.SIZE_384.DEFAULT;
@@ -49,6 +59,8 @@ interface LocalPoseCameraProps {
   side: Side;
   active: boolean;
   onObservation?: (observation: RawPoseObservation) => void;
+  /** Framing feedback of the counting engine, shown before "Braço visível". */
+  framing?: FramingFeedback | null;
   immersive?: boolean;
   style?: StyleProp<ViewStyle>;
 }
@@ -78,6 +90,7 @@ export function LocalPoseCamera({
   side,
   active,
   onObservation,
+  framing = null,
   immersive = false,
   style,
 }: LocalPoseCameraProps) {
@@ -301,6 +314,12 @@ export function LocalPoseCamera({
     );
   }
   const interruptionMessage = describeInterruption(interruption);
+  // Native messages are usually English: only a fixed pt-BR text is shown,
+  // with the detail in development builds (DEC-014).
+  const errorDetail: string | null | undefined =
+    inferenceError ??
+    resizerError ??
+    (detector.error ? (detector.error.message ?? null) : undefined);
 
   return (
     <View
@@ -331,33 +350,55 @@ export function LocalPoseCamera({
       ) : null}
       <View pointerEvents="none" style={styles.overlay}>
         {!detector.isReady || !resizer ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.surface} />
         ) : null}
-        {immersive ? (
-          <ImmersiveStatus
-            error={inferenceError ?? resizerError ?? detector.error?.message}
-            ready={detector.isReady && resizer !== null}
-            bothArms={side === 'bilateral'}
-            visible={
-              countVisibleArmPoints(latest, side) === requiredArmPoints(side)
-            }
-          />
+        {latest ? (
+          <Svg
+            style={StyleSheet.absoluteFill}
+            width={previewSize.width}
+            height={previewSize.height}
+          >
+            {armSegments(displayLandmarks, side).flatMap(([from, to]) => {
+              const start = displayLandmarks[from];
+              const end = displayLandmarks[to];
+              if (!start || !end) return [];
+              const a = previewPoint(latest, start, previewSize);
+              const b = previewPoint(latest, end, previewSize);
+              const line = { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
+              // A light outline under the line keeps it visible on any image.
+              return [
+                <Line
+                  key={`${from}-${to}-outline`}
+                  {...line}
+                  stroke={colors.surface}
+                  strokeWidth={spacing.sm}
+                  strokeLinecap="round"
+                />,
+                <Line
+                  key={`${from}-${to}`}
+                  {...line}
+                  stroke={colors.cameraLandmark}
+                  strokeWidth={spacing.xs}
+                  strokeLinecap="round"
+                />,
+              ];
+            })}
+          </Svg>
         ) : null}
-        {immersive ? null : (
-          <>
-            <Text style={styles.badge}>
-              {inferenceError ??
-                resizerError ??
-                detector.error?.message ??
-                `${sideBadge[side]} · ${countVisibleArmPoints(latest, side)}/${requiredArmPoints(side)} pontos`}
-            </Text>
-            <Text style={styles.badge}>
-              {latest
-                ? `${latest.inference_duration_ms} ms · análise local · ${droppedFrames} quadros descartados`
-                : 'Aguardando pose'}
-            </Text>
-          </>
-        )}
+        <PoseStatus
+          error={errorDetail !== undefined}
+          ready={detector.isReady && resizer !== null}
+          side={side}
+          visiblePoints={countVisibleArmPoints(latest, side)}
+          framing={framing}
+        />
+        {__DEV__ ? (
+          <Text style={styles.badge}>
+            {errorDetail !== undefined
+              ? cameraErrorMessage(errorDetail, true)
+              : cameraDebugText(latest, side, droppedFrames)}
+          </Text>
+        ) : null}
         {latest &&
           Object.entries(displayLandmarks).map(([id, point]) => {
             if (
@@ -381,34 +422,14 @@ export function LocalPoseCamera({
   );
 }
 
-function ImmersiveStatus({
-  error,
-  ready,
-  bothArms,
-  visible,
-}: {
-  error?: string | null;
-  ready: boolean;
-  bothArms: boolean;
-  visible: boolean;
-}) {
-  const text = error
-    ? 'Não foi possível analisar a imagem agora.'
-    : !ready
-      ? 'Preparando a câmera…'
-      : visible
-        ? bothArms
-          ? 'Braços visíveis'
-          : 'Braço visível'
-        : bothArms
-          ? 'Mostre os dois braços inteiros para a câmera'
-          : 'Mostre o braço inteiro para a câmera';
+function PoseStatus(props: Parameters<typeof cameraStatus>[0]) {
+  const status = cameraStatus(props);
   return (
     <Text
       accessibilityLiveRegion="polite"
-      style={[styles.status, visible && !error && styles.statusOk]}
+      style={[styles.status, status.ok && styles.statusOk]}
     >
-      {text}
+      {status.text}
     </Text>
   );
 }
@@ -535,34 +556,6 @@ function mapOrientation(orientation: CameraOrientation): FrameOrientation {
     case 'right':
       return 'landscape-right';
   }
-}
-
-const sideBadge: Record<Side, string> = {
-  left: 'Lado esquerdo',
-  right: 'Lado direito',
-  bilateral: 'Os dois lados',
-};
-const armParts = ['shoulder', 'elbow', 'wrist'] as const;
-
-function armPrefixes(side: Side): readonly ('left' | 'right')[] {
-  return side === 'bilateral' ? ['left', 'right'] : [side];
-}
-
-function requiredArmPoints(side: Side): number {
-  return armPrefixes(side).length * armParts.length;
-}
-
-/** Shoulder, elbow and wrist of the selected arm, or of both arms. */
-function countVisibleArmPoints(
-  observation: RawPoseObservation | null,
-  side: Side,
-): number {
-  if (!observation) return 0;
-  return armPrefixes(side)
-    .flatMap(prefix => armParts.map(part => `${prefix}_${part}`))
-    .filter(
-      id => observation.landmarks[id as keyof RawPoseObservation['landmarks']],
-    ).length;
 }
 
 interface DisplayLandmarks {

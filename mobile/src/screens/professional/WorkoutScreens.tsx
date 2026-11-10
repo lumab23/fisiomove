@@ -7,6 +7,7 @@ import { useScreenMessage } from '../../components/ScreenMessage';
 import { appDependencies } from '../../app/dependencies';
 import type { UUID } from '../../contracts/common';
 import type {
+  CountingRule,
   Exercise,
   Side,
   Workout,
@@ -33,12 +34,13 @@ import {
   exerciseSourceText,
   exerciseText,
   originalLanguageSeal,
+  prescribedSideLabels,
   prescriptionText,
-  sideLabels,
 } from '../patient/workoutText';
 import { CatalogExerciseText } from './ExerciseTranslation';
 import {
   apiErrorMessage,
+  CheckboxField,
   ChoiceGroup,
   ResourceView,
   restText,
@@ -72,7 +74,22 @@ type ItemDraft = {
   restSeconds: string;
   /** Optional text for the patient (Q-P2); typed by the physiotherapist. */
   professionalGuidance: string;
+  /** Demonstration counting by the camera (DEC-013); off by default. */
+  automaticCounting: boolean;
 };
+
+/** The only counting rule the app runs; not clinically validated (DEC-013). */
+const demoCountingRule: CountingRule = 'demo-elbow-flexion:v1';
+
+const automaticCountingLabel =
+  'Contagem automática demonstrativa (flexão de cotovelo)';
+const automaticCountingNotice =
+  'Não validada clinicamente; os valores são de demonstração acadêmica.';
+
+/** Automatic counting follows one arm, so it needs the left or right side. */
+function oneSided(side: Side | null): side is 'left' | 'right' {
+  return side === 'left' || side === 'right';
+}
 
 type ItemErrors = Partial<
   Record<'exercise' | 'side' | 'sets' | 'repetitions' | 'rest', string>
@@ -126,6 +143,10 @@ export function buildWorkoutItems(
         repetitions: Number(repetitions),
         rest_duration_ms: Math.round(Number(rest.replace(',', '.')) * 1000),
         professional_guidance: draft.professionalGuidance.trim() || null,
+        counting_rule:
+          draft.automaticCounting && oneSided(draft.side)
+            ? demoCountingRule
+            : null,
       });
     }
   });
@@ -146,6 +167,7 @@ function draftsFrom(workout: Workout | null, nextKey: () => string) {
       repetitions: String(item.repetitions),
       restSeconds: String(item.rest_duration_ms / 1000),
       professionalGuidance: item.professional_guidance ?? '',
+      automaticCounting: item.counting_rule === demoCountingRule,
     }));
 }
 
@@ -158,6 +180,7 @@ function emptyDraft(key: string): ItemDraft {
     repetitions: '',
     restSeconds: '',
     professionalGuidance: '',
+    automaticCounting: false,
   };
 }
 
@@ -502,12 +525,14 @@ function ItemEditor({
         value={exercise ? exercise.id : null}
         onChange={exerciseId => {
           const next = catalog.find(entry => entry.id === exerciseId);
+          const side =
+            draft.side && next?.allowed_sides.includes(draft.side)
+              ? draft.side
+              : null;
           onChange({
             exerciseId,
-            side:
-              draft.side && next?.allowed_sides.includes(draft.side)
-                ? draft.side
-                : null,
+            side,
+            automaticCounting: draft.automaticCounting && oneSided(side),
           });
         }}
         error={errors.exercise}
@@ -530,12 +555,31 @@ function ItemEditor({
           <ChoiceGroup
             label="Lado"
             options={exercise.allowed_sides.map(
-              side => [side, sideLabels[side]] as const,
+              side => [side, prescribedSideLabels[side]] as const,
             )}
             value={draft.side}
-            onChange={side => onChange({ side })}
+            onChange={side =>
+              onChange({
+                side,
+                automaticCounting: draft.automaticCounting && oneSided(side),
+              })
+            }
             error={errors.side}
           />
+          <CheckboxField
+            label={automaticCountingLabel}
+            checked={draft.automaticCounting && oneSided(draft.side)}
+            onChange={automaticCounting => onChange({ automaticCounting })}
+            disabledReason={
+              oneSided(draft.side)
+                ? undefined
+                : draft.side === 'bilateral'
+                  ? 'Disponível só para o lado esquerdo ou direito: a contagem acompanha um braço por vez.'
+                  : 'Escolha o lado esquerdo ou direito para ativar.'
+            }
+          >
+            <Badge label={automaticCountingNotice} tone="warning" />
+          </CheckboxField>
         </>
       ) : null}
       <FormField
@@ -726,8 +770,14 @@ function ReviewItem({
         images={exerciseImages(item.exercise_snapshot)}
         exerciseName={text.name}
       />
-      <Body>{prescriptionText(item)}</Body>
+      <Body>{prescriptionText(item, prescribedSideLabels)}</Body>
       <Body>{restText(item)}</Body>
+      {item.counting_rule ? (
+        <>
+          <Body>{`${automaticCountingLabel}: ativada.`}</Body>
+          <Badge label={automaticCountingNotice} tone="warning" />
+        </>
+      ) : null}
       {item.professional_guidance ? (
         <Body>{item.professional_guidance}</Body>
       ) : null}

@@ -118,13 +118,25 @@ Estados: `draft`, `published`, `archived`.
 
 `WorkoutRevision`: `id`, `workout_id`, `revision_number: integer >= 1`, `instructions: string | null`, `published_at: datetime UTC | null`, `created_at`.
 
-`WorkoutItem`: `id`, `revision_id`, `position: integer >= 1`, `exercise_id`, `side`, `sets: integer > 0`, `repetitions: integer > 0`, `rest_duration_ms: integer >= 0`, `professional_guidance: string | null`, `parameters: object` validado pelo contrato versionado do exercício.
+`WorkoutItem`: `id`, `revision_id`, `position: integer >= 1`, `exercise_id`, `side`, `sets: integer > 0`, `repetitions: integer > 0`, `rest_duration_ms: integer >= 0`, `professional_guidance: string | null`, `parameters: object` validado pelo contrato versionado do exercício, `counting_rule: "demo-elbow-flexion:v1" | null` (padrão `null`).
+
+`counting_rule` (DEC-013) ativa a contagem automática **demonstrativa, não
+validada clinicamente** no app. Só o valor `"demo-elbow-flexion:v1"` é aceito
+(outros valores → `422 validation_error`); em item `bilateral` a API devolve
+`422 counting_rule_unsupported_side`. O campo entra no snapshot do item e é
+copiado quando uma edição mantém os itens. Itens existentes antes da migração
+`20261109_0015` têm `null`.
 
 ## Observações (B06)
 
 `Note`: `id`, `patient_id`, `author_id`, `content: string não vazio`, `visibility: patient_visible | professional_only`, `created_at`, `updated_at`.
 
 Somente o autor profissional, ainda autorizado pelo vínculo, pode editar. Notas `professional_only` nunca são retornadas ao paciente.
+
+`OwnNote` (recados do fisioterapeuta, DEC-015): `id`, `content`, `created_at`,
+`updated_at`. É a visão do próprio paciente em `GET /me/notes`: só notas
+`patient_visible` do paciente resolvido pelo token, mais recentes primeiro; sem
+`patient_id`, `author_id` nem `visibility`. Só leitura.
 
 ## Sessões e idempotência (B07)
 
@@ -143,7 +155,7 @@ Somente o autor profissional, ainda autorizado pelo vínculo, pode editar. Notas
 - `items: SessionItemResult[]`;
 - `score: integer >= 0`, calculado exclusivamente pelo servidor.
 
-`SessionItemResult`: `workout_item_id`, `position`, `completed_sets: integer >= 0`, `completed_repetitions: integer >= 0`, `active_duration_ms: integer >= 0`, `interrupted: boolean`.
+`SessionItemResult`: `workout_item_id`, `position`, `completed_sets: integer >= 0`, `completed_repetitions: integer >= 0`, `active_duration_ms: integer >= 0`, `interrupted: boolean`, `counting_mode: manual | automatic | mixed` (opcional no envio, padrão `manual`; `automatic`/`mixed` exigem `counting_rule` no item do snapshot — ver `session-result.md`).
 
 O cliente não envia `score`. A regra B10 concede um ponto por repetição aceita,
 limitada a `sets × repetitions` para cada item do snapshot. Sessão interrompida

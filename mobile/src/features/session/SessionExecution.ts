@@ -1,4 +1,5 @@
 import type { UUID } from '../../contracts/common';
+import type { CountingMode, CountingRule } from '../../contracts/domain';
 import type { SessionCompletion, SessionDraft } from '../../sync/types';
 
 export interface SessionPlanItem {
@@ -7,6 +8,8 @@ export interface SessionPlanItem {
   sets: number;
   repetitions: number;
   rest_duration_ms: number;
+  /** Rule the app can run for this item; absent or `null` means touch only. */
+  counting_rule?: CountingRule | null;
 }
 
 export interface SessionItemProgress extends SessionPlanItem {
@@ -14,7 +17,14 @@ export interface SessionItemProgress extends SessionPlanItem {
   completed_repetitions: number;
   repetitions_in_current_set: number;
   active_duration_ms: number;
+  /** Sent with the result (DEC-013). */
+  counting_mode: CountingMode;
+  /** Touch counts this item: no rule, or the patient chose to count by touch. */
+  manual_counting: boolean;
 }
+
+/** Who counted a repetition: the patient's touch or the movement engine. */
+export type RepetitionOrigin = 'touch' | 'camera';
 
 export type SessionExecutionStatus =
   'ready' | 'active' | 'paused' | 'resting' | 'completed' | 'interrupted';
@@ -64,6 +74,8 @@ export class SessionExecution {
         completed_repetitions: 0,
         repetitions_in_current_set: 0,
         active_duration_ms: 0,
+        counting_mode: 'manual' as CountingMode,
+        manual_counting: !item.counting_rule,
       };
     });
   }
@@ -97,18 +109,31 @@ export class SessionExecution {
     return this.snapshot(timestamp);
   }
 
-  completeRepetition(): SessionExecutionSnapshot {
+  /**
+   * One repetition of the current item. Only one origin counts at a time, so a
+   * repetition is never counted twice: the engine while automatic counting is
+   * on, the touch otherwise (DEC-013).
+   */
+  completeRepetition(
+    origin: RepetitionOrigin = 'touch',
+  ): SessionExecutionSnapshot {
     if (this.status !== 'active') {
+      return this.snapshot();
+    }
+    const current = this.items[this.currentItemIndex];
+    if (current && current.manual_counting !== (origin === 'touch')) {
       return this.snapshot();
     }
     const timestamp = this.now();
     this.addActiveTime(timestamp);
-    const current = this.items[this.currentItemIndex];
     if (!current) {
       return this.snapshot(timestamp);
     }
     if (current.completed_sets >= current.sets) {
       return this.snapshot(timestamp);
+    }
+    if (origin === 'camera') {
+      current.counting_mode = 'automatic';
     }
 
     current.repetitions_in_current_set += 1;
@@ -124,6 +149,23 @@ export class SessionExecution {
       }
     }
     return this.snapshot(timestamp);
+  }
+
+  /**
+   * "Contar manualmente": turns the engine off for the current item; from then
+   * on only touches count. Repetitions already counted by the engine make the
+   * item `mixed`.
+   */
+  switchToManualCounting(): SessionExecutionSnapshot {
+    const current = this.items[this.currentItemIndex];
+    if (this.status !== 'active' || !current || current.manual_counting) {
+      return this.snapshot();
+    }
+    current.manual_counting = true;
+    if (current.counting_mode === 'automatic') {
+      current.counting_mode = 'mixed';
+    }
+    return this.snapshot();
   }
 
   pause(): SessionExecutionSnapshot {
@@ -201,6 +243,7 @@ export class SessionExecution {
         active_duration_ms: item.active_duration_ms,
         interrupted:
           status === 'interrupted' && index === this.currentItemIndex,
+        counting_mode: item.counting_mode,
       })),
     };
   }

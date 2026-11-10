@@ -23,6 +23,7 @@ jest.mock('../src/app/dependencies', () => ({
     workouts: { listMine: jest.fn() },
     sessions: { listMine: jest.fn() },
     progress: { mine: jest.fn() },
+    notes: { mine: jest.fn() },
     api: {
       imageSource: (url: string) => ({
         uri: `http://api.test${url}`,
@@ -61,6 +62,7 @@ const services = appDependencies as unknown as {
   workouts: { listMine: jest.Mock };
   sessions: { listMine: jest.Mock };
   progress: { mine: jest.Mock };
+  notes: { mine: jest.Mock };
 };
 
 // Test data only: values differ from the demo on purpose to prove the source.
@@ -134,6 +136,7 @@ beforeEach(() => {
     pageOf([completedSession, interruptedSession]),
   );
   services.progress.mine.mockResolvedValue(progress);
+  services.notes.mine.mockResolvedValue(pageOf([]));
   mockFindDraft.mockResolvedValue(null);
 });
 
@@ -207,7 +210,7 @@ test('home greets by the API name and shows the published prescription', async (
   await render();
   expect(hasText('Olá, Joana!')).toBe(true);
   expect(hasText('Exercício aprovado de teste')).toBe(true);
-  expect(hasText('3 séries · 12 repetições · Lado esquerdo')).toBe(true);
+  expect(hasText('3 séries · 12 repetições · Seu braço esquerdo')).toBe(true);
   expect(hasText('Orientação escrita pela profissional.')).toBe(true);
   expect(hasText('Em breve')).toBe(false);
   expect(hasLabel('Iniciar treino')).toBeTruthy();
@@ -285,7 +288,7 @@ test('exercises tab lists prescribed items, filters history and shows the curren
   await render();
   await pressTab('Exercícios');
   expect(hasText('Exercícios prescritos')).toBe(true);
-  expect(hasText('3 séries · 12 repetições · Lado esquerdo')).toBe(true);
+  expect(hasText('3 séries · 12 repetições · Seu braço esquerdo')).toBe(true);
   expect(hasText('Em breve')).toBe(false);
   expect(hasLabel('Iniciar treino')).toBeTruthy();
 
@@ -638,4 +641,57 @@ test('home and history reload when the patient comes back to them', async () => 
   expect(services.sessions.listMine.mock.calls.length).toBeGreaterThan(
     historyCalls,
   );
+});
+
+// Read-only notes marked "Paciente pode ver" (DEC-015); texts are test-only.
+const notesPage = pageOf([
+  {
+    id: 'note-2',
+    content: 'Recado de teste mais recente.',
+    created_at: '2026-11-07T13:30:00Z',
+    updated_at: '2026-11-08T13:30:00Z',
+  },
+  {
+    id: 'note-1',
+    content: 'Recado de teste antigo.',
+    // Never edited: the backend stamps the two columns microseconds apart.
+    created_at: '2026-11-05T13:30:00.000100Z',
+    updated_at: '2026-11-05T13:30:00.000400Z',
+  },
+]);
+
+test('home opens the physiotherapist notes with their dates', async () => {
+  services.notes.mine.mockResolvedValue(notesPage);
+  await render();
+  await press('Recados do fisioterapeuta');
+  expect(services.notes.mine).toHaveBeenCalledWith({ page_size: 50 });
+  expect(hasText('Recado de teste mais recente.')).toBe(true);
+  expect(hasText('Recado de teste antigo.')).toBe(true);
+  expect(hasText('07/11/2026')).toBe(true);
+  expect(hasText('Atualizado em 08/11/2026')).toBe(true);
+  expect(countText('Atualizado em')).toBe(1);
+  // Read only: no reply or contact.
+  expect(hasText('Responder')).toBe(false);
+  expect(hasText('WhatsApp')).toBe(false);
+});
+
+test('profile opens the notes and shows the empty state', async () => {
+  await render();
+  await pressTab('Perfil');
+  await press('Recados do fisioterapeuta');
+  expect(hasText('Nenhum recado')).toBe(true);
+  expect(hasText('Seu fisioterapeuta ainda não deixou recados.')).toBe(true);
+});
+
+test('a notes failure shows the error in Portuguese and recovers on retry', async () => {
+  services.notes.mine
+    .mockRejectedValueOnce(new ApiError('network', 'offline'))
+    .mockResolvedValueOnce(notesPage);
+  await render();
+  await press('Recados do fisioterapeuta');
+  expect(hasText('Não foi possível carregar os recados')).toBe(true);
+  expect(hasText('Sem conexão com o servidor')).toBe(true);
+  expect(hasText('offline')).toBe(false);
+  await press('Tentar novamente');
+  expect(hasText('Recado de teste antigo.')).toBe(true);
 });

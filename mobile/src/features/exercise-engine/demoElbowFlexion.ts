@@ -1,4 +1,3 @@
-import type { JsonValue } from '../../contracts/common';
 import type { RawPoseObservation } from '../vision/RawPoseObservation';
 import type { PoseFrame } from '../vision/types';
 import type { DemonstrationMovementRule } from './types';
@@ -32,16 +31,17 @@ export const demoElbowFlexionRule: DemonstrationMovementRule = {
   },
 };
 
-/** Enable the demonstration rule only for the explicitly marked exercise. */
-export function demoRuleForExercise(
-  exerciseSnapshot: Record<string, JsonValue>,
-  ruleVersion: string,
+/**
+ * Enables the demonstration rule only when the physiotherapist turned it on
+ * for this one-sided item (`counting_rule` in the published snapshot,
+ * DEC-013). Unknown values and both sides keep counting by touch.
+ */
+export function demoRuleForItem(
+  countingRule: string | null | undefined,
   side: 'left' | 'right' | 'bilateral',
 ): DemonstrationMovementRule | null {
   if (
-    exerciseSnapshot.code !== demoElbowFlexionRule.exercise_code ||
-    exerciseSnapshot.rule_version !== demoElbowFlexionRule.rule_version ||
-    ruleVersion !== demoElbowFlexionRule.rule_version ||
+    countingRule !== demoElbowFlexionRule.rule_version ||
     side === 'bilateral'
   ) {
     return null;

@@ -8,6 +8,9 @@ from app.modules.exercises.schemas import Side
 
 Positive = Annotated[int, Field(strict=True, gt=0)]
 Nonnegative = Annotated[int, Field(strict=True, ge=0)]
+# DEC-013: academic demonstration rule, not clinically validated. Only this value
+# is accepted; new rules need an explicit decision.
+CountingRule = Literal["demo-elbow-flexion:v1"]
 
 
 class StrictRequest(BaseModel):
@@ -23,6 +26,7 @@ class WorkoutItemInput(StrictRequest):
     rest_duration_ms: Nonnegative
     professional_guidance: str | None = None
     parameters: dict[str, Any] = Field(default_factory=dict)
+    counting_rule: CountingRule | None = None
 
 
 class WorkoutCreate(StrictRequest):

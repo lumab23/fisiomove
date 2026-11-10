@@ -9,6 +9,7 @@ import {
 import { PatientTabs } from './PatientTabs';
 
 import { PhysiotherapistInfoScreen } from '../screens/patient/PhysiotherapistInfoScreen';
+import { PatientNotesScreen } from '../screens/patient/PatientNotesScreen';
 import {
   CalibrationScreen,
   CameraPermissionScreen,
@@ -52,6 +53,7 @@ const Stack = createNativeStackNavigator<FrontendStackParamList>();
 export const patientScreens = {
   PatientTabs: PatientTabs,
   PhysiotherapistInfo: PhysiotherapistInfoScreen,
+  PatientNotes: PatientNotesScreen,
   PatientPreparation: PatientPreparationScreen,
   CameraPermission: CameraPermissionScreen,
   Calibration: CalibrationScreen,

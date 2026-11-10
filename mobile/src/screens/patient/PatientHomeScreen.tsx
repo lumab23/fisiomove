@@ -21,9 +21,11 @@ import {
   EmptyState,
   Link,
   ListGroup,
+  ListRow,
   Mascot,
   SectionTitle,
 } from '../../ui';
+import { notesTitle } from './PatientNotesScreen';
 import { SessionRow } from './SessionRow';
 import { StartWorkoutButton } from './StartWorkoutButton';
 import {
@@ -71,6 +73,14 @@ export function PatientHomeScreen() {
           }
         />
       </View>
+      <ListGroup>
+        <ListRow
+          icon="message"
+          title={notesTitle}
+          accessibilityHint="Abre os recados que seu fisioterapeuta deixou para você"
+          onPress={() => navigation.navigate('PatientNotes')}
+        />
+      </ListGroup>
       <View style={home.safety} accessible>
         <Icon name="info" size={20} color={colors.textMuted} />
         <Text style={home.safetyText}>

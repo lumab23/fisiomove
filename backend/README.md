@@ -174,7 +174,10 @@ sessões e governança do catálogo; `20261106_0010` cria `physiotherapist_profi
 sem preencher dados; `20261106_0011` remove `achievements` (o downgrade recria a
 tabela vazia); `20261106_0012` adiciona a proveniência anulável em `exercises`;
 `20261106_0013` cria `exercise_images` e `20261106_0014` adiciona a tradução
-pt-BR anulável em `exercises`, ambas sem preencher dados.
+pt-BR anulável em `exercises`, ambas sem preencher dados; `20261109_0015`
+adiciona `workout_items.counting_rule` anulável (DEC-013), sem preencher dados —
+o `counting_mode` do resultado fica no JSON `session_results.items` e é lido
+como `manual` quando ausente.
 Nenhuma migração ou fixture cadastra exercício: o catálogo só recebe itens da
 biblioteca adicionados pelo fisioterapeuta (DEC-006). Contratos de parâmetros
 clínicos ainda não aprovados são bloqueados. Consulte [treinos e observações](../docs/modules/workouts.md).

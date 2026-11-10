@@ -11,9 +11,11 @@ from app.modules.notes.schemas import (
     NotePage,
     NoteResponse,
     NoteUpdate,
+    OwnNotePage,
+    OwnNoteResponse,
     Visibility,
 )
-from app.modules.patients.authorization import get_authorized_patient
+from app.modules.patients.authorization import get_authorized_patient, get_own_patient
 from app.modules.patients.models import Patient
 
 
@@ -68,6 +70,29 @@ class NoteService:
         )
         return NotePage(
             items=[NoteResponse.model_validate(x) for x in notes],
+            page=page,
+            page_size=page_size,
+            total=total,
+            pages=(total + page_size - 1) // page_size,
+        )
+
+    def list_own(self, user: User, page: int, page_size: int) -> OwnNotePage:
+        """List only the `patient_visible` notes of the authenticated patient."""
+        patient = get_own_patient(self.session, user)
+        query = select(Note).where(
+            Note.patient_id == patient.id,
+            Note.visibility == Visibility.PATIENT_VISIBLE.value,
+        )
+        total = (
+            self.session.scalar(select(func.count()).select_from(query.subquery())) or 0
+        )
+        notes = self.session.scalars(
+            query.order_by(Note.created_at.desc(), Note.id)
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+        return OwnNotePage(
+            items=[OwnNoteResponse.model_validate(x) for x in notes],
             page=page,
             page_size=page_size,
             total=total,

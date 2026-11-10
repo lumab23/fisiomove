@@ -92,6 +92,7 @@ class WorkoutItem(Base):
     rest_duration_ms: Mapped[int] = mapped_column(Integer)
     professional_guidance: Mapped[str | None] = mapped_column(Text, nullable=True)
     parameters: Mapped[dict] = mapped_column(JSON)
+    counting_rule: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     __table_args__ = (
         UniqueConstraint("revision_id", "position"),

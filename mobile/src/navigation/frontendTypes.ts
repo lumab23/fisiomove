@@ -28,6 +28,8 @@ export type FrontendStackParamList = {
   PatientTabs: NavigatorScreenParams<PatientTabParamList> | undefined;
   PatientPreparation: PatientStackParamList['PatientPreparation'];
   PhysiotherapistInfo: undefined;
+  /** Read-only notes from the physiotherapist (DEC-015). */
+  PatientNotes: undefined;
   CameraPermission: PatientStackParamList['PatientPreparation'];
   Calibration: PatientStackParamList['PatientPreparation'];
   PatientExercise: PatientStackParamList['PatientExercise'];

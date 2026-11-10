@@ -10,6 +10,7 @@ import {
 
 import type { UUID } from '../../contracts/common';
 import type { Workout } from '../../contracts/domain';
+import { demoRuleForItem } from '../exercise-engine/demoElbowFlexion';
 import type { SessionDraft } from '../../sync/types';
 import {
   SessionExecution,
@@ -34,8 +35,12 @@ interface ActiveSessionContextValue {
   begin(workout: Workout, draft: SessionDraft): ActiveSession;
   start(): void;
   tick(): void;
-  /** Repetition counted by touch (DEC-008); no `MovementEngine`. */
+  /** Repetition counted by touch (DEC-008). */
   countRepetition(): void;
+  /** Repetition completed by the demonstration engine (DEC-013). */
+  countCameraRepetition(): void;
+  /** "Contar manualmente": engine off for the current item (DEC-013). */
+  switchToManualCounting(): void;
   pause(): void;
   resume(): void;
   clear(): void;
@@ -58,6 +63,10 @@ export function sessionPlanFrom(workout: Workout): SessionPlanItem[] {
       sets: item.sets,
       repetitions: item.repetitions,
       rest_duration_ms: item.rest_duration_ms,
+      // Only a rule the app can run; anything else is counted by touch.
+      counting_rule: demoRuleForItem(item.counting_rule, item.side)
+        ? item.counting_rule
+        : null,
     }));
 }
 
@@ -130,6 +139,14 @@ export function ActiveSessionProvider({
     () => run(execution => execution.completeRepetition()),
     [run],
   );
+  const countCameraRepetition = useCallback(
+    () => run(execution => execution.completeRepetition('camera')),
+    [run],
+  );
+  const switchToManualCounting = useCallback(
+    () => run(execution => execution.switchToManualCounting()),
+    [run],
+  );
   const pause = useCallback(() => run(execution => execution.pause()), [run]);
   const resume = useCallback(() => run(execution => execution.resume()), [run]);
 
@@ -146,6 +163,8 @@ export function ActiveSessionProvider({
       start,
       tick,
       countRepetition,
+      countCameraRepetition,
+      switchToManualCounting,
       pause,
       resume,
       clear,
@@ -157,6 +176,8 @@ export function ActiveSessionProvider({
       start,
       tick,
       countRepetition,
+      countCameraRepetition,
+      switchToManualCounting,
       pause,
       resume,
       clear,

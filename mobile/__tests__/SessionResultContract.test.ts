@@ -61,6 +61,7 @@ test('aceita a conclusão pública de M07 sem alterar identificadores de M02', a
         completed_repetitions: 1,
         active_duration_ms: 1000,
         interrupted: false,
+        counting_mode: 'manual',
       },
     ],
   });

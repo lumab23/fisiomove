@@ -85,9 +85,21 @@ jest.mock('react-native-vision-camera', () => {
   };
 });
 const mockCameraSides: string[] = [];
+/** Props of the last camera render: the test feeds synthetic observations. */
+const mockCameraProps: {
+  latest: {
+    onObservation?: (observation: unknown) => void;
+    framing?: string | null;
+  } | null;
+} = { latest: null };
 jest.mock('../src/features/vision/LocalPoseCamera', () => ({
-  LocalPoseCamera: ({ side }: { side: string }) => {
-    mockCameraSides.push(side);
+  LocalPoseCamera: (props: {
+    side: string;
+    onObservation?: (observation: unknown) => void;
+    framing?: string | null;
+  }) => {
+    mockCameraSides.push(props.side);
+    mockCameraProps.latest = props;
     return null;
   },
 }));
@@ -165,6 +177,7 @@ afterEach(async () => {
   mockCamera.initial = 'not-determined';
   mockCamera.result = 'authorized';
   mockCameraSides.length = 0;
+  mockCameraProps.latest = null;
   jest.clearAllMocks();
   await act(async () => app.unmount());
 });
@@ -219,14 +232,22 @@ async function openFraming(start = 'Iniciar treino') {
   await press('Continuar');
 }
 
-test('preparation loads the published workout and keeps the three steps', async () => {
+test('preparation loads the published workout and shows the front camera steps', async () => {
   await render();
   await press('Iniciar treino');
   expect(services.workouts.get).toHaveBeenCalledWith('workout-1');
   expect(hasText('Prepare o celular')).toBe(true);
-  expect(hasText('Apoie o celular em um local firme.')).toBe(true);
-  expect(hasText('Sente-se de frente para a câmera.')).toBe(true);
-  expect(hasText('Deixe o braço inteiro visível.')).toBe(true);
+  for (const step of [
+    'Vamos usar a câmera da frente, a mesma do lado da tela.',
+    'Deixe o celular em pé, apoiado num lugar firme, na altura do peito.',
+    'Afaste-se até o braço inteiro aparecer na tela.',
+    'Prefira um lugar claro, com a luz à sua frente.',
+    'Só você vê a imagem; ela não sai do celular.',
+  ]) {
+    expect(hasText(step)).toBe(true);
+  }
+  // Framing only: no distance in meters.
+  expect(hasText('metro')).toBe(false);
   // Voice commands are out of the flow (DEC-009).
   expect(hasText('comandos de voz')).toBe(false);
   expect(mockSync.prepare).not.toHaveBeenCalled();
@@ -492,7 +513,7 @@ test('execution shows the item, the guidance and the source as published', async
   await startGuided();
   expect(hasText('Exercício 1 de 2')).toBe(true);
   expect(hasText('Test arm raise')).toBe(true);
-  expect(hasText('Lado esquerdo')).toBe(true);
+  expect(hasText('Seu braço esquerdo')).toBe(true);
   expect(hasText('Série 1 de 2')).toBe(true);
   expect(hasText('Mantenha as costas apoiadas.')).toBe(true);
   expect(hasText('Fonte: OpenExerciseBase (CC BY-NC 4.0)')).toBe(true);
@@ -782,4 +803,166 @@ test('the interrupted screen shows the summary and the upload status', async () 
   expect(hasText('Treino interrompido')).toBe(true);
   expect(hasText('Test arm raise: 1 de 6 repetições')).toBe(true);
   expect(hasText('Aguardando envio')).toBe(true);
+});
+
+// DEC-013: item with the demonstration counting rule. Synthetic, non-clinical
+// fixtures: the angles only exercise the wiring between camera, engine and
+// session; they are not exercise parameters.
+const countedWorkout: Workout = {
+  ...workout,
+  items: [
+    {
+      ...workout.items[0],
+      sets: 1,
+      repetitions: 2,
+      counting_rule: 'demo-elbow-flexion:v1',
+    },
+  ],
+};
+
+/** Shoulder–elbow–wrist of the left arm forming `angle` degrees. */
+function syntheticObservation(
+  angle: number,
+  timestamp_ms: number,
+  confidence = 0.9,
+) {
+  const radians = (angle * Math.PI) / 180;
+  const at = (x: number, y: number) => ({ x, y, confidence, depth: null });
+  return {
+    timestamp_ms,
+    image_width: 480,
+    image_height: 640,
+    orientation: 'portrait',
+    is_mirrored: false,
+    inference_duration_ms: 20,
+    landmarks: {
+      left_shoulder: at(0.7, 0.5),
+      left_elbow: at(0.5, 0.5),
+      left_wrist: at(
+        0.5 + 0.2 * Math.cos(radians),
+        0.5 + 0.2 * Math.sin(radians),
+      ),
+    },
+  };
+}
+
+// One synthetic cycle, 100 ms apart, monotonic after the 4-frame smoothing.
+const syntheticCycle = [170, 165, 160, 155, 90, 90, 90, 90, 150, 160, 170, 175];
+let syntheticClock = 0;
+
+async function feed(angles: number[], confidence = 0.9) {
+  for (const angle of angles) {
+    syntheticClock += 100;
+    const observation = syntheticObservation(angle, syntheticClock, confidence);
+    await act(async () => mockCameraProps.latest?.onObservation?.(observation));
+  }
+}
+
+async function startCounted() {
+  services.workouts.get.mockResolvedValue(countedWorkout);
+  services.workouts.listMine.mockResolvedValue(pageOf([countedWorkout]));
+  await openFraming();
+  await press('Começar exercício');
+}
+
+test('a counted item counts synthetic cycles up to the prescription (RN19)', async () => {
+  await startCounted();
+  expect(hasText('Contagem demonstrativa · não validada clinicamente')).toBe(
+    true,
+  );
+  expect(hasButton('Contar repetição')).toBe(false);
+  expect(hasButton('Contar manualmente')).toBe(true);
+  await feed(syntheticCycle);
+  expect(hasText('Repetição')).toBe(true);
+  expect(
+    app.root.findAll(
+      node => node.props.accessibilityLabel === 'Repetição 1 de 2',
+    ).length,
+  ).toBeGreaterThan(0);
+  await feed(syntheticCycle);
+  await feed(syntheticCycle);
+  expect(hasText('Você fez tudo o que foi prescrito.')).toBe(true);
+  await press('Concluir treino');
+  const [, completion] = mockSync.finishDraft.mock.calls[0];
+  expect(completion.items).toEqual([
+    expect.objectContaining({
+      completed_repetitions: 2,
+      counting_mode: 'automatic',
+    }),
+  ]);
+  // Nothing from the camera leaves the device (privacy, no score).
+  expect(JSON.stringify(completion)).not.toMatch(
+    /score|landmark|image|frame|angle/,
+  );
+  expect(Object.keys(completion.items[0]).sort()).toEqual([
+    'active_duration_ms',
+    'completed_repetitions',
+    'completed_sets',
+    'counting_mode',
+    'interrupted',
+    'position',
+    'workout_item_id',
+  ]);
+  expect(hasText('Contadas pela câmera (demonstração)')).toBe(true);
+});
+
+test('pause freezes the engine: cycles while paused are not counted (RN20)', async () => {
+  await startCounted();
+  await press('Pausar');
+  // Manual switch stays visible, but cannot change the origin while paused.
+  expect(hasButton('Contar manualmente')).toBe(true);
+  expect(mockCameraProps.latest?.onObservation).toBeDefined();
+  await feed(syntheticCycle);
+  expect(
+    app.root.findAll(
+      node => node.props.accessibilityLabel === 'Repetição 0 de 2',
+    ).length,
+  ).toBeGreaterThan(0);
+});
+
+test('"Contar manualmente" turns the engine off and the result is mixed', async () => {
+  await startCounted();
+  await feed(syntheticCycle);
+  await press('Contar manualmente');
+  // The first touch only switches: nothing counted twice.
+  expect(
+    app.root.findAll(
+      node => node.props.accessibilityLabel === 'Repetição 1 de 2',
+    ).length,
+  ).toBeGreaterThan(0);
+  expect(hasText('Contagem demonstrativa')).toBe(false);
+  expect(mockCameraProps.latest?.onObservation).toBeUndefined();
+  await press('Contar repetição');
+  await press('Concluir treino');
+  const [, completion] = mockSync.finishDraft.mock.calls[0];
+  expect(completion.items[0]).toMatchObject({
+    completed_repetitions: 2,
+    counting_mode: 'mixed',
+  });
+  expect(hasText('Parte pela câmera, parte por toque')).toBe(true);
+});
+
+test('low confidence from the engine becomes a framing message (RN05)', async () => {
+  await startCounted();
+  await feed([170], 0.2);
+  expect(mockCameraProps.latest?.framing).toBe('low_confidence');
+  await feed([170]);
+  expect(mockCameraProps.latest?.framing).toBeNull();
+  await press('Pausar');
+  expect(mockCameraProps.latest?.framing).toBeNull();
+});
+
+test('an item without the rule stays manual and has no extra button', async () => {
+  await openFraming();
+  await press('Começar exercício');
+  expect(hasButton('Contar manualmente')).toBe(false);
+  expect(hasText('Contagem demonstrativa')).toBe(false);
+  expect(mockCameraProps.latest?.onObservation).toBeUndefined();
+  for (let i = 0; i < 6; i += 1) {
+    await press('Contar repetição');
+  }
+  await press('Concluir treino');
+  const [, completion] = mockSync.finishDraft.mock.calls[0];
+  expect(completion.items[0].counting_mode).toBe('manual');
+  expect(hasText('As repetições foram contadas pelos seus toques.')).toBe(true);
 });

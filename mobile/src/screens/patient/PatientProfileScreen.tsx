@@ -6,8 +6,10 @@ import {
   usePatientProfile,
 } from '../../integration/usePatientData';
 import { useAccount } from '../../navigation/AccountContext';
+import { usePatientTabNavigation } from '../../navigation/frontendTypes';
 import { colors, fonts, radii, spacing } from '../../theme/theme';
 import { EmptyState, ListGroup, ListRow, SectionTitle, styles } from '../../ui';
+import { notesTitle } from './PatientNotesScreen';
 
 export function initialsOf(name: string) {
   return name
@@ -82,6 +84,7 @@ export function LinkedPhysiotherapistCard() {
 export function PatientProfileScreen() {
   const { state, reload } = usePatientProfile();
   const account = useAccount();
+  const navigation = usePatientTabNavigation();
   let identity: React.ReactNode;
   if (state.status === 'idle' || state.status === 'loading') {
     identity = <LoadingState label="Carregando seu perfil" />;
@@ -115,6 +118,14 @@ export function PatientProfileScreen() {
       <View style={profile.section}>
         <SectionTitle>Meu fisioterapeuta</SectionTitle>
         <LinkedPhysiotherapistCard />
+        <ListGroup>
+          <ListRow
+            icon="message"
+            title={notesTitle}
+            accessibilityHint="Abre os recados que seu fisioterapeuta deixou para você"
+            onPress={() => navigation.navigate('PatientNotes')}
+          />
+        </ListGroup>
       </View>
 
       {account.signOut ? (

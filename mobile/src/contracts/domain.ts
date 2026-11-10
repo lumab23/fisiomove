@@ -68,6 +68,15 @@ export interface ExerciseLocalizationUpdate {
 
 export type ExercisePage = Page<Exercise>;
 
+/**
+ * Automatic counting enabled by the physiotherapist for one item (DEC-013).
+ * The only value is a demonstration rule, not clinically validated.
+ */
+export type CountingRule = 'demo-elbow-flexion:v1';
+
+/** How the repetitions of one item were counted (DEC-013). */
+export type CountingMode = 'manual' | 'automatic' | 'mixed';
+
 export interface WorkoutItemInput {
   position: number;
   exercise_id: UUID;
@@ -77,6 +86,8 @@ export interface WorkoutItemInput {
   rest_duration_ms: number;
   professional_guidance?: string | null;
   parameters?: Record<string, JsonValue>;
+  /** Only for one side; `null` or absent keeps counting by touch. */
+  counting_rule?: CountingRule | null;
 }
 
 export interface WorkoutItem extends Omit<
@@ -183,6 +194,19 @@ export interface Note {
 
 export type NotePage = Page<Note>;
 
+/**
+ * Note marked "Paciente pode ver", as the patient reads it (`GET /me/notes`,
+ * DEC-015): no author, patient or visibility fields.
+ */
+export interface OwnNote {
+  id: UUID;
+  content: string;
+  created_at: ISODateTime;
+  updated_at: ISODateTime;
+}
+
+export type OwnNotePage = Page<OwnNote>;
+
 export interface SessionItemResultInput {
   workout_item_id: UUID;
   position: number;
@@ -190,6 +214,8 @@ export interface SessionItemResultInput {
   completed_repetitions: number;
   active_duration_ms: number;
   interrupted: boolean;
+  /** Optional so results queued before the field stay valid (`manual`). */
+  counting_mode?: CountingMode;
 }
 
 export interface SessionResultInput {

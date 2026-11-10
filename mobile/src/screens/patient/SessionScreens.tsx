@@ -7,6 +7,7 @@ import { ExerciseImageGallery } from '../../components/ExerciseImageGallery';
 import { Screen } from '../../components/Screen';
 import { InlineError } from '../../components/ScreenStates';
 import type { UUID } from '../../contracts/common';
+import type { CountingMode } from '../../contracts/domain';
 import {
   countedRepetitions,
   currentWorkoutItem,
@@ -273,11 +274,21 @@ function showAfterTabs(
   });
 }
 
+/** Where the repetitions of an item came from (DEC-013). */
+const countingModeLabels: Record<CountingMode, string> = {
+  manual: 'Contadas por toque',
+  automatic: 'Contadas pela câmera (demonstração)',
+  mixed: 'Parte pela câmera, parte por toque',
+};
+
 /** Counted repetitions per item; no score and nothing about movement quality. */
 function SessionSummary({ session }: { session: ActiveSession | null }) {
   if (!session) {
     return null;
   }
+  const byTouchOnly = session.snapshot.items.every(
+    progress => progress.counting_mode === 'manual',
+  );
   return (
     <Card white title="Resumo">
       {session.snapshot.items.map(progress => {
@@ -289,11 +300,16 @@ function SessionSummary({ session }: { session: ActiveSession | null }) {
             {item ? exerciseName(item) : 'Exercício'}:{' '}
             {progress.completed_repetitions} de{' '}
             {progress.sets * progress.repetitions} repetições
+            {byTouchOnly
+              ? ''
+              : ` · ${countingModeLabels[progress.counting_mode]}`}
           </Text>
         );
       })}
       <Text style={styles.demo}>
-        As repetições foram contadas pelos seus toques.
+        {byTouchOnly
+          ? 'As repetições foram contadas pelos seus toques.'
+          : 'A contagem pela câmera é uma demonstração, não validada clinicamente.'}
       </Text>
     </Card>
   );

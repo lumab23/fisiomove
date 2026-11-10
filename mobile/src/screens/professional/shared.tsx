@@ -1,7 +1,7 @@
 import { useCallback, useRef, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { ApiError, friendlyErrorMessage } from '../../api/errors';
+import { friendlyErrorMessage } from '../../api/errors';
 import { ErrorState, LoadingState } from '../../components/ScreenStates';
 import { Icon } from '../../components/Icon';
 import type {
@@ -65,13 +65,12 @@ export function useReloadOnReturn(...reloads: (() => void)[]) {
   );
 }
 
-/** Message for an API error, preferring a specific text for known codes. */
+/** Message for an API error: screen texts first, then the global map. */
 export function apiErrorMessage(
   cause: unknown,
-  byCode: Record<string, string> = {},
+  byCode: Readonly<Record<string, string>> = {},
 ) {
-  const code = cause instanceof ApiError ? cause.code : undefined;
-  return (code && byCode[code]) || friendlyErrorMessage(cause);
+  return friendlyErrorMessage(cause, byCode);
 }
 
 export const workoutStatusLabels: Record<WorkoutStatus, string> = {
@@ -211,6 +210,65 @@ export function MultiChoiceGroup<T extends string>({
   );
 }
 
+/**
+ * One on/off option, off until the physiotherapist turns it on. When
+ * `disabledReason` is given the option cannot be changed and the reason is
+ * shown and read by the screen reader.
+ */
+export function CheckboxField({
+  label,
+  checked,
+  onChange,
+  disabledReason,
+  children,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  disabledReason?: string;
+  children?: ReactNode;
+}) {
+  const disabled = Boolean(disabledReason);
+  return (
+    <View style={choice.group}>
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityLabel={label}
+        accessibilityHint={disabledReason}
+        accessibilityState={{ checked, disabled }}
+        disabled={disabled}
+        onPress={() => onChange(!checked)}
+        style={({ pressed }) => [
+          choice.option,
+          checked && choice.selected,
+          disabled && choice.disabled,
+          pressed && !checked && choice.pressed,
+        ]}
+      >
+        <View style={choice.checkRow}>
+          {checked ? (
+            <Icon name="check" size={20} color={colors.onPrimary} />
+          ) : null}
+          <Text
+            style={[
+              choice.text,
+              choice.flexText,
+              checked && choice.selectedText,
+              disabled && choice.disabledText,
+            ]}
+          >
+            {label}
+          </Text>
+        </View>
+      </Pressable>
+      {children}
+      {disabledReason ? (
+        <Text style={choice.hint}>{disabledReason}</Text>
+      ) : null}
+    </View>
+  );
+}
+
 const choice = StyleSheet.create({
   group: { gap: spacing.sm },
   label: {
@@ -238,6 +296,14 @@ const choice = StyleSheet.create({
   },
   selectedText: { color: colors.onPrimary, fontFamily: fonts.bold },
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  flexText: { flexShrink: 1 },
+  disabled: { backgroundColor: colors.surfaceMuted },
+  disabledText: { color: colors.textMuted },
+  hint: {
+    color: colors.textMuted,
+    ...typography.caption,
+    fontFamily: fonts.regular,
+  },
   error: {
     color: colors.error,
     ...typography.caption,

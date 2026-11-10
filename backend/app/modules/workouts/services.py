@@ -138,6 +138,7 @@ class WorkoutService:
             "rest_duration_ms",
             "professional_guidance",
             "parameters",
+            "counting_rule",
         )
         return [
             WorkoutItem(**{field: deepcopy(getattr(item, field)) for field in fields})
