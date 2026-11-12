@@ -48,7 +48,7 @@ def test_empty_database_migrates_to_head(tmp_path: Path) -> None:
             revision = connection.scalar(
                 text("SELECT version_num FROM alembic_version")
             )
-        assert revision == "20261109_0015"
+        assert revision == "20261112_0016"
         with engine.connect() as connection:
             from alembic.autogenerate import compare_metadata
             from alembic.migration import MigrationContext
@@ -123,7 +123,7 @@ def test_business_routes_registered_once() -> None:
             "/api/v1/auth/me": {"get"},
             "/api/v1/auth/change-password": {"post"},
             "/api/v1/patients": {"get", "post"},
-            "/api/v1/patients/{patient_id}": {"get", "patch"},
+            "/api/v1/patients/{patient_id}": {"get", "patch", "delete"},
             "/api/v1/patients/{patient_id}/access": {"post"},
             "/api/v1/me/profile": {"get"},
             "/api/v1/me/physiotherapist-profile": {"get", "put"},
@@ -136,12 +136,12 @@ def test_business_routes_registered_once() -> None:
             "/api/v1/exercise-library/{external_id}": {"get"},
             "/api/v1/exercise-library/{external_id}/catalog": {"post"},
             "/api/v1/patients/{patient_id}/workouts": {"get", "post"},
-            "/api/v1/workouts/{workout_id}": {"get", "patch"},
+            "/api/v1/workouts/{workout_id}": {"get", "patch", "delete"},
             "/api/v1/workouts/{workout_id}/publish": {"post"},
             "/api/v1/workouts/{workout_id}/archive": {"post"},
             "/api/v1/me/workouts": {"get"},
             "/api/v1/patients/{patient_id}/notes": {"get", "post"},
-            "/api/v1/notes/{note_id}": {"patch"},
+            "/api/v1/notes/{note_id}": {"patch", "delete"},
             "/api/v1/me/notes": {"get"},
             "/api/v1/me/sessions": {"get", "post"},
             "/api/v1/me/sessions/{session_id}": {"get"},

@@ -67,7 +67,13 @@ def test_only_own_patient_visible_notes_without_internal_fields(
     assert body["total"] == 1
     assert body["pages"] == 1
     assert [x["content"] for x in body["items"]] == ["Visible test note"]
-    assert set(body["items"][0]) == {"id", "content", "created_at", "updated_at"}
+    assert set(body["items"][0]) == {
+        "id",
+        "content",
+        "emoji",
+        "created_at",
+        "updated_at",
+    }
 
     other_body = client.get(URL, headers=headers(other_user)).json()
     assert other_body["total"] == 1
