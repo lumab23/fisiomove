@@ -1,0 +1,598 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  AppState,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
+import {
+  models,
+  setTelemetryEnabled,
+  useKeypointDetector,
+  type KeypointDetection,
+} from 'react-native-executorch';
+import {
+  Camera,
+  useCameraDevice,
+  useCameraPermission,
+  useFrameOutput,
+  type CameraFrameOutput,
+} from 'react-native-vision-camera';
+import {
+  createResizer,
+  type Resizer,
+} from 'react-native-vision-camera-resizer';
+import Svg, { Line } from 'react-native-svg';
+import { scheduleOnRN } from 'react-native-worklets';
+import type {
+  CameraOrientation,
+  InterruptionReason,
+} from 'react-native-vision-camera';
+import { Button } from '../../ui';
+import { CameraMessage, CameraSettingsSteps } from './CameraGuidance';
+import type { Side } from '../../contracts/domain';
+import type { FrameOrientation } from './types';
+import {
+  toRawPoseObservation,
+  type RawPoseObservation,
+} from './RawPoseObservation';
+import { toPreviewCoordinates } from './poseAssessment';
+import {
+  armPrefixes,
+  armSegments,
+  cameraDebugText,
+  cameraErrorMessage,
+  cameraStatus,
+  countVisibleArmPoints,
+  type FramingFeedback,
+} from './cameraOverlay';
+import { colors, fonts, radii, spacing, typography } from '../../theme/theme';
+
+const detectorModel = models.keypointDetection.YOLO26_POSE.SIZE_384.DEFAULT;
+setTelemetryEnabled(false);
+
+interface LocalPoseCameraProps {
+  /** `bilateral` asks for both arms to be visible (Q-T1). */
+  side: Side;
+  active: boolean;
+  onObservation?: (observation: RawPoseObservation) => void;
+  /** Framing feedback of the counting engine, shown before "Braço visível". */
+  framing?: FramingFeedback | null;
+  immersive?: boolean;
+  style?: StyleProp<ViewStyle>;
+}
+
+type CocoDetection = KeypointDetection<
+  'xyxy',
+  | 'leftEye'
+  | 'rightEye'
+  | 'leftEar'
+  | 'rightEar'
+  | 'nose'
+  | 'leftShoulder'
+  | 'rightShoulder'
+  | 'leftElbow'
+  | 'rightElbow'
+  | 'leftWrist'
+  | 'rightWrist'
+  | 'leftHip'
+  | 'rightHip'
+  | 'leftKnee'
+  | 'rightKnee'
+  | 'leftAnkle'
+  | 'rightAnkle'
+>;
+
+export function LocalPoseCamera({
+  side,
+  active,
+  onObservation,
+  framing = null,
+  immersive = false,
+  style,
+}: LocalPoseCameraProps) {
+  // The patient faces the screen during the exercise, so the front camera
+  // must point toward them while the display and live landmarks remain visible.
+  const device = useCameraDevice('front');
+  const { hasPermission, canRequestPermission, requestPermission } =
+    useCameraPermission();
+  const [latest, setLatest] = useState<RawPoseObservation | null>(null);
+  const [displayLandmarks, setDisplayLandmarks] = useState<
+    RawPoseObservation['landmarks']
+  >({});
+  const [previewSize, setPreviewSize] = useState({ width: 0, height: 0 });
+  const [inferenceError, setInferenceError] = useState<string | null>(null);
+  const [droppedFrames, setDroppedFrames] = useState(0);
+  const [appState, setAppState] = useState(AppState.currentState);
+  const onObservationRef = useRef(onObservation);
+  const previousDisplayRef = useRef<DisplayLandmarks | null>(null);
+  onObservationRef.current = onObservation;
+
+  const detector = useKeypointDetector(detectorModel);
+  const detectKeypointsWorklet = detector.detectKeypointsWorklet;
+  const [resizer, setResizer] = useState<Resizer | null>(null);
+  const [resizerError, setResizerError] = useState<string | null>(null);
+  const detectorReady = detector.isReady;
+
+  useEffect(() => {
+    let canceled = false;
+    let createdResizer: Resizer | undefined;
+    createResizer({
+      width: 384,
+      height: 384,
+      channelOrder: 'rgb',
+      dataType: 'uint8',
+      scaleMode: 'contain',
+      pixelLayout: 'interleaved',
+    })
+      .then(created => {
+        createdResizer = created;
+        if (canceled) {
+          created.dispose();
+        } else {
+          setResizer(created);
+        }
+      })
+      .catch((error: unknown) => {
+        setResizerError(
+          error instanceof Error
+            ? error.message
+            : 'Falha ao preparar os frames.',
+        );
+      });
+    return () => {
+      canceled = true;
+      createdResizer?.dispose();
+      setResizer(null);
+    };
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', setAppState);
+    return () => subscription.remove();
+  }, []);
+
+  const onPoseDetection = useCallback(
+    (
+      detection: CocoDetection | undefined,
+      timestamp: number,
+      width: number,
+      height: number,
+      orientation: CameraOrientation,
+      isMirrored: boolean,
+      inferenceDuration: number,
+    ) => {
+      const raw = toRawPoseObservation(detection, {
+        timestamp_ms: timestamp,
+        image_width: width,
+        image_height: height,
+        orientation: mapOrientation(orientation),
+        is_mirrored: isMirrored,
+        inference_duration_ms: inferenceDuration,
+      });
+      const smoothed = smoothDisplayLandmarks(raw, previousDisplayRef.current);
+      previousDisplayRef.current = {
+        timestamp_ms: raw.timestamp_ms,
+        landmarks: smoothed,
+      };
+      setLatest(raw);
+      setDisplayLandmarks(smoothed);
+      setInferenceError(null);
+      // Keep the original detections for movement logic; smoothing is visual only.
+      onObservationRef.current?.(raw);
+    },
+    [],
+  );
+
+  const onInferenceFailure = useCallback((message: string) => {
+    setInferenceError(message);
+  }, []);
+  const recordDroppedFrame = useCallback(() => {
+    setDroppedFrames(count => count + 1);
+  }, []);
+
+  const frameOutput: CameraFrameOutput = useFrameOutput({
+    targetResolution: { width: 640, height: 480 },
+    pixelFormat: 'yuv',
+    enablePhysicalBufferRotation: true,
+    enablePreviewSizedOutputBuffers: true,
+    dropFramesWhileBusy: true,
+    onFrame(frame) {
+      'worklet';
+      const currentResizer = resizer;
+      const detect = detectKeypointsWorklet;
+      if (!currentResizer || !detectorReady || !detect) {
+        frame.dispose();
+        return;
+      }
+      let resized: ReturnType<typeof currentResizer.resize> | undefined;
+      try {
+        resized = currentResizer.resize(frame);
+        const startedAt = Date.now();
+        const results = detect({
+          data: new Uint8Array(resized.getPixelBuffer()),
+          width: 384,
+          height: 384,
+          format: 'rgb',
+          layout: 'hwc',
+        });
+        scheduleOnRN(
+          onPoseDetection,
+          results[0] as CocoDetection | undefined,
+          Date.now(),
+          frame.width,
+          frame.height,
+          frame.orientation,
+          frame.isMirrored,
+          Date.now() - startedAt,
+        );
+      } catch (error) {
+        scheduleOnRN(
+          onInferenceFailure,
+          error instanceof Error ? error.message : 'Falha na inferência local.',
+        );
+      } finally {
+        resized?.dispose();
+        frame.dispose();
+      }
+    },
+    onFrameDropped() {
+      'worklet';
+      scheduleOnRN(recordDroppedFrame);
+    },
+  });
+
+  const outputs = useMemo(() => [frameOutput], [frameOutput]);
+  const [interruption, setInterruption] = useState<InterruptionReason | null>(
+    null,
+  );
+  const [cameraFailed, setCameraFailed] = useState(false);
+  const [cameraKey, setCameraKey] = useState(0);
+  const shell = [styles.message, immersive && styles.immersiveMessage];
+
+  if (!hasPermission) {
+    return (
+      <View style={shell}>
+        {canRequestPermission ? (
+          <CameraMessage
+            icon="camera"
+            title="Vamos ativar sua câmera?"
+            description="A câmera ajuda a acompanhar seus movimentos durante o exercício."
+          >
+            <Button
+              icon="camera"
+              label="Ativar câmera"
+              onPress={() => {
+                requestPermission().catch(() => undefined);
+              }}
+            />
+          </CameraMessage>
+        ) : (
+          <CameraMessage
+            icon="cameraOff"
+            title="A câmera está desativada"
+            description="Para acompanhar seus movimentos durante o exercício, precisamos acessar a câmera do seu dispositivo."
+          >
+            <CameraSettingsSteps />
+          </CameraMessage>
+        )}
+      </View>
+    );
+  }
+  if (!device) {
+    return (
+      <View style={shell}>
+        <CameraMessage
+          icon="cameraOff"
+          title="Não encontramos a câmera"
+          description="Este celular não tem uma câmera frontal disponível para o exercício."
+        />
+      </View>
+    );
+  }
+  if (cameraFailed) {
+    return (
+      <View style={shell}>
+        <CameraMessage
+          icon="cameraOff"
+          title="Não foi possível ligar a câmera"
+          description="Feche outros aplicativos que usam a câmera, como chamadas de vídeo, e ligue de novo."
+        >
+          <Button
+            icon="camera"
+            label="Ligar a câmera de novo"
+            onPress={() => {
+              setCameraFailed(false);
+              setCameraKey(key => key + 1);
+            }}
+          />
+        </CameraMessage>
+      </View>
+    );
+  }
+  const interruptionMessage = describeInterruption(interruption);
+  // Native messages are usually English: only a fixed pt-BR text is shown,
+  // with the detail in development builds (DEC-014).
+  const errorDetail: string | null | undefined =
+    inferenceError ??
+    resizerError ??
+    (detector.error ? (detector.error.message ?? null) : undefined);
+
+  return (
+    <View
+      style={[styles.container, immersive && styles.immersive, style]}
+      onLayout={event =>
+        setPreviewSize({
+          width: event.nativeEvent.layout.width,
+          height: event.nativeEvent.layout.height,
+        })
+      }
+    >
+      <Camera
+        key={cameraKey}
+        style={StyleSheet.absoluteFill}
+        device={device}
+        outputs={outputs}
+        isActive={active && appState === 'active'}
+        orientationSource="interface"
+        resizeMode="contain"
+        onError={() => setCameraFailed(true)}
+        onInterruptionStarted={setInterruption}
+        onInterruptionEnded={() => setInterruption(null)}
+      />
+      {interruptionMessage ? (
+        <View style={styles.interruption}>
+          <CameraMessage icon="cameraOff" {...interruptionMessage} />
+        </View>
+      ) : null}
+      <View pointerEvents="none" style={styles.overlay}>
+        {!detector.isReady || !resizer ? (
+          <ActivityIndicator color={colors.surface} />
+        ) : null}
+        {latest ? (
+          <Svg
+            style={StyleSheet.absoluteFill}
+            width={previewSize.width}
+            height={previewSize.height}
+          >
+            {armSegments(displayLandmarks, side).flatMap(([from, to]) => {
+              const start = displayLandmarks[from];
+              const end = displayLandmarks[to];
+              if (!start || !end) return [];
+              const a = previewPoint(latest, start, previewSize);
+              const b = previewPoint(latest, end, previewSize);
+              const line = { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
+              // A light outline under the line keeps it visible on any image.
+              return [
+                <Line
+                  key={`${from}-${to}-outline`}
+                  {...line}
+                  stroke={colors.surface}
+                  strokeWidth={spacing.sm}
+                  strokeLinecap="round"
+                />,
+                <Line
+                  key={`${from}-${to}`}
+                  {...line}
+                  stroke={colors.cameraLandmark}
+                  strokeWidth={spacing.xs}
+                  strokeLinecap="round"
+                />,
+              ];
+            })}
+          </Svg>
+        ) : null}
+        <PoseStatus
+          error={errorDetail !== undefined}
+          ready={detector.isReady && resizer !== null}
+          side={side}
+          visiblePoints={countVisibleArmPoints(latest, side)}
+          framing={framing}
+        />
+        {__DEV__ ? (
+          <Text style={styles.badge}>
+            {errorDetail !== undefined
+              ? cameraErrorMessage(errorDetail, true)
+              : cameraDebugText(latest, side, droppedFrames)}
+          </Text>
+        ) : null}
+        {latest &&
+          Object.entries(displayLandmarks).map(([id, point]) => {
+            if (
+              !point ||
+              !armPrefixes(side).some(prefix => id.startsWith(`${prefix}_`))
+            )
+              return null;
+            const position = previewPoint(latest, point, previewSize);
+            return (
+              <View
+                key={id}
+                style={[
+                  styles.landmark,
+                  { left: position.x - 6, top: position.y - 6 },
+                ]}
+              />
+            );
+          })}
+      </View>
+    </View>
+  );
+}
+
+function PoseStatus(props: Parameters<typeof cameraStatus>[0]) {
+  const status = cameraStatus(props);
+  return (
+    <Text
+      accessibilityLiveRegion="polite"
+      style={[styles.status, status.ok && styles.statusOk]}
+    >
+      {status.text}
+    </Text>
+  );
+}
+
+const styles = StyleSheet.create({
+  immersive: { flex: 1, minHeight: 0, borderRadius: 0 },
+  immersiveMessage: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
+  status: {
+    ...typography.bodySmall,
+    fontFamily: fonts.bold,
+    color: colors.surface,
+    backgroundColor: colors.cameraOverlay,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    overflow: 'hidden',
+  },
+  statusOk: { backgroundColor: colors.success },
+  container: {
+    minHeight: 280,
+    overflow: 'hidden',
+    backgroundColor: colors.cameraSurface,
+    borderRadius: radii.md,
+  },
+  message: { padding: spacing.lg, gap: spacing.md, alignItems: 'center' },
+  interruption: {
+    ...StyleSheet.absoluteFill,
+    justifyContent: 'center',
+    padding: spacing.lg,
+    backgroundColor: colors.cameraOverlay,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFill,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  badge: {
+    color: colors.surface,
+    backgroundColor: colors.cameraOverlay,
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    overflow: 'hidden',
+  },
+  landmark: {
+    position: 'absolute',
+    width: spacing.md,
+    height: spacing.md,
+    borderRadius: radii.pill,
+    borderWidth: 2,
+    borderColor: colors.surface,
+    backgroundColor: colors.cameraLandmark,
+  },
+});
+
+function previewPoint(
+  observation: RawPoseObservation,
+  point: { x: number; y: number },
+  preview: { width: number; height: number },
+): { x: number; y: number } {
+  const oriented = toPreviewCoordinates(
+    point,
+    observation.orientation,
+    observation.is_mirrored,
+  );
+  const aspect = observation.image_width / observation.image_height;
+  const previewAspect = preview.width / Math.max(1, preview.height);
+  if (aspect > previewAspect) {
+    const contentHeight = preview.width / aspect;
+    return {
+      x: oriented.x * preview.width,
+      y: (preview.height - contentHeight) / 2 + oriented.y * contentHeight,
+    };
+  }
+  const contentWidth = preview.height * aspect;
+  return {
+    x: (preview.width - contentWidth) / 2 + oriented.x * contentWidth,
+    y: oriented.y * preview.height,
+  };
+}
+
+function describeInterruption(
+  reason: InterruptionReason | null,
+): { title: string; description: string } | null {
+  switch (reason) {
+    case 'video-device-in-use-by-another-client':
+    case 'video-device-not-available-with-multiple-foreground-apps':
+      return {
+        title: 'A câmera está sendo usada por outro aplicativo',
+        description:
+          'Feche o outro aplicativo, como uma chamada de vídeo, e volte para cá.',
+      };
+    case 'video-device-not-available-due-to-system-pressure':
+      return {
+        title: 'A câmera pausou por um momento',
+        description:
+          'O celular está muito quente ou ocupado. Aguarde um pouco, ela volta sozinha.',
+      };
+    case 'unknown':
+    case 'sensitive-content-mitigation-activated':
+      return {
+        title: 'A câmera pausou por um momento',
+        description: 'Aguarde um pouco, ela volta sozinha.',
+      };
+    default:
+      return null;
+  }
+}
+
+function mapOrientation(orientation: CameraOrientation): FrameOrientation {
+  switch (orientation) {
+    case 'up':
+      return 'portrait';
+    case 'down':
+      return 'portrait-upside-down';
+    case 'left':
+      return 'landscape-left';
+    case 'right':
+      return 'landscape-right';
+  }
+}
+
+interface DisplayLandmarks {
+  timestamp_ms: number;
+  landmarks: RawPoseObservation['landmarks'];
+}
+
+const DISPLAY_SMOOTHING_ALPHA = 0.22;
+const DISPLAY_SMOOTHING_MAX_GAP_MS = 300;
+
+function smoothDisplayLandmarks(
+  observation: RawPoseObservation,
+  previous: DisplayLandmarks | null,
+): RawPoseObservation['landmarks'] {
+  if (
+    !previous ||
+    observation.timestamp_ms - previous.timestamp_ms >
+      DISPLAY_SMOOTHING_MAX_GAP_MS
+  ) {
+    return observation.landmarks;
+  }
+
+  const smoothed: RawPoseObservation['landmarks'] = {};
+  for (const [id, point] of Object.entries(observation.landmarks) as [
+    keyof RawPoseObservation['landmarks'],
+    NonNullable<
+      RawPoseObservation['landmarks'][keyof RawPoseObservation['landmarks']]
+    >,
+  ][]) {
+    const prior = previous.landmarks[id];
+    smoothed[id] = prior
+      ? {
+          ...point,
+          x: prior.x + (point.x - prior.x) * DISPLAY_SMOOTHING_ALPHA,
+          y: prior.y + (point.y - prior.y) * DISPLAY_SMOOTHING_ALPHA,
+        }
+      : point;
+  }
+  return smoothed;
+}

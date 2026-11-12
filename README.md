@@ -4,7 +4,12 @@ Projeto acadêmico de TCC voltado ao apoio à execução de exercícios fisioter
 
 **Status:** em desenvolvimento.
 
-> Este repositório contém somente a infraestrutura inicial. As funcionalidades principais ainda não foram implementadas.
+> O backend do MVP está implementado tecnicamente, incluindo pontuação individual
+> e governança do catálogo. O catálogo de produção
+> permanece vazio até a aprovação clínica explícita do primeiro exercício; o
+> produto e as telas de negócio do mobile continuam em desenvolvimento. A base
+> mobile M01/M02 já fornece autenticação, navegação, serviços tipados e
+> sincronização offline.
 
 ## Stack planejada
 
@@ -69,7 +74,12 @@ npm test
 npm run format:check
 ```
 
+Consulte [`mobile/README.md`](mobile/README.md) para configuração da API local,
+autenticação, contratos compartilhados e fila offline.
+
 ## Backend
+
+As instruções completas da fundação do backend estão em [`backend/README.md`](backend/README.md).
 
 Prepare o ambiente local:
 
@@ -79,6 +89,13 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e '.[dev]'
+cp .env.example .env
+```
+
+Configure `DATABASE_URL` no `.env` com uma instância PostgreSQL local e aplique as migrações:
+
+```bash
+alembic upgrade head
 ```
 
 Execute a API:

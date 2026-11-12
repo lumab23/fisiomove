@@ -1,0 +1,143 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                       4 DESENVOLVIMENTO                            %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Desenvolvimento}
+\label{cap:desenvolvimento}
+
+Este capítulo descreve a solução construída até o momento: a arquitetura adotada, as tecnologias utilizadas, a organização do servidor, as regras de negócio implementadas e o estado atual do aplicativo móvel. As etapas que dependem da definição clínica dos exercícios, como a estimativa de pose e a calibração, são apresentadas como trabalho em andamento.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Arquitetura da solução}
+\label{sec:arquitetura}
+
+A arquitetura do FisioMove é dividida em dois componentes: um aplicativo móvel, responsável pela interação com o paciente e pelo processamento das imagens da câmera, e um servidor, responsável pela persistência e pelo controle de acesso aos dados. A Figura~\ref{fig:arquitetura} apresenta o fluxo principal.
+
+\begin{figure}[htbp]
+    \centering
+    \caption{Fluxo principal da arquitetura do FisioMove}
+    \label{fig:arquitetura}
+    \begin{tabular}{c}
+        Câmera do dispositivo \\
+        $\downarrow$ \\
+        Estimativa de pose no dispositivo \\
+        $\downarrow$ \\
+        Pontos corporais (\textit{landmarks}) \\
+        $\downarrow$ \\
+        Regras do exercício, contagem e \textit{feedback} \\
+        $\downarrow$ \\
+        Resultado da sessão (dados derivados) \\
+        $\downarrow$ \\
+        API REST em FastAPI \\
+        $\downarrow$ \\
+        Banco de dados PostgreSQL \\
+    \end{tabular}
+    \par\medskip
+    Fonte: elaborada pelas autoras (2026).
+\end{figure}
+
+A principal decisão arquitetural foi realizar o processamento da visão computacional no próprio dispositivo. Em comparação com o envio de imagens a um servidor, essa abordagem tende a reduzir a latência do \textit{feedback}, a dependência de conexão com a Internet, o custo de infraestrutura e a exposição das imagens do usuário. Em conformidade com essa decisão e com o princípio da minimização de dados \cite{LGPD2018}, o servidor não possui nenhuma rota para recebimento de imagens, vídeos ou áudios. Ele recebe somente o resumo de cada sessão, como repetições e séries concluídas, duração e situação final.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Tecnologias utilizadas}
+\label{sec:tecnologias}
+
+O Quadro~\ref{qua:tecnologias} resume as tecnologias empregadas em cada parte do sistema.
+
+\begin{quadro}[htbp]
+    \centering
+    \caption{Tecnologias utilizadas no FisioMove}
+    \label{qua:tecnologias}
+    \begin{tabular}{|p{4cm}|p{10cm}|}
+        \hline
+        \textbf{Camada} & \textbf{Tecnologias} \\ \hline
+        Aplicativo móvel & React Native e TypeScript em modo estrito \cite{ReactNative} \\ \hline
+        Servidor & Python, FastAPI e Uvicorn \cite{FastAPI} \\ \hline
+        Persistência & PostgreSQL, SQLAlchemy e Alembic (migrações versionadas) \\ \hline
+        Autenticação & Tokens JWT e armazenamento de senhas com Argon2 \\ \hline
+        Qualidade & Ruff e pytest no servidor; ESLint, Prettier e Jest no aplicativo \\ \hline
+        Visão computacional & MediaPipe Pose Landmarker ou solução equivalente, a ser validada em prova de conceito \cite{GooglePose,Bazarevsky2020} \\ \hline
+    \end{tabular}
+    \par\medskip
+    Fonte: elaborada pelas autoras (2026).
+\end{quadro}
+
+% TODO: inserir aqui a justificativa da escolha do React Native em vez do Flutter.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Organização do servidor}
+\label{sec:servidor}
+
+O servidor foi organizado em módulos por domínio. Cada módulo separa as rotas da API, a lógica de negócio, os modelos de dados e os esquemas de validação das requisições. Os módulos implementados são:
+
+\begin{itemize}
+    \item \textbf{autenticação}: acesso por perfil (fisioterapeuta ou paciente), renovação e revogação de sessões e troca obrigatória da senha temporária no primeiro acesso;
+    \item \textbf{pacientes}: cadastro, edição, desativação e vínculo entre fisioterapeuta e paciente;
+    \item \textbf{exercícios}: catálogo limitado aos exercícios suportados e aprovados;
+    \item \textbf{treinos}: criação, publicação e arquivamento de treinos individualizados;
+    \item \textbf{observações}: anotações do fisioterapeuta sobre o paciente;
+    \item \textbf{sessões}: registro do resultado de cada sessão realizada;
+    \item \textbf{progresso}: histórico de sessões e resumo do progresso por período;
+    \item \textbf{conquistas}: registro da conquista obtida ao atingir a meta da sessão.
+\end{itemize}
+
+Não há cadastro público de contas. O primeiro fisioterapeuta é criado localmente pela equipe, e o acesso de cada paciente é criado pelo profissional responsável, que recebe uma senha temporária para entregar ao paciente.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Modelo de dados}
+\label{sec:modelo-dados}
+
+Um treino pertence a um paciente e passa pelos estados de rascunho, publicado e arquivado. Cada alteração gera uma nova revisão. Em cada revisão, os exercícios são registrados como itens, com posição, lado do corpo, número de séries e de repetições, intervalo de descanso, orientações do profissional e parâmetros do exercício. Cada item também guarda uma cópia (\textit{snapshot}) da definição do exercício e da versão de sua regra no momento da prescrição.
+
+Ao registrar uma sessão, o aplicativo informa a revisão do treino utilizada. Assim, mesmo que o fisioterapeuta altere o treino depois, o histórico continua refletindo exatamente o que foi prescrito e realizado em cada sessão.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Regras de negócio implementadas}
+\label{sec:regras-implementadas}
+
+O Quadro~\ref{qua:regras} relaciona as regras de negócio definidas no Documento de Visão ao comportamento implementado no servidor.
+
+\begin{quadro}[htbp]
+    \centering
+    \caption{Regras de negócio e implementação no servidor}
+    \label{qua:regras}
+    \begin{tabular}{|p{5.5cm}|p{8.5cm}|}
+        \hline
+        \textbf{Regra} & \textbf{Implementação} \\ \hline
+        Treino vinculado a um paciente e cadastrado por fisioterapeuta & O vínculo é obtido da identidade autenticada, e nunca de um identificador enviado na requisição \\ \hline
+        Paciente vê apenas os próprios treinos e resultados & Rotas próprias do paciente; o fisioterapeuta acessa somente pacientes vinculados a ele \\ \hline
+        Paciente não altera parâmetros prescritos & Não há rota de edição de treino para o perfil de paciente \\ \hline
+        Exercícios somente de um catálogo implementado & Um exercício só pode ser listado e prescrito quando sua versão atual possui aprovação registrada \\ \hline
+        Sem incentivo a exceder o prescrito & A pontuação é calculada pelo servidor: um ponto por repetição aceita, limitado ao total prescrito \\ \hline
+        Conquista ligada ao cumprimento do plano & A conquista é concedida somente quando a meta da sessão é atingida \\ \hline
+        Sem armazenamento de imagem ou vídeo & Nenhuma rota recebe mídia; somente dados derivados da sessão \\ \hline
+    \end{tabular}
+    \par\medskip
+    Fonte: elaborada pelas autoras (2026).
+\end{quadro}
+
+Além dessas regras, o registro de sessões foi projetado para não gerar duplicidades: se o aplicativo reenviar o mesmo resultado, por exemplo após uma falha de conexão, o servidor retorna a sessão já registrada. As observações marcadas como exclusivas do profissional nunca são exibidas ao paciente.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Governança do catálogo de exercícios}
+\label{sec:governanca}
+
+Como o sistema não deve definir parâmetros clínicos por conta própria, foi implementado um mecanismo de governança do catálogo. Cada versão de exercício possui um estado de aprovação, com registro do profissional responsável, da data e do documento de referência. Os eventos de aprovação e revogação são apenas acrescentados ao histórico, sem possibilidade de alteração.
+
+Quando a regra de um exercício muda, a aprovação anterior deixa de valer. A revogação impede novas prescrições, mas não altera sessões já realizadas. Até a aprovação dos exercícios pelo fisioterapeuta colaborador, o catálogo de produção permanece vazio; os exercícios usados nos testes automatizados são fictícios e não podem ser promovidos ao catálogo real.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Garantia de qualidade}
+\label{sec:qualidade}
+
+O servidor possui testes automatizados que verificam autenticação, permissões por perfil, isolamento entre pacientes e profissionais, versionamento de treinos, registro de sessões, progresso e conquistas. Os testes são executados sobre bancos temporários, e um teste de integração opcional valida as migrações e o comportamento concorrente em PostgreSQL. A verificação de estilo e de tipos é executada no servidor e no aplicativo móvel.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Estado atual do aplicativo móvel}
+\label{sec:estado-mobile}
+
+O aplicativo móvel encontra-se em desenvolvimento. Atualmente, ele possui um fluxo navegável de demonstração do paciente: tela inicial, visualização do treino, preparação, permissão da câmera, ajuste do movimento, execução das séries com intervalo, conclusão e progresso. O fluxo inclui pausa e retomada, nova tentativa quando a permissão da câmera é negada e confirmação antes de encerrar a sessão.
+
+Nessa versão, a câmera, a contagem de repetições e o comando de voz são simulados, e não há comunicação com o servidor. A sessão é pausada automaticamente quando o aplicativo vai para segundo plano, e uma sessão interrompida não recebe a conquista de conclusão.
+
+As próximas etapas são a integração da estimativa de pose no dispositivo, a calibração individual, a contagem automática de repetições, o \textit{feedback} sobre desvios observáveis e a comunicação com o servidor. Essas etapas dependem da definição e da validação clínica dos dois exercícios que compõem o protótipo.
