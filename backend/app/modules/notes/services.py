@@ -50,6 +50,7 @@ class NoteService:
             author_id=user.id,
             content=payload.content,
             visibility=payload.visibility.value,
+            emoji=payload.emoji,
         )
         self.session.add(note)
         self.session.flush()
@@ -100,6 +101,21 @@ class NoteService:
         )
 
     def update(self, user: User, note_id: UUID, payload: NoteUpdate) -> NoteResponse:
+        note = self._get_writable_note(user, note_id)
+        for field, value in payload.model_dump(exclude_unset=True).items():
+            setattr(
+                note, field, value.value if isinstance(value, Visibility) else value
+            )
+        note.updated_at = utc_now()
+        self.session.flush()
+        return NoteResponse.model_validate(note)
+
+    def delete(self, user: User, note_id: UUID) -> None:
+        note = self._get_writable_note(user, note_id)
+        self.session.delete(note)
+        self.session.flush()
+
+    def _get_writable_note(self, user: User, note_id: UUID) -> Note:
         note = self.session.scalar(
             select(Note).where(Note.id == note_id).with_for_update()
         )
@@ -114,12 +130,6 @@ class NoteService:
             raise ApiError(
                 status_code=403,
                 code="note_author_required",
-                message="Only the author can edit this note.",
+                message="Only the author can modify this note.",
             )
-        for field, value in payload.model_dump(exclude_unset=True).items():
-            setattr(
-                note, field, value.value if isinstance(value, Visibility) else value
-            )
-        note.updated_at = utc_now()
-        self.session.flush()
-        return NoteResponse.model_validate(note)
+        return note

@@ -100,11 +100,12 @@ O app abre no Login; não há modo demonstração nem cadastro público. Depois 
 autenticação, o `role` define o fluxo:
 
 - paciente: abas Início, Exercícios e Perfil, lidas de `/me/*`;
-- fisioterapeuta: três abas fixas — Pacientes (vinculados, cadastro,
-  liberação de acesso e nova senha provisória, treinos, observações com
-  visibilidade), Acompanhamento (sessões e progresso da semana corrente) e
+- fisioterapeuta: três abas fixas — Pacientes (listagem sem contador, contato,
+  edição cadastral, liberação de acesso e nova senha provisória), Acompanhamento
+  (a mesma listagem, com detalhes exclusivos de treinos e observações; sessões e
+  progresso acessíveis dentro de Treinos) e
   Configurações ("Meu perfil", "Biblioteca de referência" e "Sair da conta",
-  sem confirmação).
+  com alerta nativo antes de sair).
 
 A senha provisória aparece uma única vez, na ficha do paciente, com o aviso de
 entregá-la por canal seguro. Ela fica só na memória da tela, é descartada ao
@@ -112,18 +113,31 @@ sair dela e nunca vai para parâmetros de rota, logs ou armazenamento. Se o
 paciente esquecer a senha, o fisioterapeuta gera uma nova senha provisória
 (`reset_temporary_password`).
 
-Treinos usam somente exercícios de `GET /exercises`; o lado é limitado a
-`allowed_sides`, e séries, repetições e descanso começam vazios e são digitados
-pelo fisioterapeuta. O catálogo vazio não bloqueia o editor: cada item tem
-"Buscar na biblioteca de referência", que abre a biblioteca em modo de escolha
-(`pickFor`). No detalhe, o fisioterapeuta escolhe os lados permitidos (nenhum
-vem marcado) e toca "Adicionar e usar neste treino"
-(`POST /exercise-library/{external_id}/catalog`, DEC-006); o editor volta com
-`popTo(..., { merge: true })`, sem perder o rascunho, e preenche só o
-exercício. Cada item tem ainda "Orientação para o paciente (opcional)",
-enviada como `professional_guidance`. Exercícios vindos da biblioteca mostram
-"Fonte: OpenExerciseBase (CC BY-NC 4.0)" no editor, na revisão e no app do
-paciente (`exercise_snapshot.source`).
+O editor de treino começa vazio. "Adicionar exercício" abre a pesquisa do catálogo
+clínico (`GET /exercises`), em português ou inglês, incluindo todas as páginas.
+Selecionar um item apenas o adiciona ao treino em edição: não cria catálogo nem
+salva a prescrição. Cada exercício aparece em um card com lateralidade permitida,
+séries, repetições, descanso e orientação opcional. Os controles +/− ajustam as
+séries; também é possível digitar a quantidade. Valores e lado começam vazios.
+As instruções e imagens completas ficam em "Ver orientações do exercício".
+
+O contrato clínico atual tem uma quantidade de séries com repetições e descanso
+uniformes por exercício; não aceita duração nem valores distintos por série.
+Esses parâmetros não são inventados no editor. "Adicionar outro exercício",
+"Trocar exercício" e a remoção de cards preservam os demais dados. "Criar treino"
+fica ao final do conteúdo, sem rodapé fixo, e salva o rascunho completo. Editar
+usa "Salvar rascunho". Revisão, publicação e validações permanecem separadas.
+
+Se faltar um exercício, o seletor oferece "Buscar na biblioteca de referência".
+No detalhe externo, o fisioterapeuta escolhe os lados permitidos (nenhum vem
+marcado) e toca "Adicionar e usar neste treino"
+(`POST /exercise-library/{external_id}/catalog`, DEC-006). Essa ação importa
+explicitamente para o catálogo e volta ao mesmo editor com `popTo(...,
+{ merge: true })`, sem perder a prescrição já digitada nos outros cards ou as
+orientações gerais. Tradução em português continua obrigatória para exercícios
+da fonte externa antes de salvar; importação não publica o treino.
+Itens da biblioteca mantêm a atribuição da fonte no editor, na revisão e no app
+do paciente (`exercise_snapshot.source`).
 
 Imagens e português (DEC-010, DEC-011): itens do catálogo trazem `images`
 (URLs relativas da API) e `localization` (pt-BR). `ExerciseImageGallery`
@@ -264,7 +278,7 @@ a aparelhos e à integração M02/M05–M07. O contrato de resultado está em
 - treinos: lista própria, lista profissional, detalhe, criação, edição,
   publicação e arquivamento;
 - pacientes: lista, detalhe, criação, edição e acesso temporário;
-- observações: lista, criação e edição;
+- observações: lista, criação, edição e exclusão pelo autor vinculado ao paciente;
 - sessões: envio idempotente, histórico próprio/profissional e detalhe;
 - progresso: consultas próprias e por paciente autorizado;
 - biblioteca de referência: busca, detalhe e adição ao catálogo com pt-BR
@@ -394,3 +408,33 @@ compartilhadas, mantenha os dois plists alinhados. Consulte a
 [documentação de ATS da Apple](https://developer.apple.com/documentation/bundleresources/information-property-list/nsapptransportsecurity/nsallowslocalnetworking).
 O app abre no Login e usa a API configurada acima. Imagens da câmera permanecem
 no aparelho.
+
+## Confirmações e feedback
+
+Confirmações usam `useNativeConfirmation`, com `Alert.alert` do React Native,
+sem modais personalizados. Os botões são Cancelar e Confirmar, com estilo
+`destructive` nas ações destrutivas. Isso inclui saída da conta (aluno, professor
+e troca de senha provisória), exclusão de paciente, redefinição de senha,
+arquivamento de treino e encerramento de sessão. As ações só são chamadas após
+confirmar, com proteção contra cliques repetidos; falhas mantêm o feedback atual.
+
+`ScreenMessageProvider` mantém um único toast global, inclusive nas telas de
+acesso e após mudanças de navegação. Use `show(texto, tom)`, com `success`,
+`error`, `warning` ou `info`. Uma nova mensagem substitui a anterior. O componente
+reserva espaço acima da área inferior segura, sem cobrir botões, e acompanha o
+teclado. Sucessos permanecem por pelo menos 4,5 segundos; erros, 8 segundos;
+textos longos recebem mais tempo. Com leitor de tela ativo, o fechamento é
+manual. As animações respeitam Reduzir Movimento.
+
+Erros de formulário continuam visíveis junto aos campos, além do feedback global.
+As ações de cadastro, edição, publicação, arquivamento e autenticação compartilham
+o mesmo componente; não há fluxo de exclusão definitiva nas telas atuais.
+
+### Treinos arquivados
+
+A revisão mantém os ícones Editar, Desarquivar e Apagar nos treinos arquivados.
+Desarquivar cria uma revisão em rascunho, preserva os dados anteriores e exige
+publicação explícita. Abrir a edição não muda o status; salvar as alterações
+cria o rascunho. A exclusão aceita rascunhos e arquivados sem sessões registradas;
+o histórico do paciente permanece protegido. Todas as ações exigem o mesmo
+vínculo profissional ativo já validado pelo backend.

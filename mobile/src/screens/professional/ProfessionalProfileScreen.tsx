@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../../components/Screen';
 import { FormField } from '../../components/FormField';
 import { Icon, type IconName } from '../../components/Icon';
-import { InlineError } from '../../components/ScreenStates';
 import { useScreenMessage } from '../../components/ScreenMessage';
 import { appDependencies } from '../../app/dependencies';
 import type { PhysiotherapistProfile } from '../../contracts/domain';
@@ -58,13 +57,11 @@ function ProfileDetails({ profile }: { profile: PhysiotherapistProfile }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(savedName);
   const [error, setError] = useState<string | undefined>();
-  const [failure, setFailure] = useState('');
   const [saving, setSaving] = useState(false);
 
   const startEditing = () => {
     setDraft(savedName);
     setError(undefined);
-    setFailure('');
     setEditing(true);
   };
   const cancel = () => {
@@ -73,7 +70,6 @@ function ProfileDetails({ profile }: { profile: PhysiotherapistProfile }) {
     }
     setDraft(savedName);
     setError(undefined);
-    setFailure('');
     setEditing(false);
   };
   const save = async () => {
@@ -82,7 +78,6 @@ function ProfileDetails({ profile }: { profile: PhysiotherapistProfile }) {
     }
     const invalid = validateProfessionalName(draft);
     setError(invalid ?? undefined);
-    setFailure('');
     if (invalid) {
       return;
     }
@@ -94,9 +89,9 @@ function ProfileDetails({ profile }: { profile: PhysiotherapistProfile }) {
       });
       setSavedName(name);
       setEditing(false);
-      show('Nome salvo.');
+      show('Nome salvo.', 'success');
     } catch (cause) {
-      setFailure(apiErrorMessage(cause));
+      show(apiErrorMessage(cause), 'error');
     } finally {
       setSaving(false);
     }
@@ -104,7 +99,6 @@ function ProfileDetails({ profile }: { profile: PhysiotherapistProfile }) {
 
   return (
     <Screen professional back="Configurações" title="Meu perfil">
-      {failure ? <InlineError message={failure} /> : null}
       <View style={s.section}>
         <SectionTitle>Informações pessoais</SectionTitle>
         <ListGroup>

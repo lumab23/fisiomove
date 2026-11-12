@@ -24,6 +24,7 @@ const EYE = { rx: 5.4, ry: 7 };
 const EYES = [38, 67];
 const EYE_Y = 43;
 const MOUTH_CENTER = { x: 52.5, y: 62 };
+const MOUTH_BOX = { width: 32, height: 24 };
 
 const bodyColor: Record<MascotKind, string> = {
   home: '#28B8B1',
@@ -125,11 +126,13 @@ export function AnimatedMascot({
   kind = 'pink',
   width = VIEW_W,
   still = false,
+  behindBody,
 }: {
   kind?: MascotKind;
   width?: number;
   /** Draws the resting pose only: no idle loop and no tap reaction. */
   still?: boolean;
+  behindBody?: React.ReactNode;
 }) {
   const scale = width / VIEW_W;
   const height = VIEW_H * scale;
@@ -148,9 +151,11 @@ export function AnimatedMascot({
   const nod = useRef(new Animated.Value(0)).current;
   const smile = useRef(new Animated.Value(0)).current;
   const celebrated = useRef(false);
+  const reactionAnim = useRef<Animated.CompositeAnimation | null>(null);
 
   const react = useRef<() => void>(() => {});
   react.current = () => {
+    reactionAnim.current?.stop();
     const reactions = [
       Animated.sequence([
         to(squint, 0.4, 140, Easing.out(Easing.quad)),
@@ -171,7 +176,13 @@ export function AnimatedMascot({
         ]),
       );
     }
-    Animated.parallel(reactions).start();
+    const anim = Animated.parallel(reactions);
+    reactionAnim.current = anim;
+    anim.start(() => {
+      if (reactionAnim.current === anim) {
+        reactionAnim.current = null;
+      }
+    });
   };
 
   useEffect(() => {
@@ -252,16 +263,33 @@ export function AnimatedMascot({
       alive = false;
       timers.forEach(clearTimeout);
       breathing.stop();
-      [blink, gazeX, gazeY, tilt, breath].forEach(value =>
+      reactionAnim.current?.stop();
+      reactionAnim.current = null;
+      [blink, gazeX, gazeY, tilt, breath, squint, smile, nod].forEach(value =>
         value.stopAnimation(),
       );
       blink.setValue(1);
+      squint.setValue(1);
+      smile.setValue(0);
+      nod.setValue(0);
       gazeX.setValue(0);
       gazeY.setValue(0);
       tilt.setValue(0);
       breath.setValue(0);
     };
-  }, [animate, blink, breath, gazeX, gazeY, kind, personality, tilt]);
+  }, [
+    animate,
+    blink,
+    breath,
+    gazeX,
+    gazeY,
+    kind,
+    nod,
+    personality,
+    smile,
+    squint,
+    tilt,
+  ]);
 
   const eyeScale = Animated.multiply(blink, squint);
   const eyeShiftX = Animated.multiply(gazeX, 1.6 * scale);
@@ -305,6 +333,7 @@ export function AnimatedMascot({
           { transform: [{ translateY: nodDip }, { rotate }] },
         ]}
       >
+        {behindBody}
         <Animated.View
           style={[
             StyleSheet.absoluteFill,
@@ -355,14 +384,28 @@ export function AnimatedMascot({
           ))}
           <Animated.View
             style={[
-              StyleSheet.absoluteFill,
+              mascot.mouth,
               {
-                transformOrigin: `${MOUTH_CENTER.x * scale}px ${MOUTH_CENTER.y * scale}px`,
+                left: (MOUTH_CENTER.x - MOUTH_BOX.width / 2) * scale,
+                top: (MOUTH_CENTER.y - MOUTH_BOX.height / 2) * scale,
+                width: MOUTH_BOX.width * scale,
+                height: MOUTH_BOX.height * scale,
                 transform: [{ scaleX: mouthX }, { scaleY: mouthY }],
               },
             ]}
           >
-            <Svg width={width} height={height} viewBox="0 0 104 96">
+            <Svg
+              width={width}
+              height={height}
+              viewBox="0 0 104 96"
+              style={[
+                mascot.mouthSvg,
+                {
+                  left: -(MOUTH_CENTER.x - MOUTH_BOX.width / 2) * scale,
+                  top: -(MOUTH_CENTER.y - MOUTH_BOX.height / 2) * scale,
+                },
+              ]}
+            >
               <Path
                 d={MOUTH}
                 stroke={INK}
@@ -381,4 +424,6 @@ export function AnimatedMascot({
 const mascot = StyleSheet.create({
   originBottom: { transformOrigin: 'bottom' },
   eye: { position: 'absolute' },
+  mouth: { position: 'absolute' },
+  mouthSvg: { position: 'absolute' },
 });

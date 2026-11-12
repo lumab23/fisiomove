@@ -16,11 +16,18 @@ import {
   spacing,
   typography,
 } from '../theme/theme';
-import { Icon } from './Icon';
+import { Icon, type IconName } from './Icon';
 
 interface FormFieldProps extends TextInputProps {
   label: string;
+  leadingIcon?: IconName;
+  hideLabel?: boolean;
   error?: string;
+  /**
+   * Marks the field with the error border only, when the explanation is
+   * already given by the toast (no repeated text under the field).
+   */
+  invalid?: boolean;
   /** Short guidance shown under the label and read as the field hint. */
   hint?: string;
   /** Hides the text and offers a "Mostrar senha" toggle below the field. */
@@ -29,7 +36,10 @@ interface FormFieldProps extends TextInputProps {
 
 export function FormField({
   label,
+  leadingIcon,
+  hideLabel = false,
   error,
+  invalid = false,
   hint,
   revealable = false,
   ...input
@@ -39,28 +49,43 @@ export function FormField({
   const toggleLabel = revealed ? 'Ocultar senha' : 'Mostrar senha';
   return (
     <View style={styles.group}>
-      <View style={styles.labelRow}>
-        <Text style={styles.label}>{label}</Text>
-        {error ? (
-          <Text style={styles.errorIndicator} accessibilityElementsHidden>
-            •
-          </Text>
-        ) : null}
-      </View>
+      {!hideLabel ? (
+        <View style={styles.labelRow}>
+          <Text style={styles.label}>{label}</Text>
+          {error || invalid ? (
+            <Text style={styles.errorIndicator} accessibilityElementsHidden>
+              •
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
-      <TextInput
-        {...input}
-        secureTextEntry={revealable ? !revealed : input.secureTextEntry}
-        accessibilityLabel={label}
-        accessibilityHint={error ?? hint}
-        style={[
-          styles.input,
-          input.multiline ? styles.multiline : styles.singleLine,
-          input.style,
-          error && styles.inputError,
-        ]}
-        placeholderTextColor={colors.textMuted}
-      />
+      <View>
+        {leadingIcon ? (
+          <View pointerEvents="none" style={styles.leadingIcon}>
+            <Icon name={leadingIcon} color={colors.textMuted} size={22} />
+          </View>
+        ) : null}
+        <TextInput
+          {...input}
+          secureTextEntry={revealable ? !revealed : input.secureTextEntry}
+          accessibilityLabel={label}
+          accessibilityHint={
+            error ??
+            (invalid
+              ? ['Campo a corrigir', hint].filter(Boolean).join('. ')
+              : hint)
+          }
+          style={[
+            styles.input,
+            input.multiline ? styles.multiline : styles.singleLine,
+            input.style,
+            leadingIcon && styles.inputWithIcon,
+            (error || invalid) && styles.inputError,
+          ]}
+          placeholderTextColor={colors.textMuted}
+        />
+      </View>
       {revealable ? (
         <Pressable
           accessibilityRole="button"
@@ -88,6 +113,15 @@ export function FormField({
 
 const styles = StyleSheet.create({
   group: { gap: spacing.sm },
+  leadingIcon: {
+    position: 'absolute',
+    left: spacing.lg,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  inputWithIcon: { paddingLeft: spacing.lg + 22 + spacing.md },
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   label: {
     color: colors.primary,

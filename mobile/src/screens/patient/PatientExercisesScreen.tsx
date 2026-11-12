@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRoute, type RouteProp } from '@react-navigation/native';
-import { ExerciseImageGallery } from '../../components/ExerciseImageGallery';
 import { Screen } from '../../components/Screen';
 import { ErrorState, LoadingState } from '../../components/ScreenStates';
 import { SegmentedControl } from '../../components/SegmentedControl';
@@ -31,8 +30,6 @@ import type { PendingSession } from '../../sync/types';
 import { PendingSessionRow, SessionRow } from './SessionRow';
 import { StartWorkoutButton } from './StartWorkoutButton';
 import {
-  exerciseImages,
-  exerciseSourceText,
   exerciseText,
   prescriptionText,
   textLanguage,
@@ -120,7 +117,6 @@ function MyWorkout() {
           <ListGroup>
             {workout.items.map(item => {
               const text = exerciseText(item);
-              const images = exerciseImages(item.exercise_snapshot);
               return (
                 <View key={item.id}>
                   <ListRow
@@ -130,20 +126,10 @@ function MyWorkout() {
                     description={[
                       prescriptionText(item),
                       item.professional_guidance,
-                      exerciseSourceText(item),
                     ]
                       .filter(Boolean)
                       .join('\n')}
                   />
-                  {images.length ? (
-                    <View style={exercises.image}>
-                      <ExerciseImageGallery
-                        limit={1}
-                        images={images}
-                        exerciseName={text.name}
-                      />
-                    </View>
-                  ) : null}
                 </View>
               );
             })}
@@ -200,10 +186,7 @@ function History({ onStart }: { onStart: () => void }) {
   }
   if (state.status === 'empty' && !pending.length) {
     return (
-      <EmptyState
-        title="Nenhuma sessão ainda"
-        action={{ label: 'Ver meu treino', icon: 'activity', onPress: onStart }}
-      >
+      <EmptyState title="Nenhuma sessão ainda">
         Suas sessões aparecerão aqui depois do primeiro treino.
       </EmptyState>
     );
@@ -279,10 +262,7 @@ function Progress({ onStart }: { onStart: () => void }) {
     );
   } else if (state.status === 'empty') {
     summary = (
-      <EmptyState
-        title="Nenhuma sessão nesta semana"
-        action={{ label: 'Ver meu treino', icon: 'activity', onPress: onStart }}
-      >
+      <EmptyState title="Nenhuma sessão nesta semana">
         Seu resumo da semana aparecerá aqui depois do primeiro treino.
       </EmptyState>
     );

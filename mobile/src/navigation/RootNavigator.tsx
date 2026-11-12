@@ -3,12 +3,12 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../auth/AuthContext';
 import { ChangePasswordScreen } from '../screens/auth/ChangePasswordScreen';
 import { AuthLoadingScreen } from '../screens/auth/AuthLoadingScreen';
-import { FirstAccessScreen } from '../screens/auth/FirstAccessScreen';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { WelcomeScreen } from '../screens/auth/WelcomeScreen';
 import { colors } from '../theme/theme';
 import { selectAuthenticatedFlow } from './flow';
 import { FrontendNavigator } from './FrontendNavigator';
+import { transitionOptions } from './transitions';
 import type { AuthStackParamList } from './types';
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const theme = {
@@ -21,18 +21,19 @@ const theme = {
 };
 export function RootNavigator() {
   const { status, user, logout } = useAuth();
+  const screenOptions = {
+    headerShown: false,
+    ...transitionOptions('push'),
+  };
   if (status === 'booting' || status === 'error') {
     return <AuthLoadingScreen />;
   }
   if (status === 'unauthenticated' || !user) {
     return (
       <NavigationContainer theme={theme}>
-        <AuthStack.Navigator
-          screenOptions={{ headerShown: false, animation: 'slide_from_right' }}
-        >
+        <AuthStack.Navigator screenOptions={screenOptions}>
           <AuthStack.Screen name="Welcome" component={WelcomeScreen} />
           <AuthStack.Screen name="Login" component={LoginScreen} />
-          <AuthStack.Screen name="FirstAccess" component={FirstAccessScreen} />
         </AuthStack.Navigator>
       </NavigationContainer>
     );
@@ -41,9 +42,7 @@ export function RootNavigator() {
   if (flow === 'change-password') {
     return (
       <NavigationContainer theme={theme}>
-        <AuthStack.Navigator
-          screenOptions={{ headerShown: false, animation: 'slide_from_right' }}
-        >
+        <AuthStack.Navigator screenOptions={screenOptions}>
           <AuthStack.Screen
             name="ChangePassword"
             component={ChangePasswordScreen}
@@ -52,9 +51,7 @@ export function RootNavigator() {
       </NavigationContainer>
     );
   }
-  const signOut = () => {
-    logout().catch(() => undefined);
-  };
+  const signOut = () => logout();
   // Both flows read the API; there is no demonstration data at runtime.
   return (
     <FrontendNavigator

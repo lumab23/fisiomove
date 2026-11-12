@@ -1,3 +1,8 @@
+import {
+  mockNativeAlerts,
+  pressNativeAlert,
+  lastNativeAlert,
+} from '../test-utils/nativeAlerts';
 import React from 'react';
 import { AppState, Image, Text } from 'react-native';
 import ReactTestRenderer, { act } from 'react-test-renderer';
@@ -154,6 +159,7 @@ const draft: SessionDraft = {
 let app: ReactTestRenderer.ReactTestRenderer;
 
 beforeEach(() => {
+  mockNativeAlerts();
   services.profile.mine.mockResolvedValue({ full_name: 'Joana Souza' });
   services.profile.linkedPhysiotherapist.mockResolvedValue({ full_name: null });
   services.workouts.listMine.mockResolvedValue(pageOf([workout]));
@@ -213,6 +219,19 @@ function hasButton(label: string) {
 }
 
 async function press(label: string) {
+  if (
+    (label === 'Cancelar' || label === 'Confirmar') &&
+    !app.root.findAll(
+      node =>
+        node.props.accessibilityLabel === label &&
+        typeof node.props.onPress === 'function',
+    ).length
+  ) {
+    await act(async () => {
+      pressNativeAlert(label);
+    });
+    return;
+  }
   const [target] = app.root.findAll(
     node =>
       typeof node.props.onPress === 'function' &&
@@ -369,11 +388,11 @@ test('leaving before the first repetition discards the draft (DEC-009)', async (
   await openFraming();
   await press('Começar exercício');
   await press('Encerrar');
-  expect(hasText('Encerrar o treino?')).toBe(true);
-  expect(hasText('Nada será enviado.')).toBe(true);
+  expect(lastNativeAlert()[0]).toBe('Encerrar o treino?');
+  expect(lastNativeAlert()[1]).toContain('Nada será enviado.');
   // The draft is discarded: the session cannot be resumed later.
   expect(hasText('Você pode voltar depois.')).toBe(false);
-  await press('Encerrar sessão');
+  await press('Confirmar');
   expect(mockSync.discardDraft).toHaveBeenCalledWith('client-1');
   expect(mockSync.finishDraft).not.toHaveBeenCalled();
   expect(hasText('Exercícios prescritos')).toBe(true);
@@ -386,7 +405,7 @@ test('leaving after a repetition saves an interrupted session', async () => {
   await press('Encerrar');
   // The session is closed as interrupted and cannot be resumed.
   expect(hasText('Você pode voltar depois.')).toBe(false);
-  await press('Encerrar sessão');
+  await press('Confirmar');
   expect(mockSync.discardDraft).not.toHaveBeenCalled();
   expect(mockSync.finishDraft).toHaveBeenCalledWith(
     'client-1',
@@ -799,7 +818,7 @@ test('the interrupted screen shows the summary and the upload status', async () 
   await press('Começar exercício');
   await press('Contar repetição');
   await press('Encerrar');
-  await press('Encerrar sessão');
+  await press('Confirmar');
   expect(hasText('Treino interrompido')).toBe(true);
   expect(hasText('Test arm raise: 1 de 6 repetições')).toBe(true);
   expect(hasText('Aguardando envio')).toBe(true);
@@ -965,4 +984,17 @@ test('an item without the rule stays manual and has no extra button', async () =
   const [, completion] = mockSync.finishDraft.mock.calls[0];
   expect(completion.items[0].counting_mode).toBe('manual');
   expect(hasText('As repetições foram contadas pelos seus toques.')).toBe(true);
+});
+
+test('cancelling the native session exit leaves the draft intact', async () => {
+  await openFraming();
+  await press('Começar exercício');
+  await press('Encerrar');
+  expect(lastNativeAlert()[0]).toBe('Encerrar o treino?');
+  expect(mockSync.discardDraft).not.toHaveBeenCalled();
+  expect(mockSync.finishDraft).not.toHaveBeenCalled();
+  await press('Cancelar');
+  expect(hasButton('Encerrar')).toBe(true);
+  expect(mockSync.discardDraft).not.toHaveBeenCalled();
+  expect(mockSync.finishDraft).not.toHaveBeenCalled();
 });

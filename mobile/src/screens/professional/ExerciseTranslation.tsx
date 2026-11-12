@@ -5,7 +5,6 @@ import { appDependencies } from '../../app/dependencies';
 import { ExerciseImageGallery } from '../../components/ExerciseImageGallery';
 import { FormField } from '../../components/FormField';
 import { Screen } from '../../components/Screen';
-import { InlineError } from '../../components/ScreenStates';
 import { useScreenMessage } from '../../components/ScreenMessage';
 import type { UUID } from '../../contracts/common';
 import type {
@@ -245,28 +244,27 @@ function TranslationForm({ exercise }: { exercise: Exercise }) {
       : emptyTranslation,
   );
   const [errors, setErrors] = useState<TranslationErrors>({});
-  const [failure, setFailure] = useState('');
   const [saving, setSaving] = useState(false);
   const save = async (id: UUID) => {
     if (saving) {
       return;
     }
-    setFailure('');
-    const built = buildTranslation(draft, true);
+    const built = buildTranslation(draft, false);
     if ('errors' in built) {
       setErrors(built.errors);
       return;
     }
     if (!built.translation) {
+      navigation.goBack();
       return;
     }
     setSaving(true);
     try {
       await appDependencies.exercises.updateLocalization(id, built.translation);
-      show(`Tradução salva. ${republishNotice}`);
+      show(`Tradução salva. ${republishNotice}`, 'success');
       navigation.goBack();
     } catch (cause) {
-      setFailure(apiErrorMessage(cause, translationErrors));
+      show(apiErrorMessage(cause, translationErrors), 'error');
       setSaving(false);
     }
   };
@@ -283,7 +281,6 @@ function TranslationForm({ exercise }: { exercise: Exercise }) {
         />
       }
     >
-      {failure ? <InlineError message={failure} /> : null}
       <Body>
         O conteúdo de referência continua preservado e a origem da tradução é
         registrada. A tradução vale para este exercício em todo o catálogo.
@@ -299,7 +296,7 @@ function TranslationForm({ exercise }: { exercise: Exercise }) {
       <TranslationFields
         draft={draft}
         errors={errors}
-        optional={false}
+        optional
         onChange={value => {
           setDraft(value);
           setErrors({});

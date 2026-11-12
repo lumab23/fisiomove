@@ -42,14 +42,16 @@ export function WelcomeScreen() {
               title="Sou aluno"
               description="Quero acompanhar meus exercícios"
               icon="user"
-              onPress={() => navigation.navigate('FirstAccess')}
+              onPress={() => navigation.navigate('Login', { audience: 'student' })}
             />
             <AccessCard
               title="Sou professor"
               description="Quero acompanhar meus alunos"
               icon="chart"
               professional
-              onPress={() => navigation.navigate('Login')}
+              onPress={() =>
+                navigation.navigate('Login', { audience: 'professional' })
+              }
             />
           </View>
         </View>

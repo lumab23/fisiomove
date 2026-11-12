@@ -1,7 +1,17 @@
-import { useState, type ReactNode } from 'react';
+import { BottomSheet } from '../../components/BottomSheet';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentRef,
+  type ReactNode,
+} from 'react';
 import {
   Image,
+  AccessibilityInfo,
+  findNodeHandle,
   Linking,
+  Keyboard,
   Pressable,
   StyleSheet,
   Text,
@@ -14,7 +24,6 @@ import { Icon } from '../../components/Icon';
 import {
   EmptyState,
   ErrorState,
-  InlineError,
   LoadingState,
 } from '../../components/ScreenStates';
 import { useScreenMessage } from '../../components/ScreenMessage';
@@ -178,8 +187,11 @@ function LibraryView<T>({
 }
 
 function CatalogSeal({ status }: { status: CatalogExerciseStatus | null }) {
+  if (!status) {
+    return null;
+  }
   const text = catalogSealText(status);
-  const inCatalog = status?.approval_status === 'approved';
+  const inCatalog = status.approval_status === 'approved';
   const color = inCatalog ? colors.success : colors.warningText;
   return (
     <View
@@ -310,6 +322,9 @@ export function ExerciseLibraryScreen() {
   const [draft, setDraft] = useState('');
   const [query, setQuery] = useState('');
   const [bodyPart, setBodyPart] = useState('');
+  const [filterDraft, setFilterDraft] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterButton = useRef<ComponentRef<typeof View>>(null);
   const [page, setPage] = useState(1);
   const results = useLibrarySearch({
     query: query || undefined,
@@ -317,40 +332,113 @@ export function ExerciseLibraryScreen() {
     page,
     page_size: pageSize,
   });
+  useEffect(() => {
+    const next = draft.trim();
+    if (next === query) return;
+    const timeout = setTimeout(() => {
+      setQuery(next);
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(timeout);
+  }, [draft, query]);
+  const clearBodyPart = () => {
+    setBodyPart('');
+    setFilterDraft('');
+    setPage(1);
+    setFiltersOpen(false);
+  };
   const search = () => {
     setQuery(draft.trim());
     setPage(1);
   };
   const filtered = Boolean(query || bodyPart);
   return (
-    <Screen
-      professional
-      back={pickFor ? 'Treino' : 'Configurações'}
-      title="Biblioteca de referência"
-    >
-      <Body>
-        {pickFor
-          ? 'Escolha um exercício e adicione-o ao catálogo para usar neste treino.'
-          : 'Exercícios de uma fonte externa. Para usar um deles em treinos, abra o exercício e adicione-o ao catálogo.'}
-      </Body>
-      <FormField
-        label="Buscar pelo nome (em inglês)"
-        value={draft}
-        onChangeText={setDraft}
-        onSubmitEditing={search}
-        returnKeyType="search"
-        autoCorrect={false}
-        autoCapitalize="none"
-        maxLength={100}
-      />
-      <Button secondary compact label="Buscar" onPress={search} />
-      <BodyPartFilter
-        value={bodyPart}
-        onChange={value => {
-          setBodyPart(value);
-          setPage(1);
+    <Screen professional back={pickFor ? 'Treino' : 'Configurações'}>
+      <Title>Biblioteca de referência</Title>
+      <View style={s.searchRow}>
+        <View style={s.searchField}>
+          <FormField
+            label="Buscar exercícios (em inglês)"
+            placeholder="Buscar exercícios (em inglês)"
+            hideLabel
+            leadingIcon="search"
+            value={draft}
+            onChangeText={setDraft}
+            onSubmitEditing={search}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+            autoCorrect={false}
+            autoCapitalize="none"
+            maxLength={100}
+          />
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          ref={filterButton}
+          accessibilityLabel="Filtrar exercícios"
+          accessibilityHint={
+            bodyPart
+              ? `Filtro ativo: ${bodyPartLabel(bodyPart)}. Abre as partes do corpo.`
+              : 'Abre as partes do corpo.'
+          }
+          accessibilityState={{
+            expanded: filtersOpen,
+            selected: Boolean(bodyPart),
+          }}
+          onPress={() => {
+            Keyboard.dismiss();
+            setFilterDraft(bodyPart);
+            setFiltersOpen(true);
+          }}
+          style={({ pressed }) => [
+            s.filterButton,
+            bodyPart && s.filterButtonActive,
+            pressed && s.chipPressed,
+          ]}
+        >
+          <Icon
+            name="filter"
+            color={bodyPart ? colors.onPrimary : colors.primary}
+          />
+          {bodyPart ? <View style={s.filterDot} /> : null}
+        </Pressable>
+      </View>
+      {bodyPart ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Remover filtro: ${bodyPartLabel(bodyPart)}`}
+          onPress={clearBodyPart}
+          style={s.activeFilter}
+        >
+          <Text style={s.activeFilterText}>{bodyPartLabel(bodyPart)}</Text>
+          <Icon name="close" size={18} color={colors.primary} />
+        </Pressable>
+      ) : null}
+      <BottomSheet
+        visible={filtersOpen}
+        title="Filtrar exercícios"
+        onClose={() => setFiltersOpen(false)}
+        onDismiss={() => {
+          const node = findNodeHandle(filterButton.current);
+          if (node) AccessibilityInfo.setAccessibilityFocus(node);
         }}
-      />
+        footer={
+          <>
+            <Button
+              compact
+              label="Aplicar filtros"
+              onPress={() => {
+                setBodyPart(filterDraft);
+                setPage(1);
+                setFiltersOpen(false);
+              }}
+            />
+            <Link label="Limpar filtros" onPress={clearBodyPart} />
+          </>
+        }
+      >
+        <BodyPartFilter value={filterDraft} onChange={setFilterDraft} />
+      </BottomSheet>
       <LibraryView
         resource={results}
         loadingLabel="Carregando a biblioteca"
@@ -378,7 +466,6 @@ export function ExerciseLibraryScreen() {
       >
         {data => (
           <>
-            <LibraryNotice>{data.usage_notice}</LibraryNotice>
             <Body>
               {`${data.total} ${data.total === 1 ? 'exercício encontrado' : 'exercícios encontrados'}`}
             </Body>
@@ -434,13 +521,12 @@ export function ExerciseLibraryDetailScreen() {
   const exercise = useLibraryExercise(params.externalId);
   const { pickFor } = params;
   return (
-    <Screen professional back="Biblioteca" title="Material de referência">
+    <Screen professional back="Biblioteca">
       <LibraryView resource={exercise} loadingLabel="Carregando o exercício">
         {data => (
           <>
             <Title>{data.name}</Title>
             <CatalogSeal status={data.catalog_exercise} />
-            <LibraryNotice>{data.usage_notice}</LibraryNotice>
             {isAiGenerated(data.created_by) ? (
               <Card white title="Conteúdo gerado por IA">
                 <Body>
@@ -536,7 +622,6 @@ function CatalogAction({
   const [translationErrors, setTranslationErrors] = useState<TranslationErrors>(
     {},
   );
-  const [failure, setFailure] = useState('');
   const [busy, setBusy] = useState(false);
   const chooseForWorkout = (exerciseId: string) => {
     if (!pickFor) {
@@ -570,6 +655,7 @@ function CatalogAction({
           onPress={() =>
             navigation.navigate('CatalogExerciseTranslation', {
               exerciseId: status.exercise_id,
+              origin: pickFor ? undefined : 'settings',
             })
           }
         />
@@ -580,7 +666,6 @@ function CatalogAction({
     if (busy) {
       return;
     }
-    setFailure('');
     const built = buildTranslation(translation, false);
     if ('errors' in built) {
       setTranslationErrors(built.errors);
@@ -601,22 +686,24 @@ function CatalogAction({
           )
         : await appDependencies.exerciseLibrary.addToCatalog(externalId, sides);
       if (pickFor) {
-        show('Exercício adicionado ao catálogo e escolhido para o treino.');
+        show(
+          'Exercício adicionado ao catálogo e escolhido para o treino.',
+          'success',
+        );
         chooseForWorkout(added.id);
       } else {
-        show('Exercício adicionado ao catálogo.');
+        show('Exercício adicionado ao catálogo.', 'success');
         setBusy(false);
         onAdded();
       }
     } catch (cause) {
-      setFailure(apiErrorMessage(cause, catalogErrors));
+      show(apiErrorMessage(cause, catalogErrors), 'error');
       setBusy(false);
     }
   };
   return (
     <Card white title="Adicionar ao catálogo">
       <Body>{prescriptionNotice}</Body>
-      {failure ? <InlineError message={failure} /> : null}
       <MultiChoiceGroup
         label="Lados permitidos"
         options={sideOptions}
@@ -660,6 +747,46 @@ function CatalogAction({
 }
 
 const s = StyleSheet.create({
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  searchField: { flex: 1 },
+  filterButton: {
+    minHeight: layout.controlHeight,
+    minWidth: layout.controlHeight,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterDot: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    width: spacing.sm,
+    height: spacing.sm,
+    borderRadius: radii.pill,
+    backgroundColor: colors.onPrimary,
+  },
+  activeFilter: {
+    alignSelf: 'flex-start',
+    minHeight: layout.compactControlHeight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surfaceMuted,
+  },
+  activeFilterText: {
+    ...typography.bodySmall,
+    color: colors.primary,
+    fontFamily: fonts.bold,
+  },
   seal: {
     flexDirection: 'row',
     alignItems: 'center',

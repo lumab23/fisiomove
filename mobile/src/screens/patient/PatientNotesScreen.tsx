@@ -58,12 +58,21 @@ function NoteCard({ note }: { note: OwnNote }) {
   return (
     <View
       accessible
-      accessibilityLabel={`Recado de ${date}. ${note.content}${edited ? `. ${edited}` : ''}`}
+      accessibilityLabel={`Recado de ${date}. ${note.content}${note.emoji ? `. Emoji ${note.emoji}` : ''}${edited ? `. ${edited}` : ''}`}
       style={[styles.white, notes.card]}
     >
-      <Text style={notes.date}>{date}</Text>
-      <Text style={notes.content}>{note.content}</Text>
-      {edited ? <Text style={notes.date}>{edited}</Text> : null}
+      <View style={notes.header}>
+        <View style={notes.body}>
+          <Text style={notes.date}>{date}</Text>
+          <Text style={notes.content}>{note.content}</Text>
+          {edited ? <Text style={notes.date}>{edited}</Text> : null}
+        </View>
+        {note.emoji ? (
+          <Text accessibilityElementsHidden importantForAccessibility="no" style={notes.emoji}>
+            {note.emoji}
+          </Text>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -74,6 +83,12 @@ const notes = StyleSheet.create({
     borderRadius: radii.xl,
     gap: spacing.sm,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  body: { flex: 1, gap: spacing.sm },
   date: {
     ...typography.bodySmall,
     color: colors.textMuted,
@@ -84,4 +99,5 @@ const notes = StyleSheet.create({
     color: colors.text,
     fontFamily: fonts.regular,
   },
+  emoji: { fontSize: 28, lineHeight: 32 },
 });

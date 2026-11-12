@@ -18,6 +18,7 @@ class Note(Base):
     author_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
     content: Mapped[str] = mapped_column(Text)
     visibility: Mapped[str] = mapped_column(String(30))
+    emoji: Mapped[str | None] = mapped_column(String(16), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now
     )

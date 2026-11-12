@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db_session
@@ -58,3 +58,11 @@ def update_note(
     note_id: UUID, payload: NoteUpdate, user: Professional, session: DatabaseSession
 ) -> NoteResponse:
     return NoteService(session).update(user, note_id, payload)
+
+
+@router.delete("/notes/{note_id}", status_code=204)
+def delete_note(
+    note_id: UUID, user: Professional, session: DatabaseSession
+) -> Response:
+    NoteService(session).delete(user, note_id)
+    return Response(status_code=204)

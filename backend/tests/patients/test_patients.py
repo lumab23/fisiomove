@@ -206,3 +206,194 @@ def test_patient_input_validation_is_consistent(
 
     invalid_page = client.get("/api/v1/patients?page_size=101", headers=headers)
     assert invalid_page.status_code == 422
+
+
+def test_professional_can_correct_patient_email(
+    client: TestClient,
+    create_user: Callable[..., User],
+    login_headers: Callable[[str, str], dict[str, str]],
+) -> None:
+    create_user(email="professional@example.com", role=UserRole.PHYSIOTHERAPIST)
+    headers = login_headers("professional@example.com")
+    patient = client.post(
+        "/api/v1/patients",
+        headers=headers,
+        json={"full_name": "Maria", "email": "maria.wrong@example.com"},
+    ).json()
+
+    updated = client.patch(
+        f"/api/v1/patients/{patient['id']}",
+        headers=headers,
+        json={"email": "maria.correct@example.com"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["email"] == "maria.correct@example.com"
+
+    detail = client.get(f"/api/v1/patients/{patient['id']}", headers=headers)
+    assert detail.status_code == 200
+    assert detail.json()["email"] == "maria.correct@example.com"
+
+
+def test_correcting_email_updates_patient_access_identity_and_rejects_conflict(
+    client: TestClient,
+    create_user: Callable[..., User],
+    login_headers: Callable[[str, str], dict[str, str]],
+) -> None:
+    create_user(email="professional@example.com", role=UserRole.PHYSIOTHERAPIST)
+    create_user(email="taken@example.com", role=UserRole.PATIENT)
+    headers = login_headers("professional@example.com")
+    patient = client.post(
+        "/api/v1/patients",
+        headers=headers,
+        json={"full_name": "Joao", "email": "joao.old@example.com"},
+    ).json()
+    access = client.post(
+        f"/api/v1/patients/{patient['id']}/access",
+        headers=headers,
+        json={"operation": "activate"},
+    ).json()
+
+    conflict = client.patch(
+        f"/api/v1/patients/{patient['id']}",
+        headers=headers,
+        json={"email": "taken@example.com"},
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["code"] == "email_conflict"
+
+    updated = client.patch(
+        f"/api/v1/patients/{patient['id']}",
+        headers=headers,
+        json={"email": "joao.new@example.com"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["email"] == "joao.new@example.com"
+
+    old_login = client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "joao.old@example.com",
+            "password": access["temporary_password"],
+        },
+    )
+    assert old_login.status_code == 401
+    assert old_login.json()["code"] == "invalid_credentials"
+
+    new_login = client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "joao.new@example.com",
+            "password": access["temporary_password"],
+        },
+    )
+    assert new_login.status_code == 200
+
+
+def test_professional_can_delete_patient_without_clinical_records(
+    client: TestClient,
+    create_user: Callable[..., User],
+    login_headers: Callable[[str, str], dict[str, str]],
+) -> None:
+    create_user(email="professional@example.com", role=UserRole.PHYSIOTHERAPIST)
+    headers = login_headers("professional@example.com")
+    patient = client.post(
+        "/api/v1/patients",
+        headers=headers,
+        json={"full_name": "Excluir", "email": "excluir@example.com"},
+    ).json()
+
+    deleted = client.delete(f"/api/v1/patients/{patient['id']}", headers=headers)
+    assert deleted.status_code == 204
+
+    missing = client.get(f"/api/v1/patients/{patient['id']}", headers=headers)
+    assert missing.status_code == 404
+    assert missing.json()["code"] == "patient_not_found"
+    assert client.get("/api/v1/patients", headers=headers).json()["total"] == 0
+
+
+def test_delete_removes_patient_access_account(
+    client: TestClient,
+    create_user: Callable[..., User],
+    login_headers: Callable[[str, str], dict[str, str]],
+) -> None:
+    create_user(email="professional@example.com", role=UserRole.PHYSIOTHERAPIST)
+    headers = login_headers("professional@example.com")
+    patient = client.post(
+        "/api/v1/patients",
+        headers=headers,
+        json={"full_name": "Com Acesso", "email": "acesso@example.com"},
+    ).json()
+    access = client.post(
+        f"/api/v1/patients/{patient['id']}/access",
+        headers=headers,
+        json={"operation": "activate"},
+    ).json()
+
+    deleted = client.delete(f"/api/v1/patients/{patient['id']}", headers=headers)
+    assert deleted.status_code == 204
+
+    login = client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "acesso@example.com",
+            "password": access["temporary_password"],
+        },
+    )
+    assert login.status_code == 401
+    assert login.json()["code"] == "invalid_credentials"
+
+
+def test_cannot_delete_patient_with_clinical_records(
+    client: TestClient,
+    create_user: Callable[..., User],
+    login_headers: Callable[[str, str], dict[str, str]],
+) -> None:
+    create_user(email="professional@example.com", role=UserRole.PHYSIOTHERAPIST)
+    headers = login_headers("professional@example.com")
+    patient = client.post(
+        "/api/v1/patients",
+        headers=headers,
+        json={"full_name": "Com Historico"},
+    ).json()
+    note = client.post(
+        f"/api/v1/patients/{patient['id']}/notes",
+        headers=headers,
+        json={"content": "Observação", "visibility": "professional_only"},
+    )
+    assert note.status_code == 201
+
+    deleted = client.delete(f"/api/v1/patients/{patient['id']}", headers=headers)
+    assert deleted.status_code == 409
+    assert deleted.json()["code"] == "patient_has_clinical_records"
+    assert (
+        client.get(f"/api/v1/patients/{patient['id']}", headers=headers).status_code
+        == 200
+    )
+
+
+def test_professional_cannot_delete_another_professionals_patient(
+    client: TestClient,
+    create_user: Callable[..., User],
+    login_headers: Callable[[str, str], dict[str, str]],
+) -> None:
+    create_user(email="owner@example.com", role=UserRole.PHYSIOTHERAPIST)
+    create_user(email="other@example.com", role=UserRole.PHYSIOTHERAPIST)
+    owner_headers = login_headers("owner@example.com")
+    other_headers = login_headers("other@example.com")
+    patient = client.post(
+        "/api/v1/patients",
+        headers=owner_headers,
+        json={"full_name": "Protegido"},
+    ).json()
+
+    response = client.delete(
+        f"/api/v1/patients/{patient['id']}", headers=other_headers
+    )
+    assert response.status_code == 404
+    assert response.json()["code"] == "patient_not_found"
+    assert (
+        client.get(
+            f"/api/v1/patients/{patient['id']}", headers=owner_headers
+        ).status_code
+        == 200
+    )

@@ -1,3 +1,4 @@
+import { useScreenMessage } from '../../components/ScreenMessage';
 import { useEffect, useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import {
@@ -8,11 +9,7 @@ import {
 import { useCameraPermission } from 'react-native-vision-camera';
 import { friendlyErrorMessage } from '../../api/errors';
 import { Screen } from '../../components/Screen';
-import {
-  ErrorState,
-  InlineError,
-  LoadingState,
-} from '../../components/ScreenStates';
+import { ErrorState, LoadingState } from '../../components/ScreenStates';
 import type { Workout } from '../../contracts/domain';
 import { useActiveSession } from '../../features/session/ActiveSession';
 import {
@@ -311,14 +308,13 @@ function Framing({
   const { discardOutdatedDrafts, findDraft, prepare } = useSessionSync();
   const { begin } = useActiveSession();
   const [starting, setStarting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { show } = useScreenMessage();
   const item = firstItem(workout);
   const text = exerciseText(item);
   const bothArms = item.side === 'bilateral';
 
   const start = async () => {
     setStarting(true);
-    setError(null);
     try {
       // The draft is created only here and reused for the same revision.
       // Drafts of an older revision of this workout can never be finished.
@@ -331,7 +327,7 @@ function Framing({
         clientSessionId: draft.client_session_id,
       });
     } catch (cause) {
-      setError(friendlyErrorMessage(cause));
+      show(friendlyErrorMessage(cause), 'error');
       setStarting(false);
     }
   };
@@ -342,7 +338,6 @@ function Framing({
       title="Confira o enquadramento"
       footer={
         <>
-          {error ? <InlineError message={error} /> : null}
           <Button
             label="Começar exercício"
             disabled={starting}

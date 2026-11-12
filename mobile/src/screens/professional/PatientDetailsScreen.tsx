@@ -1,3 +1,4 @@
+import { useNativeConfirmation } from '../../components/useNativeConfirmation';
 import {
   useCallback,
   useEffect,
@@ -5,44 +6,25 @@ import {
   useState,
   type ComponentRef,
 } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   useFocusEffect,
   useRoute,
   type RouteProp,
 } from '@react-navigation/native';
 import { Screen } from '../../components/Screen';
-import { EmptyState, InlineError } from '../../components/ScreenStates';
+import { Icon } from '../../components/Icon';
 import { useScreenMessage } from '../../components/ScreenMessage';
 import { appDependencies } from '../../app/dependencies';
-import type { Note, Patient, Workout } from '../../contracts/domain';
-import {
-  usePatient,
-  usePatientNotes,
-  usePatientWorkouts,
-} from '../../integration/useProfessionalData';
+import type { Patient } from '../../contracts/domain';
+import { usePatient } from '../../integration/useProfessionalData';
 import {
   useFrontendNavigation,
   type FrontendStackParamList,
 } from '../../navigation/frontendTypes';
-import { colors, fonts, typography } from '../../theme/theme';
-import {
-  Body,
-  Button,
-  Card,
-  Link,
-  ListGroup,
-  ListRow,
-  SectionTitle,
-} from '../../ui';
-import { formatSessionDate } from '../patient/SessionRow';
-import {
-  apiErrorMessage,
-  ResourceView,
-  useReloadOnReturn,
-  visibilityLabels,
-  workoutStatusLabels,
-} from './shared';
+import { colors, fonts, layout, spacing, typography } from '../../theme/theme';
+import { Body, Button, Card, Link } from '../../ui';
+import { apiErrorMessage, ResourceView, useReloadOnReturn } from './shared';
 
 /** Kept only in this screen's memory and cleared when it loses focus. */
 type TemporaryCredential = { email: string; password: string };
@@ -57,19 +39,24 @@ const accessErrors: Record<string, string> = {
   email_conflict: 'O e-mail deste paciente já é usado por outra conta.',
 };
 
+const deleteErrors: Record<string, string> = {
+  patient_has_clinical_records:
+    'Não é possível excluir este paciente porque ele já possui histórico clínico.',
+};
+
 export function PatientDetailsScreen() {
   const navigation = useFrontendNavigation();
+  const { show } = useScreenMessage();
   const { params } =
     useRoute<RouteProp<FrontendStackParamList, 'PatientDetails'>>();
   const { patientId } = params;
   const patient = usePatient(patientId);
-  const workouts = usePatientWorkouts(patientId);
-  const notes = usePatientNotes(patientId);
   const [credential, setCredential] = useState<TemporaryCredential | null>(
     null,
   );
+  const [deleting, setDeleting] = useState(false);
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
-  useReloadOnReturn(patient.reload, workouts.reload, notes.reload);
+  useReloadOnReturn(patient.reload);
   // The card is rendered on top while the button that issued it is further
   // down (and is replaced by a loading state on reload): bring it into view.
   useEffect(() => {
@@ -81,20 +68,40 @@ export function PatientDetailsScreen() {
   useFocusEffect(useCallback(() => () => setCredential(null), []));
   const name =
     patient.state.status === 'success' ? patient.state.data.full_name : null;
+
+  const confirmRemoval = useNativeConfirmation();
+  const removePatient = () => {
+    if (deleting) {
+      return;
+    }
+    confirmRemoval({
+      title: 'Excluir paciente',
+      message:
+        'Tem certeza que deseja excluir este paciente? Esta ação não pode ser desfeita.',
+      destructive: true,
+      onConfirm: async () => {
+        setDeleting(true);
+        try {
+          await appDependencies.patients.delete(patientId);
+          show('Paciente excluído.', 'success');
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'PatientList' }],
+          });
+        } catch (cause) {
+          show(apiErrorMessage(cause, deleteErrors), 'error');
+          setDeleting(false);
+        }
+      },
+    });
+  };
+
   return (
     <Screen
       professional
       back="Pacientes"
       title={name ?? 'Paciente'}
       scrollRef={scroll}
-      footer={
-        <Button
-          label="Ver acompanhamento"
-          onPress={() =>
-            navigation.navigate('PatientMonitoring', { patientId })
-          }
-        />
-      }
     >
       {credential ? (
         <TemporaryPasswordCard
@@ -105,7 +112,26 @@ export function PatientDetailsScreen() {
       <ResourceView resource={patient} loadingLabel="Carregando paciente">
         {data => (
           <>
-            <Card white title="Contato">
+            <Card white>
+              <View style={contactStyles.header}>
+                <Text accessibilityRole="header" style={contactStyles.title}>
+                  Contato
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Editar dados do paciente"
+                  accessibilityHint="Abre a tela para editar nome, e-mail e telefone."
+                  onPress={() =>
+                    navigation.navigate('PatientEdit', { patientId })
+                  }
+                  style={({ pressed }) => [
+                    contactStyles.iconButton,
+                    pressed && contactStyles.pressed,
+                  ]}
+                >
+                  <Icon name="edit" size={20} color={colors.primary} />
+                </Pressable>
+              </View>
               <Body>{data.email ?? 'Sem e-mail cadastrado'}</Body>
               <Body>{data.phone ?? 'Sem telefone cadastrado'}</Body>
             </Card>
@@ -116,95 +142,17 @@ export function PatientDetailsScreen() {
                 patient.reload();
               }}
             />
+            <View style={contactStyles.deleteRow}>
+              <Link
+                label={deleting ? 'Excluindo…' : 'Excluir paciente'}
+                onPress={removePatient}
+              />
+            </View>
           </>
         )}
       </ResourceView>
-      <SectionTitle>Treinos</SectionTitle>
-      <ResourceView
-        resource={workouts}
-        loadingLabel="Carregando treinos"
-        empty={
-          <EmptyState
-            title="Nenhum treino criado"
-            message="Monte o treino com exercícios aprovados do catálogo."
-          />
-        }
-      >
-        {page => (
-          <ListGroup>
-            {page.items.map(workout => (
-              <ListRow
-                key={workout.id}
-                icon="activity"
-                title={`Treino · ${workoutStatusLabels[workout.status]}`}
-                description={workoutSummary(workout)}
-                onPress={() =>
-                  navigation.navigate('WorkoutReview', {
-                    patientId,
-                    workoutId: workout.id,
-                  })
-                }
-              />
-            ))}
-          </ListGroup>
-        )}
-      </ResourceView>
-      <Button
-        secondary
-        label="Criar treino"
-        onPress={() =>
-          navigation.navigate('WorkoutConfiguration', { patientId })
-        }
-      />
-      <SectionTitle>Observações</SectionTitle>
-      <ResourceView
-        resource={notes}
-        loadingLabel="Carregando observações"
-        empty={
-          <EmptyState
-            title="Nenhuma observação registrada"
-            message="Escreva orientações para o paciente ou anotações só para você."
-          />
-        }
-      >
-        {page => (
-          <ListGroup>
-            {page.items.map(note => (
-              <ListRow
-                key={note.id}
-                icon="message"
-                title={preview(note)}
-                description={`${visibilityLabels[note.visibility]} · ${formatSessionDate(note.updated_at)}`}
-                accessibilityHint="Abre a observação para editar."
-                onPress={() =>
-                  navigation.navigate('NoteEditor', {
-                    patientId,
-                    noteId: note.id,
-                  })
-                }
-              />
-            ))}
-          </ListGroup>
-        )}
-      </ResourceView>
-      <Button
-        secondary
-        label="Escrever observação"
-        onPress={() => navigation.navigate('NoteEditor', { patientId })}
-      />
     </Screen>
   );
-}
-
-function workoutSummary(workout: Workout) {
-  const count = workout.items.length;
-  return `${count} ${count === 1 ? 'exercício' : 'exercícios'} · versão ${workout.revision_number}`;
-}
-
-function preview(note: Note) {
-  return note.content.length > 120
-    ? `${note.content.slice(0, 117).trimEnd()}…`
-    : note.content;
 }
 
 function AccessCard({
@@ -216,29 +164,27 @@ function AccessCard({
 }) {
   const { show } = useScreenMessage();
   const [busy, setBusy] = useState(false);
-  const [confirmReset, setConfirmReset] = useState(false);
-  const [failure, setFailure] = useState('');
+  const confirmReset = useNativeConfirmation();
   const run = async (operation: 'activate' | 'reset') => {
     if (busy) {
       return;
     }
     setBusy(true);
-    setFailure('');
     try {
       const result =
         operation === 'activate'
           ? await appDependencies.patients.activateAccess(patient.id)
           : await appDependencies.patients.resetTemporaryPassword(patient.id);
-      setConfirmReset(false);
-      // `Screen` announces this message to screen readers.
+      // The global feedback host announces the confirmation.
       show(
         operation === 'activate'
           ? 'Acesso liberado. A senha provisória está no topo da tela.'
           : 'Nova senha provisória gerada. Ela está no topo da tela.',
+        'success',
       );
       onIssued({ email: result.email, password: result.temporary_password });
     } catch (cause) {
-      setFailure(apiErrorMessage(cause, accessErrors));
+      show(apiErrorMessage(cause, accessErrors), 'error');
     } finally {
       setBusy(false);
     }
@@ -262,7 +208,6 @@ function AccessCard({
   const active = patient.has_access && patient.access_is_active;
   return (
     <Card white title="Acesso ao aplicativo">
-      {failure ? <InlineError message={failure} /> : null}
       {!active ? (
         <>
           <Body>
@@ -274,19 +219,6 @@ function AccessCard({
             disabled={busy}
             onPress={() => run('activate')}
           />
-        </>
-      ) : confirmReset ? (
-        <>
-          <Body>
-            A senha atual do paciente deixará de funcionar e ele precisará criar
-            uma nova no próximo acesso. Deseja continuar?
-          </Body>
-          <Button
-            label={busy ? 'Gerando…' : 'Gerar nova senha provisória'}
-            disabled={busy}
-            onPress={() => run('reset')}
-          />
-          <Link label="Cancelar" onPress={() => setConfirmReset(false)} />
         </>
       ) : (
         <>
@@ -301,7 +233,16 @@ function AccessCard({
           <Button
             secondary
             label="Redefinir senha provisória"
-            onPress={() => setConfirmReset(true)}
+            disabled={busy}
+            onPress={() =>
+              confirmReset({
+                title: 'Redefinir senha provisória?',
+                message:
+                  'A senha atual do paciente deixará de funcionar e ele precisará criar uma nova no próximo acesso. Deseja continuar?',
+                destructive: true,
+                onConfirm: () => run('reset'),
+              })
+            }
           />
         </>
       )}
@@ -343,4 +284,28 @@ const passwordStyles = StyleSheet.create({
     ...typography.title,
     fontFamily: fonts.bold,
   },
+});
+
+const contactStyles = StyleSheet.create({
+  header: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  title: {
+    color: colors.text,
+    ...typography.title,
+    fontFamily: fonts.bold,
+    flex: 1,
+  },
+  iconButton: {
+    alignItems: 'center',
+    borderRadius: layout.compactControlHeight / 2,
+    height: layout.compactControlHeight,
+    justifyContent: 'center',
+    width: layout.compactControlHeight,
+  },
+  pressed: { backgroundColor: colors.surfaceMuted },
+  deleteRow: { alignItems: 'center', marginTop: spacing.sm },
 });

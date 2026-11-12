@@ -1,7 +1,13 @@
-import { useEffect, useState } from 'react';
-import { useNavigation, usePreventRemove } from '@react-navigation/native';
+import { useScreenMessage } from '../../components/ScreenMessage';
+import { useState } from 'react';
+import {
+  useNavigation,
+  usePreventRemove,
+  useRoute,
+  type RouteProp,
+} from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AccessibilityInfo, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { ApiError, friendlyErrorMessage } from '../../api/errors';
 import { useAuth } from '../../auth/AuthContext';
@@ -9,7 +15,6 @@ import { validateEmail, validatePassword } from '../../auth/validation';
 import { AuthLayout, authText } from '../../components/AuthLayout';
 import { FormField } from '../../components/FormField';
 import { PrimaryButton } from '../../components/PrimaryButton';
-import { InlineError } from '../../components/ScreenStates';
 import type { AuthStackParamList } from '../../navigation/types';
 import { colors, fonts, radii, spacing, typography } from '../../theme/theme';
 
@@ -36,7 +41,10 @@ function StepProgress({ step }: { step: 1 | 2 }) {
 export function LoginScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList, 'Login'>>();
+  const route = useRoute<RouteProp<AuthStackParamList, 'Login'>>();
+  const audience = route.params?.audience;
   const { login, busy } = useAuth();
+  const { show } = useScreenMessage();
   const [step, setStep] = useState<1 | 2>(1);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,18 +52,12 @@ export function LoginScreen() {
     email?: string;
     password?: string;
   }>({});
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (error) {
-      AccessibilityInfo.announceForAccessibility(error);
-    }
-  }, [error]);
+  // Wrong credentials: the toast explains it, the field only gets the border.
+  const [rejected, setRejected] = useState(false);
 
   const continueToPassword = () => {
     const emailError = validateEmail(email);
     setFieldErrors({ email: emailError ?? undefined });
-    setError(null);
     if (emailError) {
       return;
     }
@@ -70,7 +72,7 @@ export function LoginScreen() {
       // The typed e-mail stays in state, so returning keeps it.
       setPassword('');
       setFieldErrors({});
-      setError(null);
+      setRejected(false);
       setStep(1);
       return;
     }
@@ -86,7 +88,7 @@ export function LoginScreen() {
       email: emailError ?? undefined,
       password: passwordError ?? undefined,
     });
-    setError(null);
+    setRejected(false);
     if (emailError) {
       setStep(1);
       return;
@@ -96,12 +98,17 @@ export function LoginScreen() {
     }
     try {
       await login({ email: email.trim().toLowerCase(), password });
+      show('Acesso realizado com sucesso.', 'success');
     } catch (caught) {
-      if (caught instanceof ApiError && caught.code === 'invalid_credentials') {
-        setError('E-mail ou senha incorretos. Confira e tente novamente.');
-      } else {
-        setError(friendlyErrorMessage(caught));
-      }
+      const wrongCredentials =
+        caught instanceof ApiError && caught.code === 'invalid_credentials';
+      setRejected(wrongCredentials);
+      show(
+        wrongCredentials
+          ? 'E-mail ou senha incorretos. Confira e tente novamente.'
+          : friendlyErrorMessage(caught),
+        'error',
+      );
     }
   };
 
@@ -150,8 +157,10 @@ export function LoginScreen() {
             onChangeText={value => {
               setPassword(value);
               setFieldErrors(current => ({ ...current, password: undefined }));
+              setRejected(false);
             }}
             error={fieldErrors.password}
+            invalid={rejected}
             autoCapitalize="none"
             autoCorrect={false}
             autoComplete="current-password"
@@ -161,12 +170,13 @@ export function LoginScreen() {
             onSubmitEditing={submit}
             editable={!busy}
           />
-          {error ? <InlineError message={error} /> : null}
           <PrimaryButton label="Entrar" loading={busy} onPress={submit} />
-          <Text style={styles.support}>
-            Não compartilhe sua senha. Em caso de dificuldade, procure o
-            profissional responsável pelo seu acesso.
-          </Text>
+          {audience !== 'professional' ? (
+            <Text style={styles.support}>
+              Não compartilhe sua senha. Em caso de dificuldade, procure o
+              profissional responsável pelo seu acesso.
+            </Text>
+          ) : null}
         </View>
       )}
     </AuthLayout>

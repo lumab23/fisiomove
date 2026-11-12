@@ -4,7 +4,7 @@ export { PatientPreparationScreen } from '../patient/PreparationScreens';
 export { PatientExerciseScreen } from '../patient/PatientExerciseScreen';
 export { PatientCompletionScreen } from '../patient/SessionScreens';
 export { PatientExercisesScreen } from '../patient/PatientExercisesScreen';
-export { PatientProfileScreen } from '../patient/PatientProfileScreen';
+export { PatientSettingsScreen } from '../patient/PatientSettingsScreen';
 export { PatientListScreen } from '../professional/PatientListScreen';
 export { PatientCreateScreen } from '../professional/PatientCreateScreen';
 export { PatientDetailsScreen } from '../professional/PatientDetailsScreen';

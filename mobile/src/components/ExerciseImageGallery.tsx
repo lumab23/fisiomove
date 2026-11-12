@@ -4,7 +4,7 @@ import { appDependencies } from '../app/dependencies';
 import type { ExerciseImage } from '../contracts/domain';
 import { colors, fonts, radii, spacing, typography } from '../theme/theme';
 
-/** Source and license of the copied images (DEC-010); always visible. */
+/** Source and license of copied images (DEC-010), shown by default. */
 export const imageAttribution =
   'Imagem: OpenExerciseBase (CC BY-NC 4.0); parte do material da fonte pode ter sido gerada por IA';
 
@@ -22,12 +22,15 @@ export function ExerciseImageGallery({
   exerciseName,
   limit,
   inverse = false,
+  showAttribution = true,
 }: {
   images: ExerciseImage[];
   exerciseName: string;
   limit?: number;
   /** Caption over a primary-colored background. */
   inverse?: boolean;
+  /** Allows a compact review without changing image alt text or source data. */
+  showAttribution?: boolean;
 }) {
   if (!images.length) {
     return null;
@@ -43,9 +46,11 @@ export function ExerciseImageGallery({
           inverse={inverse}
         />
       ))}
-      <Text style={[gallery.caption, inverse && gallery.inverseText]}>
-        {imageAttribution}
-      </Text>
+      {showAttribution ? (
+        <Text style={[gallery.caption, inverse && gallery.inverseText]}>
+          {imageAttribution}
+        </Text>
+      ) : null}
     </View>
   );
 }

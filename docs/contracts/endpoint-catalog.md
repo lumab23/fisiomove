@@ -31,10 +31,13 @@
 | B05 | `PATCH /api/v1/workouts/{id}` | `WorkoutUpdate` | `WorkoutResponse` com nova revisão quando aplicável |
 | B05 | `POST /api/v1/workouts/{id}/publish` | sem corpo | `WorkoutResponse` publicado |
 | B05 | `POST /api/v1/workouts/{id}/archive` | sem corpo | `WorkoutResponse` arquivado |
+| B05 | `POST /api/v1/workouts/{id}/unarchive` | sem corpo, profissional com vínculo ativo | `WorkoutResponse` em rascunho com nova revisão, sem publicação automática |
+| B05 | `DELETE /api/v1/workouts/{id}` | profissional com vínculo ativo; rascunho ou arquivado sem sessões registradas | `204` sem corpo; histórico de sessões bloqueia exclusão |
 | B05 | `GET /api/v1/me/workouts` | paginação | `Page[WorkoutResponse]` publicado |
 | B06 | `GET /api/v1/patients/{id}/notes` | paginação | `Page[NoteResponse]` filtrada por visibilidade |
 | B06 | `POST /api/v1/patients/{id}/notes` | `NoteCreate` | `NoteResponse` |
 | B06 | `PATCH /api/v1/notes/{id}` | `NoteUpdate` | `NoteResponse` |
+| B06 | `DELETE /api/v1/notes/{id}` | fisioterapeuta autor com vínculo ativo ao paciente | `204` sem corpo; `403 note_author_required` para outro autor, `404` para nota ausente ou vínculo indisponível |
 | DEC-015 | `GET /api/v1/me/notes` | identidade autenticada (`patient`), paginação | `Page[OwnNoteResponse]` (`{ id, content, created_at, updated_at }`), só `patient_visible` |
 | B07 | `POST /api/v1/me/sessions` | `SessionResultCreate` | `SessionResultResponse` idempotente |
 | B08 | `GET /api/v1/me/sessions` | período/paginação | `Page[SessionSummary]` |

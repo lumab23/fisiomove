@@ -4,7 +4,7 @@ import { EmptyState } from '../../components/ScreenStates';
 import { FormField } from '../../components/FormField';
 import type { Patient } from '../../contracts/domain';
 import { usePatients } from '../../integration/useProfessionalData';
-import { Body, Button, ListGroup, ListRow } from '../../ui';
+import { Button, ListGroup, ListRow } from '../../ui';
 import { useScreenMessage } from '../../components/ScreenMessage';
 import { useFrontendNavigation } from '../../navigation/frontendTypes';
 import { ResourceView, useReloadOnReturn } from './shared';
@@ -22,29 +22,31 @@ function accessText(patient: Patient) {
 }
 
 export function PatientListScreen() {
+  return <PatientDirectory mode="patients" />;
+}
+
+/** One directory and data source for both professional tabs. */
+export function PatientDirectory({
+  mode,
+}: {
+  mode: 'patients' | 'monitoring';
+}) {
   const patients = usePatients();
   const { clear } = useScreenMessage();
   const navigation = useFrontendNavigation();
   const [search, setSearch] = useState('');
   useReloadOnReturn(patients.reload);
-  const total =
-    patients.state.status === 'success' || patients.state.status === 'empty'
-      ? patients.state.data.total
-      : null;
   return (
     <Screen
       professional
-      title="Pacientes"
-      subtitle={
-        total === null
-          ? undefined
-          : `${total} paciente${total === 1 ? '' : 's'} cadastrado${total === 1 ? '' : 's'}`
-      }
+      title={mode === 'patients' ? 'Pacientes' : 'Acompanhamento'}
       footer={
-        <Button
-          label="Cadastrar paciente"
-          onPress={() => navigation.navigate('PatientCreate')}
-        />
+        mode === 'patients' ? (
+          <Button
+            label="Cadastrar paciente"
+            onPress={() => navigation.navigate('PatientCreate')}
+          />
+        ) : undefined
       }
     >
       <ResourceView
@@ -82,12 +84,21 @@ export function PatientListScreen() {
                       icon="user"
                       title={patient.full_name}
                       description={accessText(patient)}
-                      accessibilityHint={`Abre a ficha. ${accessText(patient)}.`}
+                      accessibilityHint={
+                        mode === 'patients'
+                          ? `Abre contato e acesso ao aplicativo. ${accessText(patient)}.`
+                          : 'Abre treinos e observações do paciente.'
+                      }
                       onPress={() => {
                         clear();
-                        navigation.navigate('PatientDetails', {
-                          patientId: patient.id,
-                        });
+                        navigation.navigate(
+                          mode === 'patients'
+                            ? 'PatientDetails'
+                            : 'PatientFollowUp',
+                          {
+                            patientId: patient.id,
+                          },
+                        );
                       }}
                     />
                   ))}
@@ -100,11 +111,6 @@ export function PatientListScreen() {
                   onAction={() => setSearch('')}
                 />
               )}
-              {page.total > page.items.length ? (
-                <Body>
-                  {`Mostrando os ${page.items.length} cadastros mais recentes de ${page.total}.`}
-                </Body>
-              ) : null}
             </>
           );
         }}

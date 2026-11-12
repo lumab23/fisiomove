@@ -193,3 +193,61 @@ def test_account_conflict_does_not_attach_wrong_user(
     assert conflict.json()["code"] == "email_conflict"
     detail = client.get(f"/api/v1/patients/{patient['id']}", headers=headers)
     assert detail.json()["has_access"] is False
+
+
+def test_patient_first_access_requires_secure_password_change(
+    client: TestClient,
+    create_user: Callable[..., User],
+    login_headers: Callable[[str, str], dict[str, str]],
+) -> None:
+    create_user(email="professional@example.com", role=UserRole.PHYSIOTHERAPIST)
+    headers = login_headers("professional@example.com")
+    patient = _create_patient(client, headers)
+
+    created = client.post(
+        f"/api/v1/patients/{patient['id']}/access",
+        headers=headers,
+        json={"operation": "activate"},
+    ).json()
+    temporary_password = created["temporary_password"]
+    assert temporary_password
+    assert temporary_password != patient.get("phone")
+    assert temporary_password != patient.get("email")
+    assert len(temporary_password) >= 12
+
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "access@example.com", "password": temporary_password},
+    )
+    assert login.status_code == 200
+    auth = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    blocked = client.get("/api/v1/me/profile", headers=auth)
+    assert blocked.status_code == 403
+    assert blocked.json()["code"] == "password_change_required"
+
+    changed = client.post(
+        "/api/v1/auth/change-password",
+        headers=auth,
+        json={
+            "current_password": temporary_password,
+            "new_password": "NovaSenhaSegura123!",
+        },
+    )
+    assert changed.status_code == 204
+
+    old_login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "access@example.com", "password": temporary_password},
+    )
+    assert old_login.status_code == 401
+
+    new_login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "access@example.com", "password": "NovaSenhaSegura123!"},
+    )
+    assert new_login.status_code == 200
+    new_auth = {"Authorization": f"Bearer {new_login.json()['access_token']}"}
+    me = client.get("/api/v1/me/profile", headers=new_auth)
+    assert me.status_code == 200
+    assert me.json() == {"full_name": "Access Patient"}

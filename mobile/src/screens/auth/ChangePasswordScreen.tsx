@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
-import { AccessibilityInfo, StyleSheet, Text, View } from 'react-native';
+import { useSignOutConfirmation } from '../../components/SignOutConfirmation';
+import { useScreenMessage } from '../../components/ScreenMessage';
+import { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { friendlyErrorMessage } from '../../api/errors';
 import { useAuth } from '../../auth/AuthContext';
@@ -8,7 +10,6 @@ import { AuthLayout, authText } from '../../components/AuthLayout';
 import { FormField } from '../../components/FormField';
 import { Icon } from '../../components/Icon';
 import { PrimaryButton } from '../../components/PrimaryButton';
-import { InlineError } from '../../components/ScreenStates';
 import { colors, fonts, layout, spacing, typography } from '../../theme/theme';
 
 /**
@@ -37,42 +38,54 @@ export function passwordChecklist(
   ];
 }
 
+type PasswordField = 'current' | 'new' | 'confirmation';
+
 export function ChangePasswordScreen() {
   const { changePassword, busy, logout } = useAuth();
+  const { requestSignOut } = useSignOutConfirmation(logout);
+  const { show } = useScreenMessage();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (error) {
-      AccessibilityInfo.announceForAccessibility(error);
-    }
-  }, [error]);
+  // The toast explains the problem; the field to fix only gets the border.
+  const [invalid, setInvalid] = useState<PasswordField | null>(null);
+  const reject = (field: PasswordField, message: string) => {
+    setInvalid(field);
+    show(message, 'error');
+  };
 
   const submit = async () => {
     const currentError = validatePassword(currentPassword);
     const newError = validatePassword(newPassword);
-    if (currentError || newError) {
-      setError(currentError ?? newError);
+    if (currentError) {
+      reject('current', currentError);
+      return;
+    }
+    if (newError) {
+      reject('new', newError);
       return;
     }
     if (currentPassword === newPassword) {
-      setError('A nova senha precisa ser diferente da senha temporária.');
+      reject('new', 'A nova senha precisa ser diferente da senha temporária.');
       return;
     }
     if (newPassword !== confirmation) {
-      setError('A confirmação não corresponde à nova senha.');
+      reject('confirmation', 'A confirmação não corresponde à nova senha.');
       return;
     }
-    setError(null);
+    setInvalid(null);
     try {
       await changePassword(currentPassword, newPassword);
-      AccessibilityInfo.announceForAccessibility('Senha alterada com sucesso.');
+      show('Senha alterada com sucesso.', 'success');
     } catch (caught) {
-      setError(friendlyErrorMessage(caught));
+      show(friendlyErrorMessage(caught), 'error');
     }
   };
+  const edit =
+    (field: PasswordField, set: (value: string) => void) => (value: string) => {
+      set(value);
+      setInvalid(current => (current === field ? null : current));
+    };
 
   const checklist = passwordChecklist(
     currentPassword,
@@ -94,7 +107,8 @@ export function ChangePasswordScreen() {
         <FormField
           label="Senha provisória"
           value={currentPassword}
-          onChangeText={setCurrentPassword}
+          onChangeText={edit('current', setCurrentPassword)}
+          invalid={invalid === 'current'}
           autoCapitalize="none"
           autoCorrect={false}
           autoComplete="current-password"
@@ -104,7 +118,8 @@ export function ChangePasswordScreen() {
         <FormField
           label="Nova senha"
           value={newPassword}
-          onChangeText={setNewPassword}
+          onChangeText={edit('new', setNewPassword)}
+          invalid={invalid === 'new'}
           autoCapitalize="none"
           autoCorrect={false}
           autoComplete="new-password"
@@ -114,7 +129,8 @@ export function ChangePasswordScreen() {
         <FormField
           label="Repita a senha"
           value={confirmation}
-          onChangeText={setConfirmation}
+          onChangeText={edit('confirmation', setConfirmation)}
+          invalid={invalid === 'confirmation'}
           autoCapitalize="none"
           autoCorrect={false}
           autoComplete="new-password"
@@ -144,14 +160,18 @@ export function ChangePasswordScreen() {
             </View>
           ))}
         </View>
-        {error ? <InlineError message={error} /> : null}
         <PrimaryButton
           label="Salvar e começar"
           loading={busy}
           onPress={submit}
         />
       </View>
-      <Text style={styles.exit} onPress={logout} accessibilityRole="button">
+      <Text
+        style={styles.exit}
+        onPress={requestSignOut}
+        accessibilityLabel="Sair e entrar com outra conta"
+        accessibilityRole="button"
+      >
         Sair e entrar com outra conta
       </Text>
     </AuthLayout>

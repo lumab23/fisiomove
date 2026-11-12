@@ -40,4 +40,12 @@ export class WorkoutService {
   archive(workoutId: UUID): Promise<Workout> {
     return this.api.post(`/workouts/${workoutId}/archive`);
   }
+
+  unarchive(workoutId: UUID): Promise<Workout> {
+    return this.api.post(`/workouts/${workoutId}/unarchive`);
+  }
+
+  delete(workoutId: UUID): Promise<void> {
+    return this.api.delete(`/workouts/${workoutId}`);
+  }
 }

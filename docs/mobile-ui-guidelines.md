@@ -113,12 +113,17 @@ decorativos e não descrevem nenhum exercício.
    telas menores. Nas telas profissionais, manter o rodapé de ação acima das
    abas fixas. O fisioterapeuta tem três abas, em posição fixa e com rótulo
    visível: Pacientes, Acompanhamento e Configurações. A aba ativa vem do
-   conjunto de rotas (`professionalTabFor` em `Screen.tsx`): Configurações fica
+   conjunto de rotas (`professionalTabFor` em `navigation/professionalTabs.tsx`): Configurações fica
    ativa em `ProfessionalSettings`, `ProfessionalProfile` e na biblioteca
    aberta pelas Configurações; a biblioteca aberta pelo editor de treino
    (modo de escolha, `pickFor`) pertence a Pacientes.
-6. Manter a transição nativa `slide_from_right`. Novas exceções precisam
-   representar um fluxo que realmente exija outra transição.
+6. Navegação instantânea em todas as telas e abas. A configuração compartilhada
+   em `navigation/transitions.ts` usa `animation: 'none'`, duração zero e gestos
+   de transição desativados. Não adicionar slides, fades ou animações JS para
+   abrir, voltar, substituir ou restaurar rotas. Modais de navegação mantêm a
+   apresentação `fullScreenModal`, com abertura e fechamento instantâneos.
+   As abas preservam históricos separados e retornam à raiz ao tocar na aba
+   ativa. Mascote, loading e toasts mantêm suas animações internas.
 7. Preservar rótulos de acessibilidade, estado desabilitado, anúncio de erro e
    área de toque mínima de 48 pontos. Não comunicar status somente por cor.
 
@@ -138,7 +143,9 @@ decorativos e não descrevem nenhum exercício.
 - `mobile/src/components/Screen.tsx`: moldura, rolagem, rodapé e abas.
 - `mobile/src/components/ScreenStates.tsx`: skeleton, vazio e erro.
 - `mobile/src/ui.tsx`: primitivos de botão, texto, cartão e elementos de apoio.
-- `mobile/src/navigation/FrontendNavigator.tsx`: transição padrão das telas.
+- `mobile/src/navigation/transitions.ts`: padrões de transição.
+- `mobile/src/navigation/FrontendNavigator.tsx`: tipo de transição de cada tela.
+- `mobile/src/navigation/professionalTabs.tsx`: abas do fisioterapeuta.
 
 Não há mais modo demonstração: as telas do paciente e do fisioterapeuta leem a
 API e usam esses estados para carregamento, lista vazia e falha. Dado sem fonte

@@ -1,8 +1,22 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Icon, type IconName } from '../../components/Icon';
+import { colors, fonts, layout, spacing, typography } from '../../theme/theme';
+import { useNativeConfirmation } from '../../components/useNativeConfirmation';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentRef,
+  type ReactNode,
+} from 'react';
 import { useRoute, type RouteProp } from '@react-navigation/native';
 import { Screen } from '../../components/Screen';
 import { FormField } from '../../components/FormField';
-import { EmptyState, InlineError } from '../../components/ScreenStates';
+import {
+  EmptyState,
+  InlineError,
+  LoadingState,
+} from '../../components/ScreenStates';
 import { useScreenMessage } from '../../components/ScreenMessage';
 import { appDependencies } from '../../app/dependencies';
 import type { UUID } from '../../contracts/common';
@@ -24,23 +38,18 @@ import {
   useFrontendNavigation,
   type FrontendStackParamList,
 } from '../../navigation/frontendTypes';
-import { Badge, Body, Button, Card, Link, SectionTitle } from '../../ui';
+import { Badge, Body, Button, Card, SectionTitle } from '../../ui';
 import { formatSessionDate } from '../patient/SessionRow';
 import { ExerciseImageGallery } from '../../components/ExerciseImageGallery';
 import {
   exerciseImages,
   exerciseLocalization,
   exerciseName,
-  exerciseSourceText,
-  exerciseText,
-  originalLanguageSeal,
   prescribedSideLabels,
   prescriptionText,
 } from '../patient/workoutText';
-import { CatalogExerciseText } from './ExerciseTranslation';
 import {
   apiErrorMessage,
-  CheckboxField,
   ChoiceGroup,
   ResourceView,
   restText,
@@ -56,9 +65,12 @@ const workoutErrors: Record<string, string> = {
   unsupported_parameters: 'Um dos exercícios não aceita parâmetros adicionais.',
   exercise_not_found:
     'Um dos exercícios não está mais aprovado no catálogo. Escolha outro.',
-  workout_archived: 'Este treino foi arquivado e não pode mais ser editado.',
+  workout_archived: 'Este treino está arquivado.',
+  workout_not_archived: 'Este treino não está arquivado. Atualize a tela.',
   workout_not_draft:
-    'Só é possível publicar um treino em rascunho. Atualize a tela.',
+    'Para publicar, salve como rascunho. Para apagar um treino publicado, arquive-o primeiro.',
+  workout_has_sessions:
+    'Este treino já tem sessões registradas e não pode ser apagado.',
 };
 
 /**
@@ -91,6 +103,20 @@ function oneSided(side: Side | null): side is 'left' | 'right' {
   return side === 'left' || side === 'right';
 }
 
+/**
+ * The side of an item: the one chosen, or the exercise's only allowed side.
+ * With more than one allowed side nothing is assumed: the physiotherapist
+ * chooses it in the card.
+ */
+function itemSide(draft: ItemDraft, exercise?: Exercise): Side | null {
+  if (draft.side) {
+    return draft.side;
+  }
+  return exercise?.allowed_sides.length === 1
+    ? exercise.allowed_sides[0]
+    : null;
+}
+
 type ItemErrors = Partial<
   Record<'exercise' | 'side' | 'sets' | 'repetitions' | 'rest', string>
 >;
@@ -103,6 +129,10 @@ export function buildWorkoutItems(
   drafts: ItemDraft[],
   catalog: Exercise[],
 ): { items: WorkoutItemInput[] } | { errors: ItemErrors[] } {
+  if (!drafts.length)
+    return {
+      errors: [{ exercise: 'Adicione pelo menos um exercício ao treino.' }],
+    };
   const errors: ItemErrors[] = [];
   const items: WorkoutItemInput[] = [];
   drafts.forEach((draft, index) => {
@@ -110,14 +140,9 @@ export function buildWorkoutItems(
     const exercise = catalog.find(entry => entry.id === draft.exerciseId);
     if (!exercise) {
       item.exercise = 'Escolha um exercício do catálogo.';
-    } else if (exercise.source && !exerciseLocalization(exercise)) {
-      item.exercise =
-        'Adicione e revise a tradução em português antes de salvar.';
     }
-    if (
-      !draft.side ||
-      (exercise && !exercise.allowed_sides.includes(draft.side))
-    ) {
+    const side = itemSide(draft, exercise);
+    if (!side || (exercise && !exercise.allowed_sides.includes(side))) {
       item.side = 'Escolha o lado.';
     }
     const sets = draft.sets.trim();
@@ -134,19 +159,17 @@ export function buildWorkoutItems(
       item.rest = 'Informe o descanso em segundos (pode ser 0).';
     }
     errors.push(item);
-    if (Object.keys(item).length === 0 && draft.exerciseId && draft.side) {
+    if (Object.keys(item).length === 0 && draft.exerciseId && side) {
       items.push({
         position: index + 1,
         exercise_id: draft.exerciseId,
-        side: draft.side,
+        side,
         sets: Number(sets),
         repetitions: Number(repetitions),
         rest_duration_ms: Math.round(Number(rest.replace(',', '.')) * 1000),
         professional_guidance: draft.professionalGuidance.trim() || null,
         counting_rule:
-          draft.automaticCounting && oneSided(draft.side)
-            ? demoCountingRule
-            : null,
+          draft.automaticCounting && oneSided(side) ? demoCountingRule : null,
       });
     }
   });
@@ -155,7 +178,7 @@ export function buildWorkoutItems(
 
 function draftsFrom(workout: Workout | null, nextKey: () => string) {
   if (!workout) {
-    return [emptyDraft(nextKey())];
+    return [];
   }
   return [...workout.items]
     .sort((a, b) => a.position - b.position)
@@ -243,16 +266,7 @@ function ConfigurationLoader({
   }
   const current =
     workout?.state.status === 'success' ? workout.state.data : null;
-  if (current?.status === 'archived') {
-    return state(
-      <EmptyState
-        title="Treino arquivado"
-        message="Treinos arquivados não podem ser editados. Crie um novo treino se precisar."
-      />,
-    );
-  }
-  // An empty catalog does not block the form: items can come from the
-  // reference library ("Buscar na biblioteca de referência").
+  // An empty catalog does not block the form.
   if (catalog.state.status !== 'success' && catalog.state.status !== 'empty') {
     return state(
       <ResourceView resource={catalog} loadingLabel="Carregando exercícios">
@@ -287,15 +301,33 @@ function WorkoutForm({
   const { show } = useScreenMessage();
   // Grows with exercises added from the library while the editor is open.
   const [catalog, setCatalog] = useState(initialCatalog);
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const selectedCard = useRef<string | null>(null);
+  const positions = useRef(new Map<string, number>()).current;
   const counter = useRef(0);
   const nextKey = () => `item-${(counter.current += 1)}`;
   const [drafts, setDrafts] = useState<ItemDraft[]>(() =>
     draftsFrom(workout, nextKey),
   );
-  const [instructions, setInstructions] = useState(workout?.instructions ?? '');
+  // Reveal the selected card without adding any navigation animation.
+  useEffect(() => {
+    const key = selectedCard.current;
+    const y = key ? positions.get(key) : undefined;
+    if (!key || y === undefined) return;
+    const frame = requestAnimationFrame(() => {
+      if (selectedCard.current === key) {
+        scroll.current?.scrollTo({ y, animated: false });
+        selectedCard.current = null;
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [drafts, positions]);
+  // No longer edited here (the item's own guidance replaces it), but an
+  // existing text is kept when the workout is saved again.
+  const instructions = workout?.instructions ?? '';
   const [errors, setErrors] = useState<ItemErrors[]>([]);
-  const [failure, setFailure] = useState('');
   const [saving, setSaving] = useState(false);
+  const [selecting, setSelecting] = useState(false);
   const update = (key: string, change: Partial<ItemDraft>) => {
     setDrafts(current =>
       current.map(draft =>
@@ -304,55 +336,74 @@ function WorkoutForm({
     );
     setErrors([]);
   };
-  // Exercise chosen in the library (pick mode): fills only that item's
-  // exercise; sets, repetitions and rest stay as typed (empty for a new item).
+  // Both the catalog picker and library import return only IDs. Existing
+  // cards keep their values; new cards start without a clinical prescription.
   const picked = params.picked;
   const handled = useRef<typeof picked>(undefined);
   const mounted = useRef(true);
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
       mounted.current = false;
-    },
-    [],
-  );
+    };
+  }, []);
   useEffect(() => {
     if (!picked || handled.current === picked) {
       return;
     }
     handled.current = picked;
-    appDependencies.exercises.get(picked.exerciseId).then(
-      exercise => {
-        if (!mounted.current) {
-          return;
-        }
-        setCatalog(current => [
-          ...current.filter(entry => entry.id !== exercise.id),
-          exercise,
-        ]);
-        setDrafts(current =>
-          current.map(draft =>
-            draft.key === picked.itemKey
-              ? {
-                  ...draft,
-                  exerciseId: exercise.id,
-                  side:
-                    draft.side && exercise.allowed_sides.includes(draft.side)
-                      ? draft.side
-                      : null,
-                }
-              : draft,
-          ),
-        );
-        setErrors([]);
-        setFailure('');
-      },
-      (cause: unknown) => {
-        if (mounted.current) {
-          setFailure(apiErrorMessage(cause, workoutErrors));
-        }
-      },
-    );
-  }, [picked]);
+    setSelecting(true);
+    const cached = catalog.find(entry => entry.id === picked.exerciseId);
+    const selection = cached
+      ? Promise.resolve(cached)
+      : appDependencies.exercises.get(picked.exerciseId);
+    selection
+      .then(
+        exercise => {
+          if (!mounted.current || handled.current !== picked) {
+            return;
+          }
+          setCatalog(current => [
+            ...current.filter(entry => entry.id !== exercise.id),
+            exercise,
+          ]);
+          selectedCard.current = picked.itemKey;
+          // The picker may append a new card or replace an existing exercise.
+          setDrafts(current => {
+            const existing = current.find(
+              draft => draft.key === picked.itemKey,
+            );
+            if (!existing)
+              return [
+                ...current,
+                { ...emptyDraft(picked.itemKey), exerciseId: exercise.id },
+              ];
+            return current.map(draft => {
+              if (draft.key !== picked.itemKey) return draft;
+              const side =
+                draft.side && exercise.allowed_sides.includes(draft.side)
+                  ? draft.side
+                  : null;
+              return {
+                ...draft,
+                exerciseId: exercise.id,
+                side,
+                automaticCounting: draft.automaticCounting && oneSided(side),
+              };
+            });
+          });
+          setErrors([]);
+        },
+        (cause: unknown) => {
+          if (mounted.current) {
+            show(apiErrorMessage(cause, workoutErrors), 'error');
+          }
+        },
+      )
+      .finally(() => {
+        if (mounted.current && handled.current === picked) setSelecting(false);
+      });
+  }, [picked, show, catalog]);
   // Back from the translation screen: reload that exercise so the editor shows
   // the new text. Saving sends the items again, so the next snapshot has it.
   const translating = useRef<UUID | null>(null);
@@ -377,19 +428,24 @@ function WorkoutForm({
     translating.current = exerciseId;
     navigation.navigate('CatalogExerciseTranslation', { exerciseId });
   };
-  const searchLibrary = (itemKey: string) =>
-    navigation.navigate('ExerciseLibrary', {
-      pickFor: { patientId, workoutId: workout?.id, itemKey },
+  const chooseExercise = (itemKey = nextKey()) =>
+    navigation.navigate('WorkoutExercisePicker', {
+      patientId,
+      workoutId: workout?.id,
+      itemKey,
     });
   const save = async () => {
-    if (saving) {
+    if (saving || selecting) {
       return;
     }
-    setFailure('');
+    if (!drafts.length) {
+      show('Adicione pelo menos um exercício ao treino.', 'error');
+      return;
+    }
     const built = buildWorkoutItems(drafts, catalog);
     if ('errors' in built) {
       setErrors(built.errors);
-      setFailure('Confira os campos destacados.');
+      show('Confira os campos destacados.', 'error');
       return;
     }
     const payload: WorkoutWrite = {
@@ -401,7 +457,7 @@ function WorkoutForm({
       const saved = workout
         ? await appDependencies.workouts.update(workout.id, payload)
         : await appDependencies.workouts.create(patientId, payload);
-      show('Rascunho salvo. Revise e publique para o paciente ver.');
+      show('Rascunho salvo. Revise e publique para o paciente ver.', 'success');
       if (workout) {
         navigation.goBack();
       } else {
@@ -411,83 +467,77 @@ function WorkoutForm({
         });
       }
     } catch (cause) {
-      setFailure(apiErrorMessage(cause, workoutErrors));
+      show(apiErrorMessage(cause, workoutErrors), 'error');
       setSaving(false);
     }
   };
   return (
-    <Screen
-      professional
-      back="Paciente"
-      title={title}
-      footer={
-        <Button
-          label={saving ? 'Salvando…' : 'Salvar rascunho'}
-          disabled={saving}
-          onPress={save}
+    <Screen professional back="Paciente" title={title} scrollRef={scroll}>
+      {!drafts.length ? (
+        <EmptyState
+          title="Adicione os exercícios do treino"
+          message="Escolha no catálogo e configure a prescrição em cada card."
         />
-      }
-    >
-      <Body>
-        Use exercícios do catálogo ou adicione da biblioteca de referência.
-      </Body>
-      <Body>
-        Séries, repetições e descanso são definidos por você; nenhum valor é
-        preenchido automaticamente.
-      </Body>
-      {workout?.status === 'published' ? (
+      ) : null}
+      {workout?.status === 'published' || workout?.status === 'archived' ? (
         <Body>
           Ao salvar, o treino volta a ser rascunho e deixa de aparecer para o
           paciente até ser publicado de novo.
         </Body>
       ) : null}
-      {failure ? <InlineError message={failure} /> : null}
+      {selecting ? (
+        <LoadingState label="Adicionando exercício ao treino" />
+      ) : null}
       {drafts.map((draft, index) => (
-        <ItemEditor
+        <View
           key={draft.key}
-          index={index}
-          draft={draft}
-          catalog={catalog}
-          errors={errors[index] ?? {}}
-          onChange={change => update(draft.key, change)}
-          onSearchLibrary={() => searchLibrary(draft.key)}
-          onEditTranslation={editTranslation}
-          onRemove={
-            drafts.length > 1
-              ? () => {
-                  setDrafts(current =>
-                    current.filter(entry => entry.key !== draft.key),
-                  );
-                  setErrors([]);
+          onLayout={({ nativeEvent }) => {
+            const y = nativeEvent.layout.y;
+            positions.set(draft.key, y);
+            if (selectedCard.current === draft.key)
+              requestAnimationFrame(() => {
+                if (selectedCard.current === draft.key) {
+                  scroll.current?.scrollTo({ y, animated: false });
+                  selectedCard.current = null;
                 }
-              : undefined
-          }
-        />
+              });
+          }}
+        >
+          <ItemEditor
+            index={index}
+            draft={draft}
+            catalog={catalog}
+            errors={errors[index] ?? {}}
+            onChange={change => update(draft.key, change)}
+            onChooseExercise={() => chooseExercise(draft.key)}
+            onEditTranslation={editTranslation}
+            onRemove={() => {
+              setDrafts(current =>
+                current.filter(entry => entry.key !== draft.key),
+              );
+              positions.delete(draft.key);
+              setErrors([]);
+            }}
+          />
+        </View>
       ))}
+      {/* Each pick appends its own card; the previous cards are kept. */}
       <Button
         secondary
-        label="Adicionar outro exercício"
-        onPress={() => {
-          setDrafts(current => [...current, emptyDraft(nextKey())]);
-          setErrors([]);
-        }}
+        icon="plus"
+        label="Adicionar exercício"
+        disabled={selecting}
+        onPress={() => chooseExercise()}
       />
-      <FormField
-        label="Orientações gerais (opcional)"
-        value={instructions}
-        onChangeText={setInstructions}
-        multiline
+      <Button
+        label={
+          saving ? 'Salvando…' : workout ? 'Salvar rascunho' : 'Criar treino'
+        }
+        disabled={saving || selecting}
+        onPress={save}
       />
     </Screen>
   );
-}
-
-/** pt-BR name with the original in parentheses, or just the original. */
-function catalogLabel(exercise: Exercise) {
-  const localization = exerciseLocalization(exercise);
-  return localization
-    ? `${localization.name} (original: ${exercise.name})`
-    : exercise.name;
 }
 
 function ItemEditor({
@@ -496,7 +546,7 @@ function ItemEditor({
   catalog,
   errors,
   onChange,
-  onSearchLibrary,
+  onChooseExercise,
   onEditTranslation,
   onRemove,
 }: {
@@ -505,90 +555,130 @@ function ItemEditor({
   catalog: Exercise[];
   errors: ItemErrors;
   onChange: (change: Partial<ItemDraft>) => void;
-  onSearchLibrary: () => void;
+  onChooseExercise: () => void;
   onEditTranslation: (exerciseId: UUID) => void;
-  onRemove?: () => void;
+  onRemove: () => void;
 }) {
   const exercise = catalog.find(entry => entry.id === draft.exerciseId);
   const missing = draft.exerciseId !== null && !exercise;
+  const localization = exercise ? exerciseLocalization(exercise) : null;
+  const name = localization?.name ?? exercise?.name ?? `Exercício ${index + 1}`;
+  const setCount = Number(draft.sets);
+  const actions: {
+    icon: IconName;
+    label: string;
+    onPress: () => void;
+  }[] = [
+    ...(exercise
+      ? [
+          {
+            icon: 'edit' as const,
+            label: 'Editar nome do exercício',
+            onPress: () => onEditTranslation(exercise.id),
+          },
+        ]
+      : []),
+    { icon: 'swap', label: 'Trocar exercício', onPress: onChooseExercise },
+    { icon: 'trash', label: 'Remover este exercício', onPress: onRemove },
+  ];
+
   return (
-    <Card white title={`Exercício ${index + 1}`}>
+    <Card white>
+      <View style={editorStyles.cardHeader}>
+        <Text accessibilityRole="header" style={editorStyles.exerciseTitle}>
+          {name}
+        </Text>
+        <View style={editorStyles.actions}>
+          {actions.map(action => (
+            <Pressable
+              key={action.icon}
+              accessibilityRole="button"
+              accessibilityLabel={action.label}
+              accessibilityHint={name}
+              onPress={action.onPress}
+              style={({ pressed }) => [
+                editorStyles.iconButton,
+                pressed && editorStyles.iconPressed,
+              ]}
+            >
+              <Icon
+                name={action.icon}
+                size={20}
+                color={
+                  action.icon === 'trash' ? colors.textMuted : colors.primary
+                }
+              />
+            </Pressable>
+          ))}
+        </View>
+      </View>
       {missing ? (
         <InlineError message="O exercício anterior não está mais aprovado no catálogo. Escolha outro." />
       ) : null}
-      {catalog.length ? null : (
-        <Body>O catálogo ainda não tem exercícios.</Body>
-      )}
-      <ChoiceGroup
-        label="Exercício"
-        options={catalog.map(entry => [entry.id, catalogLabel(entry)] as const)}
-        value={exercise ? exercise.id : null}
-        onChange={exerciseId => {
-          const next = catalog.find(entry => entry.id === exerciseId);
-          const side =
-            draft.side && next?.allowed_sides.includes(draft.side)
-              ? draft.side
-              : null;
-          onChange({
-            exerciseId,
-            side,
-            automaticCounting: draft.automaticCounting && oneSided(side),
-          });
-        }}
-        error={errors.exercise}
-      />
-      <Button
-        secondary
-        compact
-        label="Buscar na biblioteca de referência"
-        onPress={onSearchLibrary}
-      />
-      {exercise ? (
-        <>
-          <CatalogExerciseText
-            exercise={exercise}
-            onEditTranslation={() => onEditTranslation(exercise.id)}
-          />
-          {Object.keys(exercise.supported_parameters).length ? (
-            <InlineError message="Este exercício ainda depende de um validador de parâmetros aprovado e não pode entrar em treinos por enquanto." />
-          ) : null}
-          <ChoiceGroup
-            label="Lado"
-            options={exercise.allowed_sides.map(
-              side => [side, prescribedSideLabels[side]] as const,
-            )}
-            value={draft.side}
-            onChange={side =>
-              onChange({
-                side,
-                automaticCounting: draft.automaticCounting && oneSided(side),
-              })
-            }
-            error={errors.side}
-          />
-          <CheckboxField
-            label={automaticCountingLabel}
-            checked={draft.automaticCounting && oneSided(draft.side)}
-            onChange={automaticCounting => onChange({ automaticCounting })}
-            disabledReason={
-              oneSided(draft.side)
-                ? undefined
-                : draft.side === 'bilateral'
-                  ? 'Disponível só para o lado esquerdo ou direito: a contagem acompanha um braço por vez.'
-                  : 'Escolha o lado esquerdo ou direito para ativar.'
-            }
-          >
-            <Badge label={automaticCountingNotice} tone="warning" />
-          </CheckboxField>
-        </>
+      {errors.exercise ? (
+        <InlineError static message={errors.exercise} />
       ) : null}
-      <FormField
-        label="Séries"
-        value={draft.sets}
-        onChangeText={sets => onChange({ sets })}
-        keyboardType="number-pad"
-        error={errors.sets}
-      />
+      {exercise && Object.keys(exercise.supported_parameters).length ? (
+        <InlineError message="Este exercício ainda depende de um validador de parâmetros aprovado e não pode entrar em treinos por enquanto." />
+      ) : null}
+      {/* The side is asked only when the exercise allows more than one. */}
+      {exercise && exercise.allowed_sides.length > 1 ? (
+        <ChoiceGroup
+          label="Lado"
+          options={exercise.allowed_sides.map(
+            side => [side, prescribedSideLabels[side]] as const,
+          )}
+          value={draft.side}
+          onChange={side =>
+            onChange({
+              side,
+              automaticCounting: draft.automaticCounting && oneSided(side),
+            })
+          }
+          error={errors.side}
+        />
+      ) : null}
+      <View style={editorStyles.seriesRow}>
+        <View style={editorStyles.seriesField}>
+          <FormField
+            label="Séries"
+            value={draft.sets}
+            onChangeText={sets => onChange({ sets })}
+            keyboardType="number-pad"
+            error={errors.sets}
+          />
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Remover série"
+          accessibilityHint={name}
+          accessibilityState={{
+            disabled: !positiveInteger.test(draft.sets) || setCount <= 1,
+          }}
+          disabled={!positiveInteger.test(draft.sets) || setCount <= 1}
+          onPress={() => onChange({ sets: String(setCount - 1) })}
+          style={editorStyles.iconButton}
+        >
+          <Text style={editorStyles.stepper}>−</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Adicionar série"
+          accessibilityHint={name}
+          onPress={() =>
+            onChange({
+              sets: String(
+                positiveInteger.test(draft.sets) && setCount > 0
+                  ? setCount + 1
+                  : 1,
+              ),
+            })
+          }
+          style={editorStyles.iconButton}
+        >
+          <Text style={editorStyles.stepper}>+</Text>
+        </Pressable>
+      </View>
       <FormField
         label="Repetições por série"
         value={draft.repetitions}
@@ -597,23 +687,20 @@ function ItemEditor({
         error={errors.repetitions}
       />
       <FormField
-        label="Descanso entre séries (segundos)"
+        label="Descanso (em segundos)"
         value={draft.restSeconds}
         onChangeText={restSeconds => onChange({ restSeconds })}
         keyboardType="decimal-pad"
         error={errors.rest}
       />
       <FormField
-        label="Orientação para o paciente (opcional)"
+        label="Orientação para o paciente"
         value={draft.professionalGuidance}
         onChangeText={professionalGuidance =>
           onChange({ professionalGuidance })
         }
         multiline
       />
-      {onRemove ? (
-        <Link label="Remover este exercício" onPress={onRemove} />
-      ) : null}
     </Card>
   );
 }
@@ -626,27 +713,39 @@ export function WorkoutReviewScreen() {
   const { patientId, workoutId } = params;
   const workout = useWorkout(workoutId);
   const [busy, setBusy] = useState(false);
-  const [confirmArchive, setConfirmArchive] = useState(false);
-  const [failure, setFailure] = useState('');
+  const confirmArchive = useNativeConfirmation();
   useReloadOnReturn(workout.reload);
-  const run = async (action: 'publish' | 'archive') => {
+  const run = async (
+    action: 'publish' | 'archive' | 'unarchive' | 'delete',
+  ) => {
     if (busy) {
       return;
     }
     setBusy(true);
-    setFailure('');
     try {
       if (action === 'publish') {
         await appDependencies.workouts.publish(workoutId);
-        show('Treino publicado. O paciente já pode vê-lo.');
-      } else {
+        show('Treino publicado. O paciente já pode vê-lo.', 'success');
+        workout.reload();
+      } else if (action === 'archive') {
         await appDependencies.workouts.archive(workoutId);
-        show('Treino arquivado.');
+        show('Treino arquivado.', 'success');
+        workout.reload();
+      } else if (action === 'unarchive') {
+        await appDependencies.workouts.unarchive(workoutId);
+        show(
+          'Treino desarquivado. Revise e publique para o paciente ver.',
+          'success',
+        );
+        workout.reload();
+      } else {
+        await appDependencies.workouts.delete(workoutId);
+        show('Treino apagado.', 'success');
+        navigation.goBack();
+        return;
       }
-      setConfirmArchive(false);
-      workout.reload();
     } catch (cause) {
-      setFailure(apiErrorMessage(cause, workoutErrors));
+      show(apiErrorMessage(cause, workoutErrors), 'error');
     } finally {
       setBusy(false);
     }
@@ -669,7 +768,6 @@ export function WorkoutReviewScreen() {
         ) : undefined
       }
     >
-      {failure ? <InlineError message={failure} /> : null}
       <ResourceView resource={workout} loadingLabel="Carregando treino">
         {current => (
           <>
@@ -685,24 +783,10 @@ export function WorkoutReviewScreen() {
             {current.status === 'draft' ? (
               <Body>O paciente só vê o treino depois que ele é publicado.</Body>
             ) : null}
-            {current.status === 'archived' ? (
-              <Body>
-                Treino arquivado. Ele não aparece para o paciente e não pode ser
-                editado.
-              </Body>
-            ) : null}
             {[...current.items]
               .sort((a, b) => a.position - b.position)
               .map(item => (
-                <ReviewItem
-                  key={item.id}
-                  item={item}
-                  onEditTranslation={() =>
-                    navigation.navigate('CatalogExerciseTranslation', {
-                      exerciseId: item.exercise_id,
-                    })
-                  }
-                />
+                <ReviewItem key={item.id} item={item} />
               ))}
             {current.instructions ? (
               <>
@@ -710,33 +794,81 @@ export function WorkoutReviewScreen() {
                 <Body>{current.instructions}</Body>
               </>
             ) : null}
-            {current.status !== 'archived' ? (
-              confirmArchive ? (
-                <Card white title="Arquivar este treino?">
-                  <Body>
-                    O paciente deixará de vê-lo e ele não poderá mais ser
-                    editado. As sessões já registradas continuam no histórico.
-                  </Body>
-                  <Button
-                    label={busy ? 'Arquivando…' : 'Arquivar treino'}
-                    disabled={busy}
-                    onPress={() => run('archive')}
-                  />
-                  <Link
-                    label="Cancelar"
-                    onPress={() => setConfirmArchive(false)}
-                  />
-                </Card>
-              ) : (
-                <>
-                  <Button secondary label="Editar treino" onPress={edit} />
-                  <Link
-                    label="Arquivar treino"
-                    onPress={() => setConfirmArchive(true)}
-                  />
-                </>
-              )
-            ) : null}
+            <View style={editorStyles.reviewActions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Editar treino"
+                accessibilityState={{ disabled: busy }}
+                disabled={busy}
+                onPress={edit}
+                style={({ pressed }) => [
+                  editorStyles.iconButton,
+                  pressed && editorStyles.iconPressed,
+                ]}
+              >
+                <Icon name="edit" size={20} color={colors.primary} />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={
+                  current.status === 'archived'
+                    ? 'Desarquivar treino'
+                    : 'Arquivar treino'
+                }
+                accessibilityState={{ disabled: busy, busy }}
+                disabled={busy}
+                onPress={() =>
+                  confirmArchive({
+                    title:
+                      current.status === 'archived'
+                        ? 'Desarquivar este treino?'
+                        : 'Arquivar este treino?',
+                    message:
+                      current.status === 'archived'
+                        ? 'O treino voltará a ser rascunho. Revise e publique quando estiver pronto.'
+                        : 'O treino deixará de aparecer para o paciente. As sessões já registradas continuam no histórico.',
+                    destructive: current.status !== 'archived',
+                    onConfirm: () =>
+                      run(
+                        current.status === 'archived' ? 'unarchive' : 'archive',
+                      ),
+                  })
+                }
+                style={({ pressed }) => [
+                  editorStyles.iconButton,
+                  pressed && editorStyles.iconPressed,
+                ]}
+              >
+                <Icon
+                  name={current.status === 'archived' ? 'unarchive' : 'archive'}
+                  size={20}
+                  color={colors.textMuted}
+                />
+              </Pressable>
+              {current.status !== 'published' ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Apagar treino"
+                  accessibilityState={{ disabled: busy, busy }}
+                  disabled={busy}
+                  onPress={() =>
+                    confirmArchive({
+                      title: 'Apagar este treino?',
+                      message:
+                        'Este treino será removido. Esta ação não pode ser desfeita. Treinos com sessões registradas não podem ser apagados.',
+                      destructive: true,
+                      onConfirm: () => run('delete'),
+                    })
+                  }
+                  style={({ pressed }) => [
+                    editorStyles.iconButton,
+                    pressed && editorStyles.iconPressed,
+                  ]}
+                >
+                  <Icon name="trash" size={20} color={colors.textMuted} />
+                </Pressable>
+              ) : null}
+            </View>
           </>
         )}
       </ResourceView>
@@ -746,17 +878,9 @@ export function WorkoutReviewScreen() {
 
 /**
  * One published/draft item as the patient will see it (snapshot): pt-BR name
- * when translated, the original name, the first image and the source.
+ * when translated, its library reference, image and prescribed values.
  */
-function ReviewItem({
-  item,
-  onEditTranslation,
-}: {
-  item: WorkoutItem;
-  onEditTranslation: () => void;
-}) {
-  const text = exerciseText(item);
-  const source = exerciseSourceText(item);
+function ReviewItem({ item }: { item: WorkoutItem }) {
   const localized = exerciseLocalization(item.exercise_snapshot);
   const originalName = item.exercise_snapshot.name;
   return (
@@ -764,11 +888,11 @@ function ReviewItem({
       {localized && typeof originalName === 'string' ? (
         <Body>{`Nome da biblioteca: ${originalName}`}</Body>
       ) : null}
-      {text.original ? <Badge label={originalLanguageSeal} /> : null}
       <ExerciseImageGallery
         limit={1}
         images={exerciseImages(item.exercise_snapshot)}
-        exerciseName={text.name}
+        exerciseName={exerciseName(item)}
+        showAttribution={false}
       />
       <Body>{prescriptionText(item, prescribedSideLabels)}</Body>
       <Body>{restText(item)}</Body>
@@ -781,12 +905,52 @@ function ReviewItem({
       {item.professional_guidance ? (
         <Body>{item.professional_guidance}</Body>
       ) : null}
-      {source ? (
-        <>
-          <Body>{source}</Body>
-          <Link label="Tradução em português" onPress={onEditTranslation} />
-        </>
-      ) : null}
     </Card>
   );
 }
+
+const editorStyles = StyleSheet.create({
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  exerciseTitle: {
+    ...typography.title,
+    fontFamily: fonts.bold,
+    color: colors.text,
+    flex: 1,
+  },
+  actions: { flexDirection: 'row', alignItems: 'center' },
+  reviewActions: {
+    flexDirection: 'row',
+    alignSelf: 'flex-end',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  iconButton: {
+    minWidth: layout.compactControlHeight,
+    minHeight: layout.compactControlHeight,
+    borderRadius: layout.compactControlHeight / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconPressed: { backgroundColor: colors.surfaceMuted },
+  seriesRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
+  seriesField: { flex: 1 },
+  stepper: {
+    ...typography.heading,
+    color: colors.primary,
+    fontFamily: fonts.bold,
+  },
+  caption: {
+    ...typography.bodySmall,
+    color: colors.textMuted,
+    fontFamily: fonts.regular,
+  },
+  detailsButton: {
+    minHeight: layout.compactControlHeight,
+    justifyContent: 'center',
+  },
+  detailsText: {
+    ...typography.bodySmall,
+    color: colors.primary,
+    fontFamily: fonts.bold,
+  },
+});

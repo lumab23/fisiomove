@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useScreenMessage } from '../../components/ScreenMessage';
+import { useNativeConfirmation } from '../../components/useNativeConfirmation';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRoute, type RouteProp } from '@react-navigation/native';
 import { friendlyErrorMessage } from '../../api/errors';
 import { appDependencies } from '../../app/dependencies';
-import { ExerciseImageGallery } from '../../components/ExerciseImageGallery';
 import { Screen } from '../../components/Screen';
-import { InlineError } from '../../components/ScreenStates';
 import type { UUID } from '../../contracts/common';
 import type { CountingMode } from '../../contracts/domain';
 import {
@@ -26,10 +26,12 @@ import {
   styles,
 } from '../../ui';
 import {
+  patientTabsRoute,
   resetToPatientTabs,
   useFrontendNavigation,
   type ActiveSessionParams,
   type FrontendNavigation,
+  type FrontendResetState,
   type FrontendStackParamList,
 } from '../../navigation/frontendTypes';
 import { selectSessionSyncStatus } from '../../sync/status';
@@ -37,9 +39,7 @@ import { useSessionSync } from '../../sync/SessionSyncContext';
 import type { PublicSessionSyncStatus } from '../../sync/types';
 import { spacing } from '../../theme/theme';
 import {
-  exerciseImages,
   exerciseName,
-  exerciseSourceText,
   exerciseText,
   sideLabels,
   textLanguage,
@@ -67,9 +67,8 @@ function MissingSession() {
 
 /**
  * "Como fazer": the snapshot text (pt-BR when translated, otherwise the
- * original with a seal), its images, the physiotherapist's guidance and the
- * source. No corrective text is written by the app (RN18). Opening it pauses
- * the session.
+ * original with a seal), the physiotherapist's guidance and the steps. No
+ * corrective text is written by the app (RN18). Opening it pauses the session.
  */
 export function MovementGuidanceScreen() {
   const { clientSessionId } = useSessionRoute();
@@ -89,7 +88,6 @@ function MovementGuidance({ session }: { session: ActiveSession }) {
   const item = currentWorkoutItem(session);
   const content = exerciseText(item);
   const language = textLanguage(content.original);
-  const source = exerciseSourceText(item);
   const guidance = [item.professional_guidance, session.workout.instructions]
     .map(text => text?.trim())
     .filter((text): text is string => Boolean(text));
@@ -111,7 +109,6 @@ function MovementGuidance({ session }: { session: ActiveSession }) {
         </Text>
         <Body>{sideLabels[item.side]}</Body>
       </Card>
-      <SessionExerciseImages item={item} name={content.name} />
       {guidance.length ? (
         <Card white title="Orientação do profissional">
           {guidance.map(text => (
@@ -134,60 +131,8 @@ function MovementGuidance({ session }: { session: ActiveSession }) {
       ) : (
         <Body>Este exercício não tem passos escritos.</Body>
       )}
-      {source ? <Text style={styles.demo}>{source}</Text> : null}
     </Screen>
   );
-}
-
-/** Reuse the image saved with the prescription; fetch it for older snapshots. */
-function SessionExerciseImages({
-  item,
-  name,
-}: {
-  item: ReturnType<typeof currentWorkoutItem>;
-  name: string;
-}) {
-  const [images, setImages] = useState(() =>
-    exerciseImages(item.exercise_snapshot),
-  );
-
-  useEffect(() => {
-    let active = true;
-    const snapshotImages = exerciseImages(item.exercise_snapshot);
-    setImages(snapshotImages);
-    const fromLibrary = exerciseSourceText(item) !== null;
-    if (snapshotImages.length > 0 || !fromLibrary) {
-      return () => {
-        active = false;
-      };
-    }
-    if (!appDependencies.exercises) {
-      setImages([]);
-      return () => {
-        active = false;
-      };
-    }
-
-    Promise.resolve()
-      .then(() => appDependencies.exercises.get(item.exercise_id))
-      .then(
-        exercise => {
-          if (active) setImages(exercise ? exerciseImages(exercise) : []);
-        },
-        () => {
-          if (active) setImages([]);
-        },
-      );
-    return () => {
-      active = false;
-    };
-  }, [item]);
-
-  return images.length ? (
-    <ExerciseImageGallery images={images} exerciseName={name} />
-  ) : exerciseSourceText(item) ? (
-    <Body>Imagem não disponível para este exercício.</Body>
-  ) : null;
 }
 
 export function ConfirmExitScreen() {
@@ -209,12 +154,16 @@ function ConfirmExit({ session }: { session: ActiveSession }) {
   const { clear } = useActiveSession();
   const result = useSessionResult(session.execution, session.draft);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Only enables "Tentar novamente"; the toast explains the failure.
+  const [failed, setFailed] = useState(false);
+  const { show } = useScreenMessage();
   const clientSessionId = session.draft.client_session_id;
 
+  const confirmExit = useNativeConfirmation();
+  const opened = useRef(false);
   const exit = async () => {
     setBusy(true);
-    setError(null);
+    setFailed(false);
     try {
       if (session.snapshot.status === 'completed') {
         await result.complete();
@@ -229,35 +178,38 @@ function ConfirmExit({ session }: { session: ActiveSession }) {
         showAfterTabs(navigation, 'SessionInterrupted', clientSessionId);
       }
     } catch (cause) {
-      setError(friendlyErrorMessage(cause));
+      setFailed(true);
+      show(friendlyErrorMessage(cause), 'error');
       setBusy(false);
     }
   };
 
+  const requestExit = () =>
+    confirmExit({
+      title: 'Encerrar o treino?',
+      message:
+        countedRepetitions(session.snapshot) === 0
+          ? 'Nenhuma repetição foi contada. Nada será enviado.'
+          : 'As repetições contadas até aqui serão enviadas ao seu fisioterapeuta.',
+      destructive: true,
+      onConfirm: exit,
+      onCancel: () => navigation.goBack(),
+    });
+  useEffect(() => {
+    if (!opened.current) {
+      opened.current = true;
+      requestExit();
+    }
+  });
   return (
-    <Screen
-      back="Voltar à sessão"
-      title="Encerrar o treino?"
-      footer={
-        <>
-          {error ? <InlineError message={error} /> : null}
-          <Button
-            secondary
-            label="Encerrar sessão"
-            disabled={busy || result.saving}
-            onPress={exit}
-          />
-          <Button label="Voltar à sessão" onPress={() => navigation.goBack()} />
-        </>
-      }
-    >
-      <Card white>
-        <Body>
-          {countedRepetitions(session.snapshot) === 0
-            ? 'Nenhuma repetição foi contada. Nada será enviado.'
-            : 'As repetições contadas até aqui serão enviadas ao seu fisioterapeuta.'}
-        </Body>
-      </Card>
+    <Screen back="Voltar à sessão" title="Treino pausado">
+      {failed ? (
+        <Button
+          label="Tentar novamente"
+          disabled={busy || result.saving}
+          onPress={requestExit}
+        />
+      ) : null}
     </Screen>
   );
 }
@@ -270,8 +222,11 @@ function showAfterTabs(
 ) {
   navigation.reset({
     index: 1,
-    routes: [{ name: 'PatientTabs' }, { name, params: { clientSessionId } }],
-  });
+    routes: [
+      patientTabsRoute(navigation) ?? { name: 'PatientTabs' },
+      { name, params: { clientSessionId } },
+    ],
+  } as FrontendResetState);
 }
 
 /** Where the repetitions of an item came from (DEC-013). */
@@ -381,7 +336,7 @@ export function SessionSyncStatusCard({
   const { pending, syncing, loadError, lastReport, retryNow } =
     useSessionSync();
   const [retrying, setRetrying] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { show } = useScreenMessage();
   const entry = pending.find(
     item => item.payload.client_session_id === clientSessionId,
   );
@@ -400,11 +355,10 @@ export function SessionSyncStatusCard({
   const text = syncTexts[status];
   const retry = async () => {
     setRetrying(true);
-    setError(null);
     try {
       await retryNow(clientSessionId);
     } catch (cause) {
-      setError(friendlyErrorMessage(cause));
+      show(friendlyErrorMessage(cause), 'error');
     } finally {
       setRetrying(false);
     }
@@ -420,7 +374,6 @@ export function SessionSyncStatusCard({
         <Badge label={text.badge} tone={text.tone} />
         <Body>{text.message}</Body>
       </View>
-      {error ? <InlineError message={error} /> : null}
       {retryableStatuses.includes(status) ? (
         <Button
           secondary

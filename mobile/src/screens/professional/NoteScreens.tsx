@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRoute, type RouteProp } from '@react-navigation/native';
 import { Screen } from '../../components/Screen';
 import { FormField } from '../../components/FormField';
@@ -13,7 +14,8 @@ import {
   useFrontendNavigation,
   type FrontendStackParamList,
 } from '../../navigation/frontendTypes';
-import { Body, Button } from '../../ui';
+import { colors, fonts, layout, radii, spacing, typography } from '../../theme/theme';
+import { Button, SectionTitle } from '../../ui';
 import {
   apiErrorMessage,
   ChoiceGroup,
@@ -25,6 +27,8 @@ const never = () => false;
 const visibilityOptions = (
   ['patient_visible', 'professional_only'] as const
 ).map(value => [value, visibilityLabels[value]] as const);
+
+const noteEmojis = ['💪', '👏', '👍', '🙂', '🤝', '⭐', '🏃', '🧘', '🦵', '❤️'] as const;
 
 /** Writes or edits a note; the visibility is always an explicit choice. */
 export function NoteEditorScreen() {
@@ -76,11 +80,11 @@ function NoteForm({ patientId, note }: { patientId: UUID; note: Note | null }) {
   const [visibility, setVisibility] = useState<NoteVisibility | null>(
     note?.visibility ?? null,
   );
+  const [emoji, setEmoji] = useState<string | null>(note?.emoji ?? null);
   const [errors, setErrors] = useState<{
     content?: string;
     visibility?: string;
   }>({});
-  const [failure, setFailure] = useState('');
   const [saving, setSaving] = useState(false);
   const save = async () => {
     if (saving) {
@@ -94,11 +98,10 @@ function NoteForm({ patientId, note }: { patientId: UUID; note: Note | null }) {
       next.visibility = 'Escolha quem pode ver a observação.';
     }
     setErrors(next);
-    setFailure('');
     if (next.content || next.visibility || !visibility) {
       return;
     }
-    const payload = { content: content.trim(), visibility };
+    const payload = { content: content.trim(), visibility, emoji };
     setSaving(true);
     try {
       if (note) {
@@ -106,10 +109,10 @@ function NoteForm({ patientId, note }: { patientId: UUID; note: Note | null }) {
       } else {
         await appDependencies.notes.create(patientId, payload);
       }
-      show('Observação salva.');
+      show('Observação salva.', 'success');
       navigation.goBack();
     } catch (cause) {
-      setFailure(apiErrorMessage(cause));
+      show(apiErrorMessage(cause), 'error');
       setSaving(false);
     }
   };
@@ -126,7 +129,6 @@ function NoteForm({ patientId, note }: { patientId: UUID; note: Note | null }) {
         />
       }
     >
-      {failure ? <InlineError message={failure} /> : null}
       <FormField
         label="Observação"
         value={content}
@@ -137,6 +139,33 @@ function NoteForm({ patientId, note }: { patientId: UUID; note: Note | null }) {
         multiline
         error={errors.content}
       />
+      <View style={emojiStyles.section}>
+        <SectionTitle>Emoji do recado (opcional)</SectionTitle>
+        <Text style={emojiStyles.hint}>
+          Escolha um emoji para acompanhar o recado.
+        </Text>
+        <View style={emojiStyles.row}>
+          {noteEmojis.map(option => {
+            const selected = emoji === option;
+            return (
+              <Pressable
+                key={option}
+                accessibilityRole="button"
+                accessibilityLabel={`Emoji ${option}`}
+                accessibilityState={{ selected }}
+                onPress={() => setEmoji(selected ? null : option)}
+                style={({ pressed }) => [
+                  emojiStyles.option,
+                  selected && emojiStyles.optionSelected,
+                  pressed && !selected && emojiStyles.optionPressed,
+                ]}
+              >
+                <Text style={emojiStyles.emoji}>{option}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
       <ChoiceGroup
         label="Quem pode ver"
         options={visibilityOptions}
@@ -147,11 +176,32 @@ function NoteForm({ patientId, note }: { patientId: UUID; note: Note | null }) {
         }}
         error={errors.visibility}
       />
-      <Body>
-        “Só para o fisioterapeuta” nunca é mostrada ao paciente. “Paciente pode
-        ver” libera a observação para o paciente; o aplicativo dele ainda não
-        exibe observações.
-      </Body>
     </Screen>
   );
 }
+
+const emojiStyles = StyleSheet.create({
+  section: { gap: spacing.sm },
+  hint: {
+    ...typography.bodySmall,
+    color: colors.textMuted,
+    fontFamily: fonts.regular,
+  },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  option: {
+    width: layout.compactControlHeight,
+    height: layout.compactControlHeight,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.surfaceMuted,
+  },
+  optionPressed: { backgroundColor: colors.surfaceMuted },
+  emoji: { fontSize: 22, lineHeight: 28 },
+});

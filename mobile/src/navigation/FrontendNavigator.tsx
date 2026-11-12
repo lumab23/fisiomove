@@ -1,15 +1,26 @@
+import { WorkoutExercisePickerScreen } from '../screens/professional/WorkoutExercisePickerScreen';
+import { PatientFollowUpScreen } from '../screens/professional/PatientFollowUpScreen';
+import { ProfessionalPatientProgressScreen } from '../screens/professional/ProfessionalPatientProgressScreen';
+import { useSignOutConfirmation } from '../components/SignOutConfirmation';
 import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AccountContext } from './AccountContext';
 import { colors } from '../theme/theme';
-import {
-  professionalTabRoutes,
-  type FrontendStackParamList,
-} from './frontendTypes';
+import type { FrontendStackParamList } from './frontendTypes';
 import { PatientTabs } from './PatientTabs';
+import {
+  ProfessionalTabSwitchingProvider,
+  useProfessionalTabSwitching,
+} from './professionalTabs';
+import {
+  instantTransition,
+  transitionOptions,
+  type Transition,
+} from './transitions';
 
 import { PhysiotherapistInfoScreen } from '../screens/patient/PhysiotherapistInfoScreen';
 import { PatientNotesScreen } from '../screens/patient/PatientNotesScreen';
+import { PatientSelfProfileScreen } from '../screens/patient/PatientSelfProfileScreen';
 import {
   CalibrationScreen,
   CameraPermissionScreen,
@@ -27,6 +38,7 @@ import { ActiveSessionProvider } from '../features/session/ActiveSession';
 import { PatientListScreen } from '../screens/professional/PatientListScreen';
 import { PatientCreateScreen } from '../screens/professional/PatientCreateScreen';
 import { PatientDetailsScreen } from '../screens/professional/PatientDetailsScreen';
+import { PatientEditScreen } from '../screens/professional/PatientEditScreen';
 import {
   WorkoutConfigurationScreen,
   WorkoutReviewScreen,
@@ -54,6 +66,7 @@ export const patientScreens = {
   PatientTabs: PatientTabs,
   PhysiotherapistInfo: PhysiotherapistInfoScreen,
   PatientNotes: PatientNotesScreen,
+  PatientSelfProfile: PatientSelfProfileScreen,
   PatientPreparation: PatientPreparationScreen,
   CameraPermission: CameraPermissionScreen,
   Calibration: CalibrationScreen,
@@ -69,9 +82,13 @@ export const physiotherapistScreens = {
   PatientList: PatientListScreen,
   PatientCreate: PatientCreateScreen,
   PatientDetails: PatientDetailsScreen,
+  PatientEdit: PatientEditScreen,
   WorkoutConfiguration: WorkoutConfigurationScreen,
+  WorkoutExercisePicker: WorkoutExercisePickerScreen,
   WorkoutReview: WorkoutReviewScreen,
   PatientMonitoring: PatientMonitoringScreen,
+  PatientFollowUp: PatientFollowUpScreen,
+  ProfessionalPatientProgress: ProfessionalPatientProgressScreen,
   NoteEditor: NoteEditorScreen,
   ProfessionalSettings: ProfessionalSettingsScreen,
   ProfessionalProfile: ProfessionalProfileScreen,
@@ -79,6 +96,16 @@ export const physiotherapistScreens = {
   ExerciseLibraryDetail: ExerciseLibraryDetailScreen,
   CatalogExerciseTranslation: CatalogExerciseTranslationScreen,
 } as const;
+/**
+ * Screens that are not ordinary pages. "Como fazer" is presented over the
+ * running exercise (modal); "Encerrar o treino?" is a confirmation. Every
+ * other screen is a card. Every presentation opens and closes instantly.
+ */
+const screenTransitions: Partial<
+  Record<keyof FrontendStackParamList, Transition>
+> = {
+  MovementGuidance: 'modal',
+};
 export type FrontendFlow = 'patient' | 'physiotherapist';
 export function FrontendNavigator({
   flow,
@@ -87,47 +114,56 @@ export function FrontendNavigator({
 }: {
   flow: FrontendFlow;
   accountEmail?: string;
-  onSignOut?: () => void;
+  onSignOut?: () => void | Promise<void>;
 }) {
+  const { requestSignOut } = useSignOutConfirmation(onSignOut);
   const screens = flow === 'patient' ? patientScreens : physiotherapistScreens;
+  const tabSwitching = useProfessionalTabSwitching();
   const navigator = (
     <AccountContext.Provider
-      value={{ email: accountEmail, signOut: onSignOut }}
+      value={{
+        email: accountEmail,
+        signOut: onSignOut ? requestSignOut : undefined,
+      }}
     >
-      <NavigationContainer
-        theme={{
-          ...DefaultTheme,
-          colors: {
-            ...DefaultTheme.colors,
-            background: colors.background,
-            primary: colors.primary,
-          },
-        }}
-      >
-        <Stack.Navigator
-          initialRouteName={flow === 'patient' ? 'PatientTabs' : 'PatientList'}
-          screenOptions={{
-            headerShown: false,
-            animation: 'slide_from_right',
-            gestureEnabled: true,
-            freezeOnBlur: true,
-            contentStyle: { backgroundColor: colors.background },
+      <ProfessionalTabSwitchingProvider value={tabSwitching.value}>
+        <NavigationContainer
+          theme={{
+            ...DefaultTheme,
+            colors: {
+              ...DefaultTheme.colors,
+              background: colors.background,
+              primary: colors.primary,
+            },
           }}
         >
-          {Object.entries(screens).map(([name, component]) => (
-            <Stack.Screen
-              key={name}
-              name={name as keyof FrontendStackParamList}
-              component={component}
-              options={{
-                animation: professionalTabRoutes.includes(name)
-                  ? 'fade'
-                  : undefined,
-              }}
-            />
-          ))}
-        </Stack.Navigator>
-      </NavigationContainer>
+          <Stack.Navigator
+            initialRouteName={
+              flow === 'patient' ? 'PatientTabs' : 'PatientList'
+            }
+            screenOptions={{
+              ...instantTransition,
+              headerShown: false,
+              freezeOnBlur: true,
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          >
+            {Object.entries(screens).map(([name, component]) => {
+              const route = name as keyof FrontendStackParamList;
+              return (
+                <Stack.Screen
+                  key={name}
+                  name={route}
+                  component={component}
+                  options={{
+                    ...transitionOptions(screenTransitions[route] ?? 'push'),
+                  }}
+                />
+              );
+            })}
+          </Stack.Navigator>
+        </NavigationContainer>
+      </ProfessionalTabSwitchingProvider>
     </AccountContext.Provider>
   );
   // The session in memory belongs to the signed-in patient only.

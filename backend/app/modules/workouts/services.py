@@ -2,7 +2,7 @@ from copy import deepcopy
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.core.errors import ApiError
@@ -186,8 +186,6 @@ class WorkoutService:
         self, user: User, workout_id: UUID, payload: WorkoutUpdate
     ) -> WorkoutResponse:
         workout = self.load(user, workout_id, write=True)
-        if workout.status == "archived":
-            fail("workout_archived", 409)
         previous = self.session.get(WorkoutRevision, workout.current_revision_id)
         instructions = (
             payload.instructions
@@ -222,6 +220,56 @@ class WorkoutService:
         workout.updated_at = utc_now()
         self.session.flush()
         return self.response(workout)
+
+    def unarchive(self, user: User, workout_id: UUID) -> WorkoutResponse:
+        workout = self.load(user, workout_id, write=True)
+        if workout.status == "draft":
+            return self.response(workout)
+        if workout.status != "archived":
+            fail("workout_not_archived", 409)
+        previous = self.session.get(WorkoutRevision, workout.current_revision_id)
+        self.revision(workout, previous.instructions, self.copy_items(previous.id))
+        workout.status = "draft"
+        self.session.flush()
+        return self.response(workout)
+
+    def delete(self, user: User, workout_id: UUID) -> None:
+        from app.modules.sessions.models import SessionResult
+
+        workout = self.load(user, workout_id, write=True)
+        if workout.status not in {"draft", "archived"}:
+            raise ApiError(
+                status_code=409,
+                code="workout_not_draft",
+                message="Only draft or archived workouts can be deleted.",
+            )
+        has_sessions = (
+            self.session.scalar(
+                select(func.count())
+                .select_from(SessionResult)
+                .where(SessionResult.workout_id == workout.id)
+            )
+            or 0
+        )
+        if has_sessions:
+            raise ApiError(
+                status_code=409,
+                code="workout_has_sessions",
+                message="This workout has recorded sessions and cannot be deleted.",
+            )
+        workout.current_revision_id = None
+        self.session.flush()
+        revision_ids = select(WorkoutRevision.id).where(
+            WorkoutRevision.workout_id == workout.id
+        )
+        self.session.execute(
+            delete(WorkoutItem).where(WorkoutItem.revision_id.in_(revision_ids))
+        )
+        self.session.execute(
+            delete(WorkoutRevision).where(WorkoutRevision.workout_id == workout.id)
+        )
+        self.session.delete(workout)
+        self.session.flush()
 
     def published_snapshot(
         self,

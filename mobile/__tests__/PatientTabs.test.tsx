@@ -1,3 +1,4 @@
+import { mockNativeAlerts, pressNativeAlert } from '../test-utils/nativeAlerts';
 import React from 'react';
 import { Image, Text } from 'react-native';
 import ReactTestRenderer, { act } from 'react-test-renderer';
@@ -129,6 +130,7 @@ let app: ReactTestRenderer.ReactTestRenderer;
 const signOut = jest.fn();
 
 beforeEach(() => {
+  mockNativeAlerts();
   services.profile.mine.mockResolvedValue({ full_name: 'Joana Souza' });
   services.profile.linkedPhysiotherapist.mockResolvedValue({ full_name: null });
   services.workouts.listMine.mockResolvedValue(pageOf([workout]));
@@ -180,6 +182,19 @@ function hasLabel(label: string) {
 }
 
 async function press(label: string, role?: string) {
+  if (
+    (label === 'Cancelar' || label === 'Confirmar') &&
+    !app.root.findAll(
+      node =>
+        node.props.accessibilityLabel === label &&
+        typeof node.props.onPress === 'function',
+    ).length
+  ) {
+    await act(async () => {
+      pressNativeAlert(label);
+    });
+    return;
+  }
   const [target] = app.root.findAll(
     node =>
       typeof node.props.onPress === 'function' &&
@@ -237,7 +252,8 @@ test('without an approved exercise the patient sees empty states, never demo dat
   services.workouts.listMine.mockResolvedValue(pageOf([]));
   services.sessions.listMine.mockResolvedValue(pageOf([]));
   await render();
-  expect(hasText('Nenhum treino publicado')).toBe(true);
+  expect(hasText('Nenhum treino disponível')).toBe(true);
+  expect(hasText('Seu fisioterapeuta está preparando seu treino.')).toBe(true);
   expect(hasText('Nenhuma sessão realizada ainda.')).toBe(true);
   expect(hasText('SEU TREINO')).toBe(false);
   expect(hasLabel('Iniciar treino')).toBe(0);
@@ -343,32 +359,25 @@ test('home link opens the progress section of the exercises tab', async () => {
   expect(hasText('Semana de')).toBe(true);
 });
 
-test('profile shows the API name, the account and an empty physiotherapist state', async () => {
+test('settings shows patient options like the professional layout and keeps physiotherapist access', async () => {
   await render();
-  await pressTab('Perfil');
-  expect(hasText('Joana Souza')).toBe(true);
-  expect(hasText('paciente@example.com')).toBe(true);
-  expect(hasText('Meu fisioterapeuta')).toBe(true);
-  expect(hasText('Dados do fisioterapeuta')).toBe(true);
+  await pressTab('Configurações');
+  expect(hasText('Configurações')).toBe(true);
+  expect(hasLabel('Meu fisioterapeuta')).toBeTruthy();
+  expect(hasLabel('Recados do fisioterapeuta')).toBeTruthy();
   expect(hasText('Conversar')).toBe(false);
   expect(hasText('Informações')).toBe(false);
   expectNoDemoData();
+  await press('Meu fisioterapeuta');
+  expect(hasText('Dados do fisioterapeuta')).toBe(true);
+  await press('Voltar para Configurações');
   await press('Sair da conta');
+  expect(signOut).not.toHaveBeenCalled();
+  await press('Cancelar');
+  expect(signOut).not.toHaveBeenCalled();
+  await press('Sair da conta');
+  await press('Confirmar');
   expect(signOut).toHaveBeenCalledTimes(1);
-});
-
-test('a profile failure offers a retry', async () => {
-  // Home and Profile each request the profile once.
-  services.profile.mine
-    .mockRejectedValueOnce(new ApiError('access_denied', 'no', 403))
-    .mockRejectedValueOnce(new ApiError('access_denied', 'no', 403))
-    .mockResolvedValueOnce({ full_name: 'Joana Souza' });
-  await render();
-  await pressTab('Perfil');
-  expect(hasText('Não foi possível carregar seu perfil')).toBe(true);
-  expect(hasText('Você não tem permissão')).toBe(true);
-  await press('Tentar novamente');
-  expect(hasText('Joana Souza')).toBe(true);
 });
 
 test('physiotherapist details show the empty state', async () => {
@@ -397,36 +406,39 @@ test('physiotherapist details show the empty state', async () => {
   expectNoDemoData();
 });
 
-test('profile shows the linked physiotherapist name when the API has it', async () => {
+test('settings opens the linked physiotherapist name when the API has it', async () => {
   services.profile.linkedPhysiotherapist.mockResolvedValue({
     full_name: 'Dra. Teste Vinculada',
   });
   await render();
-  await pressTab('Perfil');
+  await pressTab('Configurações');
+  await press('Meu fisioterapeuta');
   expect(hasText('Dra. Teste Vinculada')).toBe(true);
   expect(hasText('Seu fisioterapeuta')).toBe(true);
   expect(hasText('Dados do fisioterapeuta')).toBe(false);
   expect(hasText('CREFITO')).toBe(false);
 });
 
-test('without a link (404) the physiotherapist card keeps the empty state', async () => {
+test('without a link (404) the physiotherapist screen keeps the empty state', async () => {
   services.profile.linkedPhysiotherapist.mockRejectedValue(
     new ApiError('not_found', 'x', 404, 'physiotherapist_not_found'),
   );
   await render();
-  await pressTab('Perfil');
+  await pressTab('Configurações');
+  await press('Meu fisioterapeuta');
   expect(hasText('Dados do fisioterapeuta')).toBe(true);
   expect(hasText('Não foi possível carregar os dados do fisioterapeuta')).toBe(
     false,
   );
 });
 
-test('a physiotherapist request failure offers a retry', async () => {
+test('a physiotherapist request failure offers a retry from settings', async () => {
   services.profile.linkedPhysiotherapist
     .mockRejectedValueOnce(new ApiError('network', 'offline'))
     .mockResolvedValueOnce({ full_name: 'Dra. Teste Vinculada' });
   await render();
-  await pressTab('Perfil');
+  await pressTab('Configurações');
+  await press('Meu fisioterapeuta');
   expect(hasText('Não foi possível carregar os dados do fisioterapeuta')).toBe(
     true,
   );
@@ -457,7 +469,7 @@ test('physiotherapist details show the linked name', async () => {
   expect(hasText('Dados do fisioterapeuta')).toBe(false);
 });
 
-test('an exercise from the reference library shows its source and the guidance', async () => {
+test('an exercise from the reference library shows the name and guidance without source text', async () => {
   services.workouts.listMine.mockResolvedValue(
     pageOf([
       {
@@ -485,13 +497,13 @@ test('an exercise from the reference library shows its source and the guidance',
   );
   await render();
   expect(hasText('Reference Item Test')).toBe(true);
-  expect(hasText('Fonte: OpenExerciseBase (CC BY-NC 4.0)')).toBe(true);
+  expect(hasText('Fonte: OpenExerciseBase (CC BY-NC 4.0)')).toBe(false);
   expect(hasText('Orientação do item de teste.')).toBe(true);
   await pressTab('Exercícios');
-  expect(countText('Fonte: OpenExerciseBase (CC BY-NC 4.0)')).toBe(2);
+  expect(countText('Fonte: OpenExerciseBase (CC BY-NC 4.0)')).toBe(0);
 });
 
-test('home and exercises show the pt-BR name and the first API image', async () => {
+test('home and exercises show the pt-BR name without exercise image or image attribution', async () => {
   services.workouts.listMine.mockResolvedValue(
     pageOf([
       {
@@ -531,15 +543,13 @@ test('home and exercises show the pt-BR name and the first API image', async () 
   expect(hasText('Item de referência traduzido')).toBe(true);
   expect(hasText('Reference Item Test')).toBe(false);
   expect(hasText('Texto original em inglês')).toBe(false);
-  expect(firstImageOnly()).toEqual([
-    'Imagem 1 de 2 do exercício Item de referência traduzido',
-  ]);
+  expect(firstImageOnly()).toEqual([]);
   await pressTab('Exercícios');
   expect(countText('Item de referência traduzido')).toBe(2);
-  expect(firstImageOnly()).toHaveLength(2);
+  expect(firstImageOnly()).toHaveLength(0);
   expect(
     countText('Imagem: OpenExerciseBase (CC BY-NC 4.0); parte do material'),
-  ).toBe(2);
+  ).toBe(0);
 });
 
 test('an untranslated library name has no English seal and keeps voice metadata', async () => {
@@ -675,9 +685,9 @@ test('home opens the physiotherapist notes with their dates', async () => {
   expect(hasText('WhatsApp')).toBe(false);
 });
 
-test('profile opens the notes and shows the empty state', async () => {
+test('settings opens the notes and shows the empty state', async () => {
   await render();
-  await pressTab('Perfil');
+  await pressTab('Configurações');
   await press('Recados do fisioterapeuta');
   expect(hasText('Nenhum recado')).toBe(true);
   expect(hasText('Seu fisioterapeuta ainda não deixou recados.')).toBe(true);

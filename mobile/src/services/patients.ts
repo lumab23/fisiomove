@@ -39,4 +39,8 @@ export class PatientService {
       operation: 'reset_temporary_password',
     });
   }
+
+  delete(patientId: UUID): Promise<void> {
+    return this.api.delete(`/patients/${patientId}`);
+  }
 }

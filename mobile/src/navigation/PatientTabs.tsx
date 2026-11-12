@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Icon, type IconName } from '../components/Icon';
 import { PatientExercisesScreen } from '../screens/patient/PatientExercisesScreen';
 import { PatientHomeScreen } from '../screens/patient/PatientHomeScreen';
-import { PatientProfileScreen } from '../screens/patient/PatientProfileScreen';
+import { PatientSettingsScreen } from '../screens/patient/PatientSettingsScreen';
 import { colors, fonts, radii } from '../theme/theme';
 import type { PatientTabParamList } from './frontendTypes';
 
@@ -18,10 +18,10 @@ const tabs: Record<
     icon: 'activity',
     component: PatientExercisesScreen,
   },
-  PatientProfile: {
-    label: 'Perfil',
-    icon: 'user',
-    component: PatientProfileScreen,
+  PatientSettings: {
+    label: 'Configurações',
+    icon: 'settings',
+    component: PatientSettingsScreen,
   },
 };
 
@@ -31,6 +31,8 @@ export function PatientTabs() {
       backBehavior="firstRoute"
       screenOptions={({ route }) => ({
         headerShown: false,
+        // iOS tab bars switch instantly; each tab keeps its own state.
+        animation: 'none',
         tabBarLabel: tabs[route.name].label,
         tabBarAccessibilityLabel: `Aba ${tabs[route.name].label}`,
         tabBarActiveTintColor: colors.primary,

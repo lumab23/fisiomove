@@ -188,6 +188,7 @@ export interface Note {
   author_id: UUID;
   content: string;
   visibility: NoteVisibility;
+  emoji?: string | null;
   created_at: ISODateTime;
   updated_at: ISODateTime;
 }
@@ -201,6 +202,7 @@ export type NotePage = Page<Note>;
 export interface OwnNote {
   id: UUID;
   content: string;
+  emoji?: string | null;
   created_at: ISODateTime;
   updated_at: ISODateTime;
 }

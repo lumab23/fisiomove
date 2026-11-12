@@ -1,7 +1,7 @@
+import { useNativeConfirmation } from '../../components/useNativeConfirmation';
 import { useEffect, type ReactNode } from 'react';
 import {
   AccessibilityInfo,
-  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -48,6 +48,7 @@ export function SessionExecutionPanel({
   feedbackInterval,
   mascot,
 }: Props) {
+  const confirmInterrupt = useNativeConfirmation();
   useEffect(() => {
     if (feedbackMessage && feedbackInterval.shouldAnnounce(Date.now())) {
       AccessibilityInfo.announceForAccessibility(feedbackMessage);
@@ -115,18 +116,12 @@ export function SessionExecutionPanel({
             variant="secondary"
             disabled={busy}
             onPress={() =>
-              Alert.alert(
-                'Interromper sessão?',
-                'O progresso parcial desta sessão será preservado.',
-                [
-                  { text: 'Continuar sessão', style: 'cancel' },
-                  {
-                    text: 'Interromper',
-                    style: 'destructive',
-                    onPress: onInterrupt,
-                  },
-                ],
-              )
+              confirmInterrupt({
+                title: 'Interromper sessão?',
+                message: 'O progresso parcial desta sessão será preservado.',
+                destructive: true,
+                onConfirm: onInterrupt,
+              })
             }
           />
         ) : null}

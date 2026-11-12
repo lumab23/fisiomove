@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db_session
@@ -87,3 +87,18 @@ def archive_workout(
     workout_id: UUID, user: Professional, session: DatabaseSession
 ) -> WorkoutResponse:
     return WorkoutService(session).archive(user, workout_id)
+
+
+@router.delete("/workouts/{workout_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_workout(
+    workout_id: UUID, user: Professional, session: DatabaseSession
+) -> Response:
+    WorkoutService(session).delete(user, workout_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/workouts/{workout_id}/unarchive", response_model=WorkoutResponse)
+def unarchive_workout(
+    workout_id: UUID, user: Professional, session: DatabaseSession
+) -> WorkoutResponse:
+    return WorkoutService(session).unarchive(user, workout_id)

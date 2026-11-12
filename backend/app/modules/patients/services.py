@@ -2,12 +2,14 @@ from dataclasses import dataclass
 from math import ceil
 from uuid import UUID
 
+from sqlalchemy import delete, exists, select
 from sqlalchemy.orm import Session
 
 from app.core.errors import ApiError
 from app.modules.auth.models import User, utc_now
 from app.modules.auth.repositories import SqlAlchemyUserRepository
 from app.modules.auth.services import PatientAccountService, normalize_email
+from app.modules.notes.models import Note
 from app.modules.patients.authorization import get_authorized_patient
 from app.modules.patients.models import Patient, ProfessionalPatientLink
 from app.modules.patients.repositories import SqlAlchemyPatientRepository
@@ -19,6 +21,8 @@ from app.modules.patients.schemas import (
     PatientResponse,
     PatientUpdate,
 )
+from app.modules.sessions.models import SessionResult
+from app.modules.workouts.models import Workout
 
 
 @dataclass(frozen=True)
@@ -172,6 +176,41 @@ class PatientService:
             email=credential.email,
             temporary_password=credential.temporary_password,
             action=action,
+        )
+
+    def delete(self, physiotherapist_id: UUID, patient_id: UUID) -> None:
+        patient = get_authorized_patient(
+            self._session, physiotherapist_id, patient_id, for_update=True
+        )
+        if self._has_clinical_records(patient.id):
+            raise ApiError(
+                status_code=409,
+                code="patient_has_clinical_records",
+                message=(
+                    "This patient has clinical records and cannot be permanently "
+                    "deleted. Deactivate the record instead."
+                ),
+            )
+
+        account = self._user_for(patient)
+        self._session.execute(
+            delete(ProfessionalPatientLink).where(
+                ProfessionalPatientLink.patient_id == patient.id
+            )
+        )
+        self._session.delete(patient)
+        if account is not None:
+            self._session.delete(account)
+        self._session.flush()
+
+    def _has_clinical_records(self, patient_id: UUID) -> bool:
+        checks = (
+            select(Workout.id).where(Workout.patient_id == patient_id),
+            select(Note.id).where(Note.patient_id == patient_id),
+            select(SessionResult.id).where(SessionResult.patient_id == patient_id),
+        )
+        return any(
+            self._session.scalar(select(exists(query))) for query in checks
         )
 
     def _user_for(self, patient: Patient) -> User | None:

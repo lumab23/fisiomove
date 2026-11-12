@@ -96,7 +96,7 @@ export const apiErrorMessages: Readonly<Record<string, string>> = {
     'Um dos exercícios ainda não pode entrar em treinos. Escolha outro exercício.',
   catalog_exercise_revoked:
     'Este exercício foi retirado do catálogo e não pode ser adicionado de novo.',
-  workout_archived: 'Este treino foi arquivado e não pode mais ser editado.',
+  workout_archived: 'Este treino está arquivado.',
   workout_not_draft:
     'Só é possível publicar um treino em rascunho. Atualize a tela.',
   idempotency_conflict: 'Esta sessão já foi registrada com outros dados.',

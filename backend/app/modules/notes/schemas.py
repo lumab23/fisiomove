@@ -23,19 +23,24 @@ class NoteCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     content: Content
     visibility: Visibility
+    emoji: Annotated[str | None, StringConstraints(max_length=16)] = None
 
 
 class NoteUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     content: Content | None = None
     visibility: Visibility | None = None
+    emoji: Annotated[str | None, StringConstraints(max_length=16)] = None
 
     @model_validator(mode="after")
     def patch(self) -> "NoteUpdate":
         if not self.model_fields_set:
             raise ValueError("At least one field must be provided")
-        if any(getattr(self, field) is None for field in self.model_fields_set):
-            raise ValueError("Note fields cannot be null")
+        for field in self.model_fields_set:
+            if field == "emoji":
+                continue
+            if getattr(self, field) is None:
+                raise ValueError("Note fields cannot be null")
         return self
 
 
@@ -46,6 +51,7 @@ class NoteResponse(BaseModel):
     author_id: UUID
     content: str
     visibility: Visibility
+    emoji: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -75,6 +81,7 @@ class OwnNoteResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     content: str
+    emoji: str | None = None
     created_at: datetime
     updated_at: datetime
 

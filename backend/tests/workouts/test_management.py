@@ -63,8 +63,10 @@ def test_draft_publish_edit_archive_and_history(
     assert client.post(url + "/archive", headers=pro).json()["status"] == "archived"
     assert client.post(url + "/archive", headers=pro).status_code == 200
     assert client.get("/api/v1/me/workouts", headers=patient).json()["items"] == []
-    assert client.patch(url, headers=pro, json=changed).status_code == 409
     assert client.post(url + "/publish", headers=pro).status_code == 409
+    edited_archive = client.patch(url, headers=pro, json=changed)
+    assert edited_archive.status_code == 200
+    assert edited_archive.json()["status"] == "draft"
     with application.state.database.session() as session:
         service = WorkoutService(session)
         assert (
@@ -113,7 +115,7 @@ def test_forbidden_management(client, data, headers, payload, actor, expected):
     )
     url = f"/api/v1/workouts/{item['id']}"
     assert client.patch(url, headers=auth, json=payload).status_code == expected
-    for action in ["publish", "archive"]:
+    for action in ["publish", "archive", "unarchive"]:
         assert client.post(url + "/" + action, headers=auth).status_code == expected
     assert client.get(url, headers=auth).status_code == 404
 
@@ -194,3 +196,84 @@ def test_snapshot_rejects_drafts_and_wrong_relationship(
         ]:
             with pytest.raises(ApiError):
                 service.published_snapshot(user, data_uuid(item["id"]), revision_id)
+
+
+def test_unarchive_creates_draft_revision_without_publishing(
+    client, data, headers, payload
+):
+    auth = headers(data["pro"])
+    draft = create(client, data, headers, payload)
+    url = f"/api/v1/workouts/{draft['id']}"
+    published = client.post(url + "/publish", headers=auth).json()
+    client.post(url + "/archive", headers=auth)
+    response = client.post(url + "/unarchive", headers=auth)
+    assert response.status_code == 200
+    restored = response.json()
+    assert restored["status"] == "draft"
+    assert restored["published_at"] is None
+    assert restored["current_revision_id"] != published["current_revision_id"]
+    assert restored["items"][0]["repetitions"] == published["items"][0]["repetitions"]
+    assert (
+        client.post(url + "/unarchive", headers=auth).json()["current_revision_id"]
+        == restored["current_revision_id"]
+    )
+    assert (
+        client.get("/api/v1/me/workouts", headers=headers(data["patient_user"])).json()[
+            "items"
+        ]
+        == []
+    )
+    assert client.post(url + "/publish", headers=auth).json()["status"] == "published"
+
+
+def test_archived_workout_can_be_deleted(client, data, headers, payload):
+    auth = headers(data["pro"])
+    workout = create(client, data, headers, payload)
+    url = f"/api/v1/workouts/{workout['id']}"
+    client.post(url + "/archive", headers=auth)
+    assert client.delete(url, headers=headers(data["other"])).status_code == 404
+    assert client.delete(url, headers=headers(data["patient_user"])).status_code == 403
+    assert client.delete(url, headers=auth).status_code == 204
+    assert client.get(url, headers=auth).status_code == 404
+
+
+def test_archived_workout_with_sessions_preserves_history(
+    application, client, data, headers, payload
+):
+    from uuid import uuid4
+
+    from app.modules.auth.models import utc_now
+    from app.modules.sessions.models import SessionResult
+
+    auth = headers(data["pro"])
+    workout = create(client, data, headers, payload)
+    url = f"/api/v1/workouts/{workout['id']}"
+    published = client.post(url + "/publish", headers=auth).json()
+    with application.state.database.session() as session:
+        now = utc_now()
+        result = SessionResult(
+            client_session_id=uuid4(),
+            patient_id=data["patient"].id,
+            workout_id=data_uuid(workout["id"]),
+            workout_revision_id=data_uuid(published["current_revision_id"]),
+            status="interrupted",
+            started_at=now,
+            finished_at=now,
+            active_duration_ms=0,
+            workout_snapshot={},
+            items=[],
+            payload_hash="0" * 64,
+            score=0,
+        )
+        session.add(result)
+        session.flush()
+        result_id = result.id
+    client.post(url + "/archive", headers=auth)
+    denied = client.delete(url, headers=auth)
+    assert denied.status_code == 409
+    assert denied.json()["code"] == "workout_has_sessions"
+    assert client.post(url + "/unarchive", headers=auth).status_code == 200
+    with application.state.database.session() as session:
+        assert session.get(SessionResult, result_id).workout_revision_id == data_uuid(
+            published["current_revision_id"]
+        )

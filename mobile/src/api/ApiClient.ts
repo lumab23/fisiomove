@@ -48,6 +48,13 @@ export class ApiClient {
     return this.request<T>(path, { ...options, method: 'PATCH', body });
   }
 
+  delete<T>(
+    path: string,
+    options: Omit<ApiRequestOptions, 'method' | 'body'> = {},
+  ) {
+    return this.request<T>(path, { ...options, method: 'DELETE' });
+  }
+
   /**
    * Source for `<Image>` of a server-relative API path (e.g. an exercise
    * image, DEC-010), with the current bearer token. Only paths under the API

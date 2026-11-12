@@ -1,3 +1,8 @@
+import {
+  mockNativeAlerts,
+  pressNativeAlert,
+  lastNativeAlert,
+} from '../test-utils/nativeAlerts';
 import React from 'react';
 import {
   AccessibilityInfo,
@@ -31,6 +36,7 @@ jest.mock('../src/app/dependencies', () => ({
       list: jest.fn(),
       get: jest.fn(),
       create: jest.fn(),
+      delete: jest.fn(),
       activateAccess: jest.fn(),
       resetTemporaryPassword: jest.fn(),
     },
@@ -41,6 +47,8 @@ jest.mock('../src/app/dependencies', () => ({
       update: jest.fn(),
       publish: jest.fn(),
       archive: jest.fn(),
+      unarchive: jest.fn(),
+      delete: jest.fn(),
     },
     exercises: {
       list: jest.fn(),
@@ -63,7 +71,12 @@ jest.mock('../src/app/dependencies', () => ({
       physiotherapistProfile: jest.fn(),
       updatePhysiotherapistProfile: jest.fn(),
     },
-    notes: { list: jest.fn(), create: jest.fn(), update: jest.fn() },
+    notes: {
+      list: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
     sessions: { listForPatient: jest.fn() },
     progress: { forPatient: jest.fn() },
   },
@@ -262,6 +275,7 @@ const importedExercise: Exercise = {
 let app: ReactTestRenderer.ReactTestRenderer;
 
 beforeEach(() => {
+  mockNativeAlerts();
   services.patients.list.mockResolvedValue(pageOf([patient]));
   services.patients.get.mockResolvedValue(patient);
   services.workouts.listForPatient.mockResolvedValue(pageOf([]));
@@ -336,6 +350,19 @@ function pressables(label: string) {
 
 // Screens below in the stack stay mounted; the focused one is rendered last.
 async function press(label: string) {
+  if (
+    (label === 'Cancelar' || label === 'Confirmar') &&
+    !app.root.findAll(
+      node =>
+        node.props.accessibilityLabel === label &&
+        typeof node.props.onPress === 'function',
+    ).length
+  ) {
+    await act(async () => {
+      pressNativeAlert(label);
+    });
+    return;
+  }
   const target = pressables(label).at(-1);
   if (!target) {
     throw new Error(`Missing control: ${label}`);
@@ -357,7 +384,24 @@ async function fill(label: string, value: string) {
   await act(async () => field(label).props.onChangeText(value));
 }
 
+async function selectExercise(label = 'Exercício aprovado de teste') {
+  await press('Adicionar exercício');
+  await press(label);
+}
+
+async function saveWorkout() {
+  await press(
+    pressables('Salvar rascunho').length ? 'Salvar rascunho' : 'Criar treino',
+  );
+}
+
 async function openPatient() {
+  await render();
+  await press('Acompanhamento');
+  await press('Joana Teste');
+}
+
+async function openRegistration() {
   await render();
   await press('Joana Teste');
 }
@@ -365,7 +409,7 @@ async function openPatient() {
 test('lists the linked patients from the API', async () => {
   await render();
   expect(hasText('Joana Teste')).toBe(true);
-  expect(hasText('1 paciente cadastrado')).toBe(true);
+  expect(hasText('1 paciente cadastrado')).toBe(false);
   expect(hasText('Acesso ao app não liberado')).toBe(true);
   expect(services.patients.list).toHaveBeenCalledWith({ page_size: 100 });
 });
@@ -423,7 +467,7 @@ test('creating a patient validates fields and sends only name, e-mail and phone'
 
 test('the temporary password is shown once, outside the navigation state', async () => {
   services.patients.activateAccess.mockResolvedValue(access);
-  await openPatient();
+  await openRegistration();
   await press('Liberar acesso ao app');
   expect(services.patients.activateAccess).toHaveBeenCalledWith('patient-1');
   expect(hasText('Provisoria-Teste-123')).toBe(true);
@@ -435,8 +479,8 @@ test('the temporary password is shown once, outside the navigation state', async
   expect(JSON.stringify(routeParams)).not.toContain('Provisoria');
 
   // Leaving the screen discards it; returning to it does not show it again.
-  await press('Ver acompanhamento');
-  await press('Voltar para Joana Teste');
+  await press('Acompanhamento');
+  await press('Pacientes');
   expect(hasText('Acesso ao aplicativo')).toBe(true);
   expect(hasText('Provisoria-Teste-123')).toBe(false);
   expect(services.patients.activateAccess).toHaveBeenCalledTimes(1);
@@ -452,11 +496,14 @@ test('forgotten password: a new temporary password needs confirmation', async ()
     ...access,
     temporary_password: 'Nova-Provisoria-456',
   });
-  await openPatient();
+  await openRegistration();
   await press('Redefinir senha provisória');
   expect(services.patients.resetTemporaryPassword).not.toHaveBeenCalled();
-  expect(hasText('deixará de funcionar')).toBe(true);
-  await press('Gerar nova senha provisória');
+  expect(lastNativeAlert()[1]).toContain('deixará de funcionar');
+  await press('Cancelar');
+  expect(services.patients.resetTemporaryPassword).not.toHaveBeenCalled();
+  await press('Redefinir senha provisória');
+  await press('Confirmar');
   expect(services.patients.resetTemporaryPassword).toHaveBeenCalledWith(
     'patient-1',
   );
@@ -465,51 +512,46 @@ test('forgotten password: a new temporary password needs confirmation', async ()
   expect(hasText('Nova-Provisoria-456')).toBe(false);
 });
 
-test('with an empty catalog the editor offers the reference library', async () => {
+test('with an empty catalog the picker offers import without creating an empty item', async () => {
   services.exercises.list.mockResolvedValue(pageOf([]));
   await openPatient();
-  expect(hasText('Nenhum treino criado')).toBe(true);
   await press('Criar treino');
-  expect(hasText('Nenhum exercício aprovado no catálogo')).toBe(false);
-  expect(
-    hasText(
-      'Use exercícios do catálogo ou adicione da biblioteca de referência.',
-    ),
-  ).toBe(true);
+  expect(hasText('Adicione os exercícios do treino')).toBe(true);
+  await press('Adicionar exercício');
+  expect(hasText('O catálogo ainda não tem exercícios')).toBe(true);
   expect(pressables('Buscar na biblioteca de referência')).toHaveLength(1);
-  await press('Salvar rascunho');
-  expect(hasText('Escolha um exercício do catálogo.')).toBe(true);
+  await press('Voltar para Treino');
+  await saveWorkout();
+  expect(hasText('Adicione pelo menos um exercício ao treino.')).toBe(true);
   expect(services.workouts.create).not.toHaveBeenCalled();
 });
 
-test('workout values start empty and sides come from allowed_sides', async () => {
+test('workout values start empty and a single allowed side needs no choice', async () => {
   services.exercises.list.mockResolvedValue(
     pageOf([{ ...exercise, allowed_sides: ['left'] }]),
   );
   services.workouts.create.mockResolvedValue(draftWorkout);
   await openPatient();
   await press('Criar treino');
+  expect(pressables('Lado esquerdo')).toHaveLength(0);
+  await saveWorkout();
+  expect(hasText('Adicione pelo menos um exercício ao treino.')).toBe(true);
+  expect(services.workouts.create).not.toHaveBeenCalled();
+  await selectExercise();
   for (const label of [
     'Séries',
     'Repetições por série',
-    'Descanso entre séries (segundos)',
+    'Descanso (em segundos)',
   ]) {
     expect(field(label).props.value).toBe('');
   }
+  // The only allowed side is used without asking.
   expect(pressables('Lado esquerdo')).toHaveLength(0);
-
-  await press('Salvar rascunho');
-  expect(hasText('Escolha um exercício do catálogo.')).toBe(true);
-  expect(services.workouts.create).not.toHaveBeenCalled();
-
-  await press('Exercício aprovado de teste');
-  expect(pressables('Lado esquerdo')).toHaveLength(1);
   expect(pressables('Lado direito')).toHaveLength(0);
-  await press('Lado esquerdo');
   await fill('Séries', '3');
   await fill('Repetições por série', '12');
-  await fill('Descanso entre séries (segundos)', '30');
-  await press('Salvar rascunho');
+  await fill('Descanso (em segundos)', '30');
+  await saveWorkout();
   expect(services.workouts.create).toHaveBeenCalledWith('patient-1', {
     instructions: null,
     items: [
@@ -533,64 +575,34 @@ const countingLabel = 'Contagem automática demonstrativa (flexão de cotovelo)'
 const countingNotice =
   'Não validada clinicamente; os valores são de demonstração acadêmica.';
 
-function countingToggle() {
-  const [toggle] = pressables(countingLabel);
-  if (!toggle) {
-    throw new Error('Missing counting toggle');
-  }
-  return toggle;
-}
-
-test('demonstration counting is off by default, one-sided only and sent per item (DEC-013)', async () => {
+test('the editor no longer offers automatic counting; new items go without it', async () => {
   services.exercises.list.mockResolvedValue(
     pageOf([{ ...exercise, allowed_sides: ['left', 'bilateral'] }]),
   );
   services.workouts.create.mockResolvedValue(draftWorkout);
   await openPatient();
   await press('Criar treino');
-  await press('Exercício aprovado de teste');
-  expect(hasText(countingNotice)).toBe(true);
-  expect(countingToggle().props.accessibilityRole).toBe('checkbox');
-  expect(countingToggle().props.accessibilityState).toEqual({
-    checked: false,
-    disabled: true,
-  });
-  expect(hasText('Escolha o lado esquerdo ou direito para ativar.')).toBe(true);
-
-  await press('Os dois lados');
-  expect(countingToggle().props.accessibilityState.disabled).toBe(true);
-  expect(hasText('Disponível só para o lado esquerdo ou direito')).toBe(true);
-
+  await selectExercise();
+  expect(pressables(countingLabel)).toHaveLength(0);
+  expect(hasText(countingNotice)).toBe(false);
+  expect(hasText('Escolha o lado esquerdo ou direito para ativar.')).toBe(
+    false,
+  );
+  // More than one allowed side: the physiotherapist chooses it.
+  expect(pressables('Lado esquerdo')).toHaveLength(1);
+  expect(pressables('Os dois lados')).toHaveLength(1);
   await press('Lado esquerdo');
-  expect(countingToggle().props.accessibilityState).toEqual({
-    checked: false,
-    disabled: false,
-  });
-  await act(async () => countingToggle().props.onPress());
-  expect(countingToggle().props.accessibilityState.checked).toBe(true);
-  // Choosing both sides turns it off: the API refuses it there.
-  await press('Os dois lados');
-  expect(countingToggle().props.accessibilityState.checked).toBe(false);
-  await press('Lado esquerdo');
-  expect(countingToggle().props.accessibilityState.checked).toBe(false);
-  await act(async () => countingToggle().props.onPress());
-
   await fill('Séries', '3');
   await fill('Repetições por série', '12');
-  await fill('Descanso entre séries (segundos)', '30');
-  await press('Salvar rascunho');
+  await fill('Descanso (em segundos)', '30');
+  await saveWorkout();
   expect(services.workouts.create).toHaveBeenCalledWith('patient-1', {
     instructions: null,
-    items: [
-      expect.objectContaining({
-        side: 'left',
-        counting_rule: 'demo-elbow-flexion:v1',
-      }),
-    ],
+    items: [expect.objectContaining({ side: 'left', counting_rule: null })],
   });
 });
 
-test('editing loads the counting rule and the review shows the seal', async () => {
+test('editing keeps an existing counting rule and the review shows the seal', async () => {
   const counted: Workout = {
     ...draftWorkout,
     items: [
@@ -605,8 +617,8 @@ test('editing loads the counting rule and the review shows the seal', async () =
   expect(hasText(`${countingLabel}: ativada.`)).toBe(true);
   expect(hasText(countingNotice)).toBe(true);
   await press('Editar treino');
-  expect(countingToggle().props.accessibilityState.checked).toBe(true);
-  await press('Salvar rascunho');
+  expect(pressables(countingLabel)).toHaveLength(0);
+  await saveWorkout();
   expect(services.workouts.update).toHaveBeenCalledWith('workout-1', {
     instructions: null,
     items: [
@@ -622,7 +634,7 @@ test('a review without the rule does not mention automatic counting', async () =
   expect(hasText(countingLabel)).toBe(false);
 });
 
-test('a library exercise needs reviewed Portuguese text before saving', async () => {
+test('a library exercise without Portuguese text can be saved and uses the original name', async () => {
   services.exercises.list.mockResolvedValue(
     pageOf([
       {
@@ -639,20 +651,21 @@ test('a library exercise needs reviewed Portuguese text before saving', async ()
       },
     ]),
   );
+  services.workouts.create.mockResolvedValue(draftWorkout);
   await openPatient();
   await press('Criar treino');
-  await press('Exercício aprovado de teste');
+  await selectExercise();
   await press('Lado esquerdo');
   await fill('Séries', '2');
   await fill('Repetições por série', '8');
-  await fill('Descanso entre séries (segundos)', '30');
-  expect(pressables('Escrever tradução em português')).toHaveLength(1);
+  await fill('Descanso (em segundos)', '30');
+  expect(pressables('Editar nome do exercício')).toHaveLength(1);
 
-  await press('Salvar rascunho');
+  await saveWorkout();
   expect(
     hasText('Adicione e revise a tradução em português antes de salvar.'),
-  ).toBe(true);
-  expect(services.workouts.create).not.toHaveBeenCalled();
+  ).toBe(false);
+  expect(services.workouts.create).toHaveBeenCalled();
 });
 
 test('pending parameter contracts and unsupported sides get clear messages', async () => {
@@ -665,14 +678,14 @@ test('pending parameter contracts and unsupported sides get clear messages', asy
     );
   await openPatient();
   await press('Criar treino');
-  await press('Exercício aprovado de teste');
+  await selectExercise();
   await press('Lado direito');
   await fill('Séries', '1');
   await fill('Repetições por série', '1');
-  await fill('Descanso entre séries (segundos)', '0');
-  await press('Salvar rascunho');
+  await fill('Descanso (em segundos)', '0');
+  await saveWorkout();
   expect(hasText('validador de parâmetros aprovado')).toBe(true);
-  await press('Salvar rascunho');
+  await saveWorkout();
   expect(hasText('O lado escolhido não é permitido')).toBe(true);
 });
 
@@ -696,8 +709,11 @@ test('a draft is published and archiving asks for confirmation', async () => {
 
   await press('Arquivar treino');
   expect(services.workouts.archive).not.toHaveBeenCalled();
-  expect(hasText('Arquivar este treino?')).toBe(true);
+  expect(lastNativeAlert()[0]).toBe('Arquivar este treino?');
+  await press('Cancelar');
+  expect(services.workouts.archive).not.toHaveBeenCalled();
   await press('Arquivar treino');
+  await press('Confirmar');
   expect(services.workouts.archive).toHaveBeenCalledWith('workout-1');
 });
 
@@ -709,7 +725,7 @@ test('editing keeps the prescribed values typed by the physiotherapist', async (
   await press('Editar treino');
   expect(field('Séries').props.value).toBe('3');
   await fill('Repetições por série', '10');
-  await press('Salvar rascunho');
+  await saveWorkout();
   expect(services.workouts.update).toHaveBeenCalledWith('workout-1', {
     instructions: null,
     items: [expect.objectContaining({ repetitions: 10, sets: 3 })],
@@ -738,9 +754,10 @@ test('an existing note is edited with its visibility', async () => {
   services.notes.update.mockResolvedValue(note);
   await openPatient();
   expect(hasText('Só para o fisioterapeuta')).toBe(true);
-  await press('Anotação de teste.');
+  await press('Editar observação');
   await press('Paciente pode ver');
   await press('Salvar observação');
+  expect(services.notes.list.mock.calls.length).toBeGreaterThanOrEqual(3);
   expect(services.notes.update).toHaveBeenCalledWith('note-1', {
     content: 'Anotação de teste.',
     visibility: 'patient_visible',
@@ -748,8 +765,9 @@ test('an existing note is edited with its visibility', async () => {
 });
 
 test('monitoring shows the linked patient sessions and progress, without achievements', async () => {
+  services.workouts.listForPatient.mockResolvedValue(pageOf([draftWorkout]));
   await openPatient();
-  await press('Ver acompanhamento');
+  await press('Ver sessões de progresso');
   expect(hasText('Sessões concluídas: 1')).toBe(true);
   expect(hasText('Repetições: 36 de 36 prescritas')).toBe(true);
   expect(hasText('Treino concluído')).toBe(true);
@@ -760,9 +778,10 @@ test('monitoring shows the linked patient sessions and progress, without achieve
 });
 
 test('monitoring without a selected patient and with no data shows empty states', async () => {
+  services.workouts.listForPatient.mockResolvedValue(pageOf([draftWorkout]));
   await render();
   await press('Acompanhamento');
-  expect(hasText('Escolha um paciente')).toBe(true);
+  expect(hasText('Joana Teste')).toBe(true);
   expect(services.sessions.listForPatient).not.toHaveBeenCalled();
 
   services.sessions.listForPatient.mockResolvedValue(pageOf([]));
@@ -770,9 +789,8 @@ test('monitoring without a selected patient and with no data shows empty states'
     ...progress,
     completed_sessions: 0,
   });
-  await press('Ver pacientes');
   await press('Joana Teste');
-  await press('Acompanhamento');
+  await press('Ver sessões de progresso');
   expect(hasText('Nenhuma sessão nesta semana')).toBe(true);
   expect(hasText('Nenhuma sessão registrada')).toBe(true);
   expect(hasText('conquista')).toBe(false);
@@ -794,7 +812,7 @@ test('editing a workout keeps the professional guidance of each item', async () 
   await openPatient();
   await press('Treino · Rascunho');
   await press('Editar treino');
-  await press('Salvar rascunho');
+  await saveWorkout();
   expect(services.workouts.update).toHaveBeenCalledWith('workout-1', {
     instructions: null,
     items: [
@@ -805,22 +823,21 @@ test('editing a workout keeps the professional guidance of each item', async () 
   });
 });
 
-test('long notes and workout instructions are not cut by the app', async () => {
+test('long notes and patient guidance are not cut by the app', async () => {
   services.exercises.list.mockResolvedValue(pageOf([exercise]));
   await openPatient();
   await press('Escrever observação');
   expect(field('Observação').props.maxLength).toBeUndefined();
   await press('Voltar para Paciente');
   await press('Criar treino');
-  expect(
-    field('Orientações gerais (opcional)').props.maxLength,
-  ).toBeUndefined();
+  await selectExercise();
+  expect(field('Orientação para o paciente').props.maxLength).toBeUndefined();
 });
 
 test('a new temporary password is brought into view and announced', async () => {
   const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
   services.patients.activateAccess.mockResolvedValue(access);
-  await openPatient();
+  await openRegistration();
   const scroll = app.root.findAllByType(ScrollView).at(-1);
   const scrollTo = jest.fn();
   if (!scroll?.instance) {
@@ -830,7 +847,7 @@ test('a new temporary password is brought into view and announced', async () => 
   await press('Liberar acesso ao app');
   expect(scrollTo).toHaveBeenCalledWith({ y: 0, animated: false });
   expect(announce).toHaveBeenCalledWith(
-    'Acesso liberado. A senha provisória está no topo da tela.',
+    'Sucesso. Acesso liberado. A senha provisória está no topo da tela.',
   );
   expect(JSON.stringify(announce.mock.calls)).not.toContain('Provisoria');
   announce.mockRestore();
@@ -887,7 +904,7 @@ test('the own profile shows the saved name and recovers from a failure', async (
   expect(field('Nome').props.value).toBe('Dra. Teste');
 });
 
-test('the reference library lists items with the seal, notice and attribution', async () => {
+test('the reference library lists items with attribution', async () => {
   await openSettings('Biblioteca de referência');
   expect(services.exerciseLibrary.search).toHaveBeenLastCalledWith({
     query: undefined,
@@ -895,7 +912,7 @@ test('the reference library lists items with the seal, notice and attribution', 
     page: 1,
     page_size: 20,
   });
-  expect(hasText(usageNotice)).toBe(true);
+  expect(hasText(usageNotice)).toBe(false);
   expect(hasText('Reference Item Test')).toBe(true);
   expect(hasText('Ombros, full body')).toBe(true);
   expect(hasText('Fonte: Fonte de teste')).toBe(true);
@@ -908,18 +925,33 @@ test('the reference library lists items with the seal, notice and attribution', 
 });
 
 test('the fixed English notices of the library appear in Portuguese', async () => {
+  const englishNotice =
+    'External reference material. A physiotherapist may add it to the FisioMove catalog for academic use; prescription values are always set by the physiotherapist.';
+  const englishAttribution =
+    'Only selected descriptive fields are shown; text is kept in the original language without edits. Performance metrics and variations are omitted.';
   services.exerciseLibrary.search.mockResolvedValue({
     ...libraryPage,
-    usage_notice:
-      'External reference material. A physiotherapist may add it to the FisioMove catalog for academic use; prescription values are always set by the physiotherapist.',
+    usage_notice: englishNotice,
     attribution: {
       ...attribution,
-      changes:
-        'Only selected descriptive fields are shown; text is kept in the original language without edits. Performance metrics and variations are omitted.',
+      changes: englishAttribution,
+    },
+  });
+  services.exerciseLibrary.get.mockResolvedValue({
+    ...libraryDetail,
+    usage_notice: englishNotice,
+    attribution: {
+      ...attribution,
+      changes: englishAttribution,
     },
   });
   await openSettings('Biblioteca de referência');
-  expect(hasText('Material de referência externo.')).toBe(true);
+  expect(hasText('Material de referência externo.')).toBe(false);
+  expect(hasText('Mostramos só alguns campos descritivos')).toBe(true);
+  expect(hasText('External reference material')).toBe(false);
+  expect(hasText('Only selected descriptive fields')).toBe(false);
+  await press('Reference Item Test');
+  expect(hasText('Material de referência externo.')).toBe(false);
   expect(hasText('Mostramos só alguns campos descritivos')).toBe(true);
   expect(hasText('External reference material')).toBe(false);
   expect(hasText('Only selected descriptive fields')).toBe(false);
@@ -928,14 +960,19 @@ test('the fixed English notices of the library appear in Portuguese', async () =
 
 test('library search and the upper-limb shortcut filter on the server', async () => {
   await openSettings('Biblioteca de referência');
-  await fill('Buscar pelo nome (em inglês)', '  raise ');
-  await press('Buscar');
+  await fill('Buscar exercícios (em inglês)', '  raise ');
+  await act(async () =>
+    field('Buscar exercícios (em inglês)').props.onSubmitEditing(),
+  );
   expect(services.exerciseLibrary.search).toHaveBeenLastCalledWith({
     query: 'raise',
     body_part: undefined,
     page: 1,
     page_size: 20,
   });
+  expect(pressables('Ombros')).toHaveLength(0);
+  expect(pressables('Buscar')).toHaveLength(0);
+  await press('Filtrar exercícios');
   for (const label of [
     'Ombros',
     'Parte superior das costas',
@@ -953,6 +990,15 @@ test('library search and the upper-limb shortcut filter on the server', async ()
     ...pageOf([]),
   });
   await press('Ombros');
+  expect(services.exerciseLibrary.search).toHaveBeenLastCalledWith({
+    query: 'raise',
+    body_part: undefined,
+    page: 1,
+    page_size: 20,
+  });
+  await press('Aplicar filtros');
+  expect(pressables('Ombros')).toHaveLength(0);
+  expect(pressables('Remover filtro: Ombros')).toHaveLength(1);
   expect(services.exerciseLibrary.search).toHaveBeenLastCalledWith({
     query: 'raise',
     body_part: 'shoulders',
@@ -987,9 +1033,9 @@ test('library details show original steps, AI origin and no prescription values'
   await press('Reference Item Test');
   expect(services.exerciseLibrary.get).toHaveBeenCalledWith('EX-test-1');
   expect(hasText('Material de referência — ainda não está no catálogo')).toBe(
-    true,
+    false,
   );
-  expect(hasText(usageNotice)).toBe(true);
+  expect(hasText(usageNotice)).toBe(false);
   expect(hasText('Texto de referência')).toBe(true);
   expect(hasText('Conteúdo gerado por IA')).toBe(true);
   expect(hasText('Situação de revisão na fonte: accepted_with_edits')).toBe(
@@ -1055,6 +1101,11 @@ test('settings is the third tab with profile, library and sign out', async () =>
   expect(selectedTab()).toBe('Configurações');
   await press('Configurações');
   await press('Sair da conta');
+  expect(signOut).not.toHaveBeenCalled();
+  await press('Cancelar');
+  expect(signOut).not.toHaveBeenCalled();
+  await press('Sair da conta');
+  await press('Confirmar');
   expect(signOut).toHaveBeenCalledTimes(1);
 });
 
@@ -1136,8 +1187,9 @@ test.each([
   await press('Adicionar ao catálogo');
   expect(hasText(text)).toBe(true);
   expect(hasText('Material de referência — ainda não está no catálogo')).toBe(
-    true,
+    false,
   );
+  expect(pressables('Adicionar ao catálogo')).toHaveLength(1);
 });
 
 test('the editor requires Portuguese before saving an exercise from the library', async () => {
@@ -1145,14 +1197,13 @@ test('the editor requires Portuguese before saving an exercise from the library'
   services.workouts.create.mockResolvedValue(draftWorkout);
   await openPatient();
   await press('Criar treino');
-  await fill('Orientações gerais (opcional)', 'Texto geral de teste.');
-  await fill('Séries', '2');
+  await press('Adicionar exercício');
   await press('Buscar na biblioteca de referência');
-  expect(hasText('Escolha um exercício e adicione-o ao catálogo')).toBe(true);
+  expect(hasText('Escolha um exercício e adicione-o ao catálogo')).toBe(false);
   // Pick mode belongs to the patient's flow, not to "Configurações".
-  expect(selectedTab()).toBe('Pacientes');
+  expect(selectedTab()).toBe('Acompanhamento');
   await press('Reference Item Test');
-  expect(selectedTab()).toBe('Pacientes');
+  expect(selectedTab()).toBe('Acompanhamento');
   expect(pressables('Adicionar ao catálogo')).toHaveLength(0);
   await press('Lado direito');
   await press('Adicionar e usar neste treino');
@@ -1165,30 +1216,39 @@ test('the editor requires Portuguese before saving an exercise from the library'
   // Back in the same editor: the draft survived, only the exercise was set.
   expect(hasText('Material de referência')).toBe(false);
   expect(hasText('Biblioteca de referência')).toBe(false);
-  expect(services.exercises.list).toHaveBeenCalledTimes(1);
-  expect(field('Orientações gerais (opcional)').props.value).toBe(
-    'Texto geral de teste.',
-  );
-  expect(field('Séries').props.value).toBe('2');
+  expect(services.exercises.list).toHaveBeenCalledTimes(2);
+  expect(field('Séries').props.value).toBe('');
   expect(field('Repetições por série').props.value).toBe('');
-  expect(field('Descanso entre séries (segundos)').props.value).toBe('');
-  expect(field('Orientação para o paciente (opcional)').props.value).toBe('');
-  const [picked] = pressables('Reference Item Test');
-  expect(picked.props.accessibilityState).toEqual({ checked: true });
-  expect(pressables('Lado direito')[0].props.accessibilityState).toEqual({
-    checked: false,
-  });
-  expect(hasText('Fonte: OpenExerciseBase (CC BY-NC 4.0)')).toBe(true);
+  expect(field('Descanso (em segundos)').props.value).toBe('');
+  expect(field('Orientação para o paciente').props.value).toBe('');
+  expect(hasText('Reference Item Test')).toBe(true);
+  // The only allowed side (right) is used without a selector.
+  expect(pressables('Lado direito')).toHaveLength(0);
+  expect(pressables('Editar nome do exercício')).toHaveLength(1);
 
-  await press('Lado direito');
+  await fill('Séries', '2');
   await fill('Repetições por série', '8');
-  await fill('Descanso entre séries (segundos)', '0');
-  await fill('Orientação para o paciente (opcional)', '  Faça devagar.  ');
-  await press('Salvar rascunho');
+  await fill('Descanso (em segundos)', '0');
+  await fill('Orientação para o paciente', '  Faça devagar.  ');
+  await saveWorkout();
   expect(
     hasText('Adicione e revise a tradução em português antes de salvar.'),
-  ).toBe(true);
-  expect(services.workouts.create).not.toHaveBeenCalled();
+  ).toBe(false);
+  expect(services.workouts.create).toHaveBeenCalledWith('patient-1', {
+    instructions: null,
+    items: [
+      {
+        position: 1,
+        exercise_id: 'exercise-imported',
+        side: 'right',
+        sets: 2,
+        repetitions: 8,
+        rest_duration_ms: 0,
+        professional_guidance: 'Faça devagar.',
+        counting_rule: null,
+      },
+    ],
+  });
 });
 
 test('an exercise already in the catalog is used without adding it again', async () => {
@@ -1203,15 +1263,14 @@ test('an exercise already in the catalog is used without adding it again', async
   });
   await openPatient();
   await press('Criar treino');
+  await press('Adicionar exercício');
   await press('Buscar na biblioteca de referência');
   await press('Reference Item Test');
   expect(pressables('Adicionar e usar neste treino')).toHaveLength(0);
   await press('Usar neste treino');
   expect(services.exerciseLibrary.addToCatalog).not.toHaveBeenCalled();
   expect(hasText('Material de referência')).toBe(false);
-  expect(
-    pressables('Reference Item Test').at(-1)?.props.accessibilityState,
-  ).toEqual({ checked: true });
+  expect(hasText('Reference Item Test')).toBe(true);
 });
 
 test('a failure loading the picked exercise is shown in the editor', async () => {
@@ -1219,6 +1278,7 @@ test('a failure loading the picked exercise is shown in the editor', async () =>
   services.exercises.get.mockRejectedValueOnce(new ApiError('network', 'x'));
   await openPatient();
   await press('Criar treino');
+  await press('Adicionar exercício');
   await press('Buscar na biblioteca de referência');
   await press('Reference Item Test');
   await press('Lado direito');
@@ -1288,6 +1348,7 @@ test('the translation of a catalog exercise is edited with the original beside i
   await openSettings('Biblioteca de referência');
   await press('Reference Item Test');
   await press('Tradução em português');
+  expect(selectedTab()).toBe('Configurações');
   expect(services.exercises.get).toHaveBeenCalledWith('exercise-imported');
   expect(hasText('Texto de referência')).toBe(true);
   expect(hasText('1. First step text.')).toBe(true);
@@ -1341,43 +1402,35 @@ test('an existing translation is prefilled and a 404 is explained', async () => 
   ).toBe(true);
 });
 
-test('the editor shows the pt-BR text, the original and the first API image', async () => {
+test('the editor card shows the pt-BR name and the pencil opens the name page', async () => {
   services.exercises.list.mockResolvedValue(pageOf([translatedExercise]));
   await openPatient();
   await press('Criar treino');
-  await press('Item de referência de teste (original: Reference Item Test)');
-  expect(hasText('Em português (o paciente vê este texto)')).toBe(true);
-  expect(hasText('2. Segundo passo de teste.')).toBe(true);
-  expect(hasText('Referência da fonte')).toBe(true);
-  const english = app.root.findAll(
-    node =>
-      node.props.accessibilityLanguage === 'en' &&
-      typeof node.type !== 'string',
+  await selectExercise(
+    'Item de referência de teste (original: Reference Item Test)',
   );
-  expect(english.map(node => [node.props.children].flat().join(''))).toEqual(
-    expect.arrayContaining(['1. First step text.\n2. Second step text.']),
+  // Only the name and the prescription fields: no steps, images or source.
+  expect(hasText('Item de referência de teste')).toBe(true);
+  expect(pressables('Ver orientações do exercício')).toHaveLength(0);
+  expect(app.root.findAllByType(Image)).toHaveLength(0);
+  expect(hasText('Adaptado de OpenExerciseBase (CC BY-NC 4.0).')).toBe(false);
+  expect(hasText('Repetições e descanso valem para todas as séries')).toBe(
+    false,
   );
-  const images = app.root.findAllByType(Image);
-  expect(images.map(node => node.props.accessibilityLabel)).toEqual([
-    'Imagem 1 de 2 do exercício Item de referência de teste',
-  ]);
-  expect(images[0].props.source.uri).toBe(
-    'http://api.test/api/v1/exercises/exercise-imported/images/1',
-  );
-  expect(hasText('Adaptado de OpenExerciseBase (CC BY-NC 4.0).')).toBe(true);
-  expect(pressables('Editar tradução em português')).toHaveLength(1);
+  for (const label of ['Trocar exercício', 'Remover este exercício']) {
+    expect(pressables(label)).toHaveLength(1);
+  }
 
-  // Back from the translation screen, the editor reloads that exercise.
+  // Back from the name page, the editor reloads that exercise.
   services.exercises.get.mockResolvedValue({
     ...translatedExercise,
     localization: { ...translation, name: 'Nome revisado de teste' },
   });
-  await press('Editar tradução em português');
+  await press('Editar nome do exercício');
+  expect(hasText('Tradução para o português')).toBe(true);
   await press('Voltar para Exercício');
   expect(services.exercises.get).toHaveBeenLastCalledWith('exercise-imported');
-  expect(
-    hasText('Nome revisado de teste (original: Reference Item Test)'),
-  ).toBe(true);
+  expect(hasText('Nome revisado de teste')).toBe(true);
 });
 
 test('the review shows the snapshot pt-BR name, the original and the image', async () => {
@@ -1413,6 +1466,577 @@ test('the review shows the snapshot pt-BR name, the original and the image', asy
   expect(
     app.root.findAllByType(Image).map(node => node.props.accessibilityLabel),
   ).toEqual(['Imagem 1 de 1 do exercício Item de referência de teste']);
-  await press('Tradução em português');
-  expect(services.exercises.get).toHaveBeenCalledWith('exercise-imported');
+  expect(hasText('Fonte: OpenExerciseBase')).toBe(false);
+  expect(hasText('Adaptado de OpenExerciseBase')).toBe(false);
+  expect(hasText('Imagem: OpenExerciseBase')).toBe(false);
+  expect(pressables('Tradução em português')).toHaveLength(0);
+  for (const label of ['Editar treino', 'Arquivar treino', 'Apagar treino']) {
+    expect(pressables(label)).toHaveLength(1);
+    expect(pressables(label)[0].findAllByType(Text)).toHaveLength(0);
+  }
+});
+
+test('tabs switch without stacking screens and keep each tab history', async () => {
+  await render();
+  await press('Joana Teste');
+  expect(pressables('Voltar para Pacientes')).toHaveLength(1);
+
+  await press('Configurações');
+  await press('Meu perfil');
+  expect(selectedTab()).toBe('Configurações');
+  // The patients stack is not kept underneath the settings tab.
+  expect(pressables('Voltar para Pacientes')).toHaveLength(0);
+
+  await press('Pacientes');
+  expect(selectedTab()).toBe('Pacientes');
+  expect(hasText('Informações pessoais')).toBe(false);
+  // Back on the patient's details, where the tab was left.
+  expect(pressables('Voltar para Pacientes')).toHaveLength(1);
+
+  await press('Configurações');
+  expect(hasText('Informações pessoais')).toBe(true);
+  // Tapping the selected tab returns to its root.
+  await press('Configurações');
+  expect(hasText('Informações pessoais')).toBe(false);
+  expect(pressables('Meu perfil')).toHaveLength(1);
+});
+
+test('professional tabs keep registration and follow-up details separate', async () => {
+  await openRegistration();
+  expect(hasText('Contato')).toBe(true);
+  expect(hasText('Acesso ao aplicativo')).toBe(true);
+  expect(pressables('Criar treino')).toHaveLength(0);
+  expect(pressables('Escrever observação')).toHaveLength(0);
+  expect(services.workouts.listForPatient).not.toHaveBeenCalled();
+  expect(services.notes.list).not.toHaveBeenCalled();
+  await press('Acompanhamento');
+  expect(selectedTab()).toBe('Acompanhamento');
+  expect(hasText('Joana Teste')).toBe(true);
+  expect(hasText('Contato')).toBe(false);
+  expect(hasText('Acesso ao aplicativo')).toBe(false);
+  expect(pressables('Cadastrar paciente')).toHaveLength(0);
+  expect(services.sessions.listForPatient).not.toHaveBeenCalled();
+  await press('Joana Teste');
+  expect(hasText('Treinos')).toBe(true);
+  expect(hasText('Observações')).toBe(true);
+  expect(hasText('Contato')).toBe(false);
+  expect(hasText('Acesso ao aplicativo')).toBe(false);
+  expect(pressables('Criar treino')).toHaveLength(1);
+  expect(pressables('Escrever observação')).toHaveLength(1);
+  await press('Pacientes');
+  expect(selectedTab()).toBe('Pacientes');
+  expect(hasText('Contato')).toBe(true);
+  expect(pressables('Criar treino')).toHaveLength(0);
+  await press('Acompanhamento');
+  expect(selectedTab()).toBe('Acompanhamento');
+  expect(hasText('Contato')).toBe(false);
+  await press('Voltar para Acompanhamento');
+  expect(hasText('Joana Teste')).toBe(true);
+  expect(pressables('Criar treino')).toHaveLength(0);
+});
+
+test('the shared directory filters patients in both tabs', async () => {
+  await render();
+  await fill('Buscar paciente', 'sem resultado');
+  expect(hasText('Nenhum paciente encontrado')).toBe(true);
+  await press('Limpar busca');
+  expect(pressables('Joana Teste')).toHaveLength(1);
+  await press('Acompanhamento');
+  await fill('Buscar paciente', 'sem resultado');
+  expect(hasText('Nenhum paciente encontrado')).toBe(true);
+  await press('Limpar busca');
+  expect(pressables('Joana Teste')).toHaveLength(1);
+});
+
+test('follow-up updates the exclusive workout action after creation and removal', async () => {
+  services.workouts.create.mockResolvedValue(draftWorkout);
+  await openPatient();
+  expect(pressables('Criar treino')).toHaveLength(1);
+  expect(pressables('Ver sessões de progresso')).toHaveLength(0);
+  await press('Criar treino');
+  await selectExercise();
+  await press('Lado esquerdo');
+  await fill('Séries', '3');
+  await fill('Repetições por série', '12');
+  await fill('Descanso (em segundos)', '30');
+  services.workouts.listForPatient.mockResolvedValue(pageOf([draftWorkout]));
+  await saveWorkout();
+  await press('Voltar para Paciente');
+  expect(pressables('Criar treino')).toHaveLength(0);
+  expect(pressables('Ver sessões de progresso')).toHaveLength(1);
+  await press('Ver sessões de progresso');
+  expect(services.sessions.listForPatient).toHaveBeenCalledWith('patient-1', {
+    page_size: 10,
+  });
+  services.workouts.listForPatient.mockResolvedValue(pageOf([]));
+  await press('Voltar para Joana Teste');
+  expect(pressables('Criar treino')).toHaveLength(1);
+  expect(pressables('Ver sessões de progresso')).toHaveLength(0);
+});
+
+test('follow-up does not assume an empty workout list during loading or failure', async () => {
+  services.workouts.listForPatient.mockRejectedValueOnce(
+    new ApiError('network', 'offline'),
+  );
+  await openPatient();
+  expect(pressables('Criar treino')).toHaveLength(0);
+  expect(pressables('Ver sessões de progresso')).toHaveLength(0);
+  services.workouts.listForPatient.mockImplementation(
+    () => new Promise(() => undefined),
+  );
+  await press('Tentar novamente');
+  expect(pressables('Criar treino')).toHaveLength(0);
+  expect(pressables('Ver sessões de progresso')).toHaveLength(0);
+});
+
+test('patient deletion uses a native destructive confirmation and preserves error feedback', async () => {
+  services.patients.delete
+    .mockRejectedValueOnce(new ApiError('network', 'offline'))
+    .mockResolvedValueOnce(undefined);
+  await openRegistration();
+  await press('Excluir paciente');
+  expect(lastNativeAlert()[0]).toBe('Excluir paciente');
+  expect(
+    lastNativeAlert()[2]?.find(button => button.text === 'Confirmar')?.style,
+  ).toBe('destructive');
+  expect(services.patients.delete).not.toHaveBeenCalled();
+  await press('Cancelar');
+  expect(services.patients.delete).not.toHaveBeenCalled();
+  await press('Excluir paciente');
+  await press('Confirmar');
+  expect(services.patients.delete).toHaveBeenCalledWith('patient-1');
+  expect(hasText('Paciente excluído.')).toBe(false);
+  expect(hasText('Sem conexão com o servidor')).toBe(true);
+  await press('Excluir paciente');
+  await press('Confirmar');
+  expect(hasText('Paciente excluído.')).toBe(true);
+});
+
+test('library search debounces typing, resets pagination and cancels drafts on closing filters', async () => {
+  jest.useFakeTimers();
+  try {
+    services.exerciseLibrary.search.mockResolvedValue({
+      ...libraryPage,
+      pages: 2,
+    });
+    await openSettings('Biblioteca de referência');
+    await press('Próxima página');
+    expect(services.exerciseLibrary.search).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 2 }),
+    );
+    const before = services.exerciseLibrary.search.mock.calls.length;
+    await fill('Buscar exercícios (em inglês)', 'r');
+    await act(async () => {
+      jest.advanceTimersByTime(200);
+    });
+    await fill('Buscar exercícios (em inglês)', 'raise');
+    await act(async () => {
+      jest.advanceTimersByTime(349);
+    });
+    expect(services.exerciseLibrary.search).toHaveBeenCalledTimes(before);
+    await act(async () => {
+      jest.advanceTimersByTime(1);
+    });
+    expect(services.exerciseLibrary.search).toHaveBeenLastCalledWith({
+      query: 'raise',
+      body_part: undefined,
+      page: 1,
+      page_size: 20,
+    });
+    await press('Filtrar exercícios');
+    await press('Ombros');
+    await press('Fechar filtros');
+    expect(pressables('Remover filtro: Ombros')).toHaveLength(0);
+    await press('Filtrar exercícios');
+    expect(
+      pressables('Todas as partes')[0].props.accessibilityState.checked,
+    ).toBe(true);
+    await press('Ombros');
+    await press('Aplicar filtros');
+    expect(services.exerciseLibrary.search).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        query: 'raise',
+        body_part: 'shoulders',
+        page: 1,
+      }),
+    );
+    await press('Remover filtro: Ombros');
+    expect(services.exerciseLibrary.search).toHaveBeenLastCalledWith(
+      expect.objectContaining({ query: 'raise', body_part: undefined }),
+    );
+    await press('Filtrar exercícios');
+    await press('Ombros');
+    await press('Aplicar filtros');
+    await press('Filtrar exercícios');
+    await press('Limpar filtros');
+    expect(pressables('Remover filtro: Ombros')).toHaveLength(0);
+    expect(services.exerciseLibrary.search).toHaveBeenLastCalledWith(
+      expect.objectContaining({ query: 'raise', body_part: undefined }),
+    );
+  } finally {
+    jest.useRealTimers();
+  }
+});
+
+test('notes have explicit edit and delete actions and delete only after native confirmation', async () => {
+  services.notes.list.mockResolvedValue(pageOf([note]));
+  services.notes.delete.mockResolvedValue(undefined);
+  await openPatient();
+  expect(pressables('Anotação de teste.')).toHaveLength(0);
+  expect(pressables('Editar observação')).toHaveLength(1);
+  expect(pressables('Excluir observação')).toHaveLength(1);
+  await press('Excluir observação');
+  expect(lastNativeAlert()[0]).toBe('Deseja excluir esta observação?');
+  expect(
+    lastNativeAlert()[2]?.map(button => [button.text, button.style]),
+  ).toEqual([
+    ['Cancelar', 'cancel'],
+    ['Excluir', 'destructive'],
+  ]);
+  expect(services.notes.delete).not.toHaveBeenCalled();
+  await press('Cancelar');
+  expect(services.notes.delete).not.toHaveBeenCalled();
+  await press('Excluir observação');
+  services.notes.list.mockResolvedValue(pageOf([]));
+  await act(async () => {
+    pressNativeAlert('Excluir');
+  });
+  expect(services.notes.delete).toHaveBeenCalledWith('note-1');
+  expect(hasText('Observação excluída.')).toBe(true);
+  expect(hasText('Nenhuma observação registrada')).toBe(true);
+  expect(pressables('Editar observação')).toHaveLength(0);
+});
+
+test('failed note deletion preserves the card and reports an error', async () => {
+  services.notes.list.mockResolvedValue(pageOf([note]));
+  services.notes.delete.mockRejectedValue(
+    new ApiError('access_denied', 'denied', 403, 'note_author_required'),
+  );
+  await openPatient();
+  await press('Excluir observação');
+  await act(async () => {
+    pressNativeAlert('Excluir');
+  });
+  expect(hasText('Somente o autor pode excluir esta observação.')).toBe(true);
+  expect(hasText('Observação excluída.')).toBe(false);
+  expect(pressables('Editar observação')).toHaveLength(1);
+  expect(pressables('Excluir observação')).toHaveLength(1);
+});
+
+async function fillExercise(index: number, label: string, value: string) {
+  const target = app.root
+    .findAllByType(FormField)
+    .filter(node => node.props.label === label)[index];
+  expect(target).toBeDefined();
+  await act(async () => target.props.onChangeText(value));
+}
+function exerciseValue(index: number, label: string) {
+  return app.root
+    .findAllByType(FormField)
+    .filter(node => node.props.label === label)[index]?.props.value;
+}
+test('builds several cards in order and saves them together', async () => {
+  const second = {
+    ...exercise,
+    id: 'exercise-2',
+    name: 'Segundo exercício de teste',
+    allowed_sides: ['right'],
+  };
+  services.exercises.list.mockResolvedValue(pageOf([exercise, second]));
+  services.workouts.create.mockResolvedValue(draftWorkout);
+  await openPatient();
+  await press('Criar treino');
+  await selectExercise();
+  expect(hasText('Orientações gerais')).toBe(false);
+  await press('Lado esquerdo');
+  await press('Adicionar série');
+  expect(field('Séries').props.value).toBe('1');
+  expect(pressables('Remover série')[0].props.accessibilityState.disabled).toBe(
+    true,
+  );
+  await press('Adicionar série');
+  await press('Adicionar série');
+  await press('Remover série');
+  expect(field('Séries').props.value).toBe('2');
+  await fill('Repetições por série', '6');
+  await fill('Descanso (em segundos)', '15');
+  await fill('Orientação para o paciente', 'Orientação do primeiro.');
+
+  // The add button stays below the list and appends a new card.
+  expect(pressables('Adicionar exercício')).toHaveLength(1);
+  await press('Adicionar exercício');
+  await fill('Buscar no catálogo', 'nao existe');
+  expect(hasText('Nenhum exercício encontrado')).toBe(true);
+  await press('Voltar para Treino');
+  expect(exerciseValue(0, 'Séries')).toBe('2');
+  expect(pressables('Remover este exercício')).toHaveLength(1);
+  await selectExercise('Segundo exercício de teste');
+  expect(pressables('Remover este exercício')).toHaveLength(2);
+  expect(exerciseValue(0, 'Repetições por série')).toBe('6');
+  expect(exerciseValue(1, 'Séries')).toBe('');
+  await fillExercise(1, 'Séries', '4');
+  await fillExercise(1, 'Repetições por série', '8');
+  await fillExercise(1, 'Descanso (em segundos)', '20');
+  await fillExercise(1, 'Orientação para o paciente', 'Orientação do segundo.');
+  expect(pressables('Adicionar exercício')).toHaveLength(1);
+  expect(services.workouts.create).not.toHaveBeenCalled();
+  await saveWorkout();
+  expect(services.workouts.create).toHaveBeenCalledTimes(1);
+  expect(services.workouts.create).toHaveBeenCalledWith('patient-1', {
+    instructions: null,
+    items: [
+      expect.objectContaining({
+        position: 1,
+        exercise_id: 'exercise-1',
+        side: 'left',
+        sets: 2,
+        repetitions: 6,
+        rest_duration_ms: 15000,
+        professional_guidance: 'Orientação do primeiro.',
+      }),
+      expect.objectContaining({
+        position: 2,
+        exercise_id: 'exercise-2',
+        side: 'right',
+        sets: 4,
+        repetitions: 8,
+        rest_duration_ms: 20000,
+        professional_guidance: 'Orientação do segundo.',
+      }),
+    ],
+  });
+  expect(hasText('Revisar treino')).toBe(true);
+  expect(services.workouts.publish).not.toHaveBeenCalled();
+});
+
+test('removing a card keeps the others and can return to an empty workout', async () => {
+  const second = {
+    ...exercise,
+    id: 'exercise-2',
+    name: 'Segundo exercício de teste',
+  };
+  services.exercises.list.mockResolvedValue(pageOf([exercise, second]));
+  await openPatient();
+  await press('Criar treino');
+  await selectExercise();
+  await fill('Séries', '2');
+  await selectExercise('Segundo exercício de teste');
+  await fillExercise(1, 'Séries', '4');
+  await fillExercise(1, 'Repetições por série', '8');
+  await act(async () =>
+    pressables('Remover este exercício')[0].props.onPress(),
+  );
+  expect(exerciseValue(0, 'Séries')).toBe('4');
+  expect(exerciseValue(0, 'Repetições por série')).toBe('8');
+  await press('Remover este exercício');
+  expect(hasText('Adicione os exercícios do treino')).toBe(true);
+  expect(pressables('Adicionar exercício')).toHaveLength(1);
+  await saveWorkout();
+  expect(services.workouts.create).not.toHaveBeenCalled();
+});
+
+test('changing an exercise keeps typed values and uses the only allowed side', async () => {
+  const second = {
+    ...exercise,
+    id: 'exercise-2',
+    name: 'Segundo exercício de teste',
+    allowed_sides: ['right'],
+  };
+  services.exercises.list.mockResolvedValue(pageOf([exercise, second]));
+  await openPatient();
+  await press('Criar treino');
+  await selectExercise();
+  await press('Lado esquerdo');
+  await fill('Séries', '2');
+  await fill('Repetições por série', '6');
+  await press('Trocar exercício');
+  await press('Segundo exercício de teste');
+  expect(exerciseValue(0, 'Séries')).toBe('2');
+  expect(exerciseValue(0, 'Repetições por série')).toBe('6');
+  // The new exercise allows only the right side: no selector is shown.
+  expect(pressables('Lado esquerdo')).toHaveLength(0);
+  expect(pressables('Lado direito')).toHaveLength(0);
+});
+
+test('an existing workout keeps its general instructions when saved again', async () => {
+  const withInstructions: Workout = {
+    ...draftWorkout,
+    instructions: 'Texto preservado.',
+  };
+  services.workouts.listForPatient.mockResolvedValue(
+    pageOf([withInstructions]),
+  );
+  services.workouts.get.mockResolvedValue(withInstructions);
+  services.workouts.update.mockResolvedValue(withInstructions);
+  await openPatient();
+  await press('Treino · Rascunho');
+  await press('Editar treino');
+  expect(pressables('Orientações gerais (opcional)')).toHaveLength(0);
+  await saveWorkout();
+  expect(services.workouts.update).toHaveBeenCalledWith(
+    'workout-1',
+    expect.objectContaining({ instructions: 'Texto preservado.' }),
+  );
+});
+
+test('catalog search includes exercises from subsequent API pages', async () => {
+  const second = {
+    ...exercise,
+    id: 'exercise-2',
+    name: 'Exercício da segunda página',
+  };
+  services.exercises.list.mockImplementation(params =>
+    Promise.resolve({
+      ...pageOf(params?.page === 2 ? [second] : [exercise]),
+      total: 101,
+      pages: 2,
+    }),
+  );
+  services.exercises.get.mockResolvedValue(second);
+  await openPatient();
+  await press('Criar treino');
+  await press('Adicionar exercício');
+  await fill('Buscar no catálogo', 'segunda pagina');
+  expect(services.exercises.list).toHaveBeenCalledWith({
+    page: 2,
+    page_size: 100,
+  });
+  await press('Exercício da segunda página');
+  expect(services.exercises.get).toHaveBeenCalledWith('exercise-2');
+  expect(pressables('Remover este exercício')).toHaveLength(1);
+  expect(field('Séries').props.value).toBe('');
+});
+
+test('creates another workout for the same patient without replacing existing workouts', async () => {
+  const second = { ...draftWorkout, id: 'workout-2' };
+  services.workouts.listForPatient.mockResolvedValue(pageOf([draftWorkout]));
+  services.workouts.create.mockResolvedValue(second);
+  services.workouts.get.mockResolvedValue(second);
+  await openPatient();
+  expect(pressables('Treino · Rascunho')).toHaveLength(1);
+  expect(pressables('Ver sessões de progresso')).toHaveLength(1);
+  await press('Criar outro treino');
+  expect(hasText('Adicione os exercícios do treino')).toBe(true);
+  await selectExercise();
+  await press('Lado esquerdo');
+  await fill('Séries', '2');
+  await fill('Repetições por série', '8');
+  await fill('Descanso (em segundos)', '20');
+  services.workouts.listForPatient.mockResolvedValue(
+    pageOf([draftWorkout, second]),
+  );
+  await saveWorkout();
+  expect(services.workouts.create).toHaveBeenCalledWith(
+    'patient-1',
+    expect.objectContaining({
+      items: [
+        expect.objectContaining({
+          exercise_id: 'exercise-1',
+          sets: 2,
+          repetitions: 8,
+        }),
+      ],
+    }),
+  );
+  expect(services.workouts.update).not.toHaveBeenCalled();
+  await press('Voltar para Paciente');
+  expect(pressables('Treino · Rascunho')).toHaveLength(2);
+  expect(pressables('Criar outro treino')).toHaveLength(1);
+});
+
+test.each([
+  ['published', 'Publicado'],
+  ['archived', 'Arquivado'],
+] as const)(
+  'review icons preserve permissions for %s workouts',
+  async (status, label) => {
+    const current = { ...draftWorkout, status };
+    services.workouts.listForPatient.mockResolvedValue(pageOf([current]));
+    services.workouts.get.mockResolvedValue(current);
+    await openPatient();
+    await press(`Treino · ${label}`);
+    expect(pressables('Editar treino')).toHaveLength(1);
+    expect(pressables('Arquivar treino')).toHaveLength(
+      status === 'archived' ? 0 : 1,
+    );
+    expect(pressables('Desarquivar treino')).toHaveLength(
+      status === 'archived' ? 1 : 0,
+    );
+    expect(pressables('Apagar treino')).toHaveLength(
+      status === 'archived' ? 1 : 0,
+    );
+  },
+);
+test('the delete review icon keeps its native confirmation before deleting a draft', async () => {
+  services.workouts.listForPatient.mockResolvedValue(pageOf([draftWorkout]));
+  services.workouts.delete.mockResolvedValue(undefined);
+  await openPatient();
+  await press('Treino · Rascunho');
+  await press('Apagar treino');
+  expect(lastNativeAlert()[0]).toBe('Apagar este treino?');
+  expect(services.workouts.delete).not.toHaveBeenCalled();
+  await press('Cancelar');
+  expect(services.workouts.delete).not.toHaveBeenCalled();
+  await press('Apagar treino');
+  services.workouts.listForPatient.mockResolvedValue(pageOf([]));
+  await press('Confirmar');
+  expect(services.workouts.delete).toHaveBeenCalledWith('workout-1');
+  expect(hasText('Treino apagado.')).toBe(true);
+});
+
+test('unarchives a workout after native confirmation and returns it to draft', async () => {
+  const archived = { ...draftWorkout, status: 'archived' };
+  services.workouts.listForPatient.mockResolvedValue(pageOf([archived]));
+  services.workouts.get.mockResolvedValue(archived);
+  services.workouts.unarchive.mockResolvedValue(draftWorkout);
+  await openPatient();
+  await press('Treino · Arquivado');
+  await press('Desarquivar treino');
+  expect(lastNativeAlert()[0]).toBe('Desarquivar este treino?');
+  expect(
+    lastNativeAlert()[2]?.find(button => button.text === 'Confirmar')?.style,
+  ).toBe('default');
+  await press('Cancelar');
+  expect(services.workouts.unarchive).not.toHaveBeenCalled();
+  await press('Desarquivar treino');
+  services.workouts.get.mockResolvedValue(draftWorkout);
+  await press('Confirmar');
+  expect(services.workouts.unarchive).toHaveBeenCalledWith('workout-1');
+  expect(services.workouts.publish).not.toHaveBeenCalled();
+  expect(pressables('Publicar treino')).toHaveLength(1);
+  expect(pressables('Desarquivar treino')).toHaveLength(0);
+});
+test('editing an archived workout only restores it to draft when saved', async () => {
+  const archived = { ...draftWorkout, status: 'archived' };
+  services.workouts.listForPatient.mockResolvedValue(pageOf([archived]));
+  services.workouts.get.mockResolvedValue(archived);
+  services.workouts.update.mockResolvedValue(draftWorkout);
+  await openPatient();
+  await press('Treino · Arquivado');
+  await press('Editar treino');
+  expect(field('Séries').props.value).toBe('3');
+  expect(services.workouts.unarchive).not.toHaveBeenCalled();
+  await saveWorkout();
+  expect(services.workouts.update).toHaveBeenCalledWith(
+    'workout-1',
+    expect.anything(),
+  );
+  expect(services.workouts.publish).not.toHaveBeenCalled();
+});
+test('archived workout deletion preserves the session-history error', async () => {
+  const archived = { ...draftWorkout, status: 'archived' };
+  services.workouts.listForPatient.mockResolvedValue(pageOf([archived]));
+  services.workouts.get.mockResolvedValue(archived);
+  services.workouts.delete.mockRejectedValueOnce(
+    new ApiError('conflict', 'history', 409, 'workout_has_sessions'),
+  );
+  await openPatient();
+  await press('Treino · Arquivado');
+  await press('Apagar treino');
+  await press('Confirmar');
+  expect(services.workouts.delete).toHaveBeenCalledWith('workout-1');
+  expect(
+    hasText('Este treino já tem sessões registradas e não pode ser apagado.'),
+  ).toBe(true);
+  expect(pressables('Desarquivar treino')).toHaveLength(1);
 });

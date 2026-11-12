@@ -2,8 +2,7 @@ import type { UUID } from '../contracts/common';
 
 export type AuthStackParamList = {
   Welcome: undefined;
-  FirstAccess: undefined;
-  Login: undefined;
+  Login: { audience?: 'student' | 'professional' } | undefined;
   ChangePassword: undefined;
 };
 
@@ -21,6 +20,9 @@ export type PhysiotherapistStackParamList = {
   PatientList: undefined;
   PatientCreate: undefined;
   PatientDetails: { patientId: UUID };
+  PatientEdit: { patientId: UUID };
   WorkoutConfiguration: { patientId: UUID; workoutId?: UUID };
-  PatientMonitoring: { patientId: UUID };
+  PatientMonitoring: undefined;
+  PatientFollowUp: { patientId: UUID };
+  ProfessionalPatientProgress: { patientId: UUID };
 };

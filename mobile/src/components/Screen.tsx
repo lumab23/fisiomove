@@ -1,14 +1,11 @@
 import {
   useCallback,
-  useEffect,
   useRef,
   type ComponentRef,
   type PropsWithChildren,
   type RefObject,
 } from 'react';
 import {
-  AccessibilityInfo,
-  Animated,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -23,50 +20,18 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-import {
-  useFocusEffect,
-  useIsFocused,
-  useRoute,
-} from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import { AppHeader } from './AppHeader';
+import { colors, fonts, layout, spacing, typography } from '../theme/theme';
+import { useFrontendNavigation } from '../navigation/frontendTypes';
 import {
-  colors,
-  fonts,
-  layout,
-  radii,
-  spacing,
-  typography,
-} from '../theme/theme';
-import {
-  professionalTabRoutes,
-  useFrontendNavigation,
-} from '../navigation/frontendTypes';
+  professionalTabFor,
+  useOpenProfessionalTab,
+  type ProfessionalTab,
+} from '../navigation/professionalTabs';
 import { Icon } from './Icon';
-import { useScreenMessage } from './ScreenMessage';
 
-type ProfessionalTab = 'patients' | 'monitoring' | 'settings';
-
-/**
- * Tab highlighted for the current route. The library belongs to
- * "Configurações", except when it was opened from the workout editor to pick
- * an exercise (`pickFor`): then it is part of the patient's flow.
- */
-export function professionalTabFor(
-  route: string,
-  params?: object,
-): ProfessionalTab {
-  if (route === 'PatientMonitoring') {
-    return 'monitoring';
-  }
-  if (route === 'ProfessionalSettings' || route === 'ProfessionalProfile') {
-    return 'settings';
-  }
-  if (route === 'ExerciseLibrary' || route === 'ExerciseLibraryDetail') {
-    const pickFor = (params as { pickFor?: unknown } | undefined)?.pickFor;
-    return pickFor ? 'patients' : 'settings';
-  }
-  return 'patients';
-}
+export { professionalTabFor };
 
 export function Screen({
   children,
@@ -88,44 +53,26 @@ export function Screen({
   scrollRef?: RefObject<ComponentRef<typeof ScrollView> | null>;
 }>) {
   const navigation = useFrontendNavigation();
-  const { message, clear } = useScreenMessage();
-  const route = useRoute();
-  const isFocused = useIsFocused();
+  const openTab = useOpenProfessionalTab(navigation);
   const ownScroll = useRef<ComponentRef<typeof ScrollView>>(null);
   const scroll = scrollRef ?? ownScroll;
-  const tabTransition = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    if (!message || !isFocused) return;
-    AccessibilityInfo.announceForAccessibility(message.text);
-    const timeout = setTimeout(clear, 2800);
-    return () => clearTimeout(timeout);
-  }, [clear, isFocused, message]);
   useFocusEffect(
     useCallback(() => {
       scroll.current?.scrollTo({ y: 0, animated: false });
     }, [scroll]),
   );
-  useFocusEffect(
-    useCallback(() => {
-      const isTab = professional && professionalTabRoutes.includes(route.name);
-      if (!isTab) {
-        tabTransition.setValue(1);
-        return;
-      }
-      tabTransition.setValue(0.96);
-      const animation = Animated.timing(tabTransition, {
-        toValue: 1,
-        duration: 190,
-        useNativeDriver: true,
-      });
-      animation.start();
-      return () => animation.stop();
-    }, [professional, route.name, tabTransition]),
-  );
-  const goBack = () =>
-    navigation.canGoBack()
-      ? navigation.goBack()
-      : navigation.navigate(professional ? 'PatientList' : 'PatientTabs');
+  // Transitions come only from the navigator (see `navigation/transitions`).
+  const goBack = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else if (professional) {
+      const state = navigation.getState();
+      const current = state.routes[state.index];
+      openTab(professionalTabFor(current.name, current.params));
+    } else {
+      navigation.navigate('PatientTabs');
+    }
+  };
   return (
     <SafeAreaView
       style={s.safe}
@@ -135,32 +82,12 @@ export function Screen({
         style={s.safe}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <Animated.View
-          style={[
-            s.safe,
-            professional && professionalTabRoutes.includes(route.name)
-              ? {
-                  opacity: tabTransition,
-                  transform: [{ scale: tabTransition }],
-                }
-              : null,
-          ]}
-        >
+        <View style={s.safe}>
           <AppHeader
             title={title}
             backLabel={back}
             onBack={back ? goBack : undefined}
           />
-          {message && isFocused ? (
-            <View
-              pointerEvents="none"
-              style={[s.toastWrap, message.tone === 'error' && s.toastError]}
-            >
-              <Text accessibilityRole="alert" style={s.toastText}>
-                {message.text}
-              </Text>
-            </View>
-          ) : null}
           <ScrollView
             ref={scroll}
             style={s.scrollView}
@@ -179,45 +106,22 @@ export function Screen({
             <View style={s.fixedFooter}>{footer}</View>
           ) : null}
           {professional && <ProfessionalTabs />}
-        </Animated.View>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 export function ProfessionalTabs() {
   const navigation = useFrontendNavigation();
+  const openTab = useOpenProfessionalTab(navigation);
   const insets = useSafeAreaInsets();
   const state = navigation.getState();
   const current = state.routes[state.index];
-  const route = current.name;
-  // Keeps the selected patient when switching to "Acompanhamento".
-  const params = current.params as { patientId?: string } | undefined;
-  const patientId = params?.patientId;
-  const activeTab = professionalTabFor(route, current.params);
-  const tabs: {
-    key: ProfessionalTab;
-    label: string;
-    route: 'PatientList' | 'PatientMonitoring' | 'ProfessionalSettings';
-    icon: TabIconName;
-  }[] = [
-    {
-      key: 'patients',
-      label: 'Pacientes',
-      route: 'PatientList',
-      icon: 'people',
-    },
-    {
-      key: 'monitoring',
-      label: 'Acompanhamento',
-      route: 'PatientMonitoring',
-      icon: 'chart',
-    },
-    {
-      key: 'settings',
-      label: 'Configurações',
-      route: 'ProfessionalSettings',
-      icon: 'settings',
-    },
+  const activeTab = professionalTabFor(current.name, current.params);
+  const tabs: { key: ProfessionalTab; label: string; icon: TabIconName }[] = [
+    { key: 'patients', label: 'Pacientes', icon: 'people' },
+    { key: 'monitoring', label: 'Acompanhamento', icon: 'chart' },
+    { key: 'settings', label: 'Configurações', icon: 'settings' },
   ];
   return (
     <View
@@ -234,7 +138,7 @@ export function ProfessionalTabs() {
         style={StyleSheet.absoluteFill}
       />
       <View style={s.tabs}>
-        {tabs.map(({ key, label, route: targetRoute, icon }) => {
+        {tabs.map(({ key, label, icon }) => {
           const active = key === activeTab;
           const color = active ? colors.primary : colors.textMuted;
           return (
@@ -243,11 +147,7 @@ export function ProfessionalTabs() {
               accessibilityRole="tab"
               accessibilityLabel={label}
               accessibilityState={{ selected: active }}
-              onPress={() =>
-                targetRoute === 'PatientMonitoring' && patientId
-                  ? navigation.navigate(targetRoute, { patientId })
-                  : navigation.navigate(targetRoute)
-              }
+              onPress={() => openTab(key)}
               style={s.tab}
             >
               <TabIcon name={icon} color={color} />
@@ -361,29 +261,6 @@ export const s = StyleSheet.create({
     textAlign: 'center',
   },
   activeTabText: { fontFamily: fonts.bold },
-  toastWrap: {
-    alignSelf: 'center',
-    position: 'absolute',
-    top: layout.headerHeight,
-    width: '90%',
-    maxWidth: layout.contentMaxWidth - spacing.xl,
-    zIndex: 10,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.lg,
-    backgroundColor: colors.text,
-    shadowColor: '#000000',
-    shadowOpacity: 0.14,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-  },
-  toastText: {
-    color: colors.surface,
-    ...typography.bodySmall,
-    textAlign: 'center',
-  },
-  toastError: { backgroundColor: colors.error },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   column: { flex: 1, minWidth: 120 },
 });

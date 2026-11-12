@@ -1,3 +1,5 @@
+import { mockNativeAlerts, pressNativeAlert } from '../test-utils/nativeAlerts';
+import { ScreenMessageProvider } from '../src/components/ScreenMessage';
 import React from 'react';
 import {
   AccessibilityInfo,
@@ -9,7 +11,11 @@ import {
 } from 'react-native';
 import ReactTestRenderer, { act } from 'react-test-renderer';
 import { ApiError } from '../src/api/errors';
-import { HERO_ARM } from '../src/components/AuthHero';
+import {
+  ARM_LEFT_REST,
+  HERO_ARM,
+  HERO_ARM_LEFT,
+} from '../src/components/AuthHero';
 import { RootNavigator } from '../src/navigation/RootNavigator';
 import { ChangePasswordScreen } from '../src/screens/auth/ChangePasswordScreen';
 
@@ -35,10 +41,12 @@ let app: Renderer | undefined;
 let loopStart: jest.Mock;
 
 beforeEach(() => {
+  mockNativeAlerts();
   Object.defineProperty(AppState, 'currentState', {
     value: 'active',
     configurable: true,
   });
+  mockAuth.logout.mockReset().mockResolvedValue(undefined);
   mockAuth.login.mockReset().mockResolvedValue(undefined);
   mockAuth.changePassword.mockReset().mockResolvedValue(undefined);
   loopStart = jest.fn();
@@ -61,7 +69,9 @@ async function render(element: React.ReactElement, reduceMotion = true) {
     .spyOn(AccessibilityInfo, 'isReduceMotionEnabled')
     .mockResolvedValue(reduceMotion);
   await act(async () => {
-    app = ReactTestRenderer.create(element);
+    app = ReactTestRenderer.create(
+      <ScreenMessageProvider>{element}</ScreenMessageProvider>,
+    );
   });
   return app!;
 }
@@ -80,6 +90,19 @@ function control(label: string) {
 }
 
 async function press(label: string) {
+  if (
+    (label === 'Cancelar' || label === 'Confirmar') &&
+    !app!.root.findAll(
+      node =>
+        node.props.accessibilityLabel === label &&
+        typeof node.props.onPress === 'function',
+    ).length
+  ) {
+    await act(async () => {
+      pressNativeAlert(label);
+    });
+    return;
+  }
   await act(async () => control(label).props.onPress());
 }
 
@@ -216,7 +239,7 @@ describe('two step login', () => {
     const invalid = 'E-mail ou senha incorretos. Confira e tente novamente.';
     expect(text()).toContain(invalid);
     expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(
-      invalid,
+      `Erro. ${invalid}`,
     );
     mockAuth.login.mockRejectedValueOnce(new ApiError('network', 'x'));
     await press('Entrar');
@@ -238,6 +261,17 @@ describe('two step login', () => {
 });
 
 describe('create password', () => {
+  test('sign out requires confirmation even during the password change', async () => {
+    await render(<ChangePasswordScreen />);
+    await press('Sair e entrar com outra conta');
+    expect(mockAuth.logout).not.toHaveBeenCalled();
+    await press('Cancelar');
+    expect(mockAuth.logout).not.toHaveBeenCalled();
+    await press('Sair e entrar com outra conta');
+    await press('Confirmar');
+    expect(mockAuth.logout).toHaveBeenCalledTimes(1);
+  });
+
   const status = (label: string) =>
     app!.root.findAll(
       node =>
@@ -311,6 +345,25 @@ describe('reduce motion', () => {
     const bodyRightEdge = 98;
     expect(shoulderY).toBeLessThanOrEqual(46);
     expect(shoulderX + HERO_ARM.width / 2).toBeLessThanOrEqual(bodyRightEdge);
+  });
+
+  test('both hero arms are visible, with resting left arm and hidden shoulder', async () => {
+    await render(<RootNavigator />, true);
+    const leftArm = app!.root.findByProps({ testID: 'auth-hero-arm-left' });
+    const rightArm = app!.root.findByProps({ testID: 'auth-hero-arm' });
+    expect(leftArm).toBeDefined();
+    expect(rightArm).toBeDefined();
+
+    const leftStyle = StyleSheet.flatten(leftArm.props.style);
+    const unit = 112 / 104;
+    const shoulderX =
+      (leftStyle.left as number) / unit + HERO_ARM_LEFT.width / 2;
+    const shoulderY =
+      ((leftStyle.top as number) + (leftStyle.height as number)) / unit;
+    expect(shoulderY).toBeLessThanOrEqual(46);
+    // Body left edge at y=44 is ~5.2, shoulder starts at x >= 5.2
+    expect(shoulderX - HERO_ARM_LEFT.width / 2).toBeGreaterThanOrEqual(5);
+    expect(leftStyle.transform).toEqual([{ rotate: ARM_LEFT_REST }]);
   });
 
   test('form screens keep the mascot still', async () => {

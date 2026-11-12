@@ -1,4 +1,4 @@
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import select
@@ -189,3 +189,39 @@ def test_note_database_constraints(application, data):
             with pytest.raises(IntegrityError):
                 session.flush()
             session.rollback()
+
+
+@pytest.mark.parametrize("visibility", ["professional_only", "patient_visible"])
+def test_author_deletes_note_and_lists_refresh(client, data, headers, visibility):
+    note = create(client, data, headers, visibility)
+    url = f"/api/v1/notes/{note['id']}"
+    response = client.delete(url, headers=headers(data["pro"]))
+    assert response.status_code == 204
+    assert response.content == b""
+    for actor in ["pro", "patient_user"]:
+        page = client.get(path(data), headers=headers(data[actor])).json()
+        assert page["items"] == []
+        assert page["total"] == 0
+    assert client.delete(url, headers=headers(data["pro"])).status_code == 404
+
+
+def test_note_delete_requires_linked_author(application, client, data, headers):
+    note = create(client, data, headers, "patient_visible")
+    url = f"/api/v1/notes/{note['id']}"
+    assert client.delete(url).status_code == 401
+    assert client.delete(url, headers=headers(data["patient_user"])).status_code == 403
+    assert client.delete(url, headers=headers(data["other"])).status_code == 404
+    with application.state.database.session() as session:
+        session.add(
+            ProfessionalPatientLink(
+                physiotherapist_id=data["other"].id, patient_id=data["patient"].id
+            )
+        )
+    response = client.delete(url, headers=headers(data["other"]))
+    assert response.status_code == 403
+    assert response.json()["code"] == "note_author_required"
+    with application.state.database.session() as session:
+        session.get(ProfessionalPatientLink, data["link"].id).is_active = False
+    assert client.delete(url, headers=headers(data["pro"])).status_code == 404
+    with application.state.database.session() as session:
+        assert session.get(Note, UUID(note["id"])) is not None

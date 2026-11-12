@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Screen } from '../../components/Screen';
 import { FormField } from '../../components/FormField';
-import { InlineError } from '../../components/ScreenStates';
 import { useScreenMessage } from '../../components/ScreenMessage';
 import { appDependencies } from '../../app/dependencies';
 import type { PatientCreate } from '../../contracts/domain';
@@ -39,12 +38,10 @@ export function PatientCreateScreen() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [errors, setErrors] = useState<Errors>({});
-  const [failure, setFailure] = useState('');
   const [saving, setSaving] = useState(false);
   const submit = async () => {
     const next = validatePatientForm(name, email, phone);
     setErrors(next);
-    setFailure('');
     if (Object.keys(next).length || saving) {
       return;
     }
@@ -56,13 +53,14 @@ export function PatientCreateScreen() {
     setSaving(true);
     try {
       const patient = await appDependencies.patients.create(payload);
-      show('Paciente cadastrado.');
+      show('Paciente cadastrado.', 'success');
       navigation.replace('PatientDetails', { patientId: patient.id });
     } catch (cause) {
-      setFailure(
+      show(
         apiErrorMessage(cause, {
           email_conflict: 'Este e-mail já é usado por outra conta.',
         }),
+        'error',
       );
       setSaving(false);
     }
@@ -84,7 +82,6 @@ export function PatientCreateScreen() {
         O e-mail é opcional agora, mas é necessário para liberar o acesso ao
         aplicativo.
       </Body>
-      {failure ? <InlineError message={failure} /> : null}
       <FormField
         label="Nome completo"
         value={name}

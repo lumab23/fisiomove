@@ -20,7 +20,7 @@ import { useReduceMotion } from '../../accessibility/useReduceMotion';
 import { friendlyErrorMessage } from '../../api/errors';
 import { Icon, type IconName } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
-import { InlineError } from '../../components/ScreenStates';
+import { useScreenMessage } from '../../components/ScreenMessage';
 import {
   currentWorkoutItem,
   useActiveSession,
@@ -52,7 +52,6 @@ import {
 } from '../../theme/theme';
 import { Button, EmptyState } from '../../ui';
 import {
-  exerciseSourceText,
   exerciseText,
   sideLabels,
   textLanguage,
@@ -109,7 +108,7 @@ function Execution({ session }: { session: ActiveSession }) {
   const pulse = useRef(new Animated.Value(1)).current;
   const result = useSessionResult(session.execution, draft);
   const [finished, setFinished] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { show } = useScreenMessage();
 
   usePreventRemove(focused && !finished, () =>
     navigation.navigate('ConfirmExit', { clientSessionId }),
@@ -173,7 +172,6 @@ function Execution({ session }: { session: ActiveSession }) {
   const goal = progress?.repetitions ?? item.repetitions;
   const sets = progress?.sets ?? item.sets;
   const setNumber = Math.min((progress?.completed_sets ?? 0) + 1, sets);
-  const source = exerciseSourceText(item);
   const text = exerciseText(item);
 
   // Pause, rest and manual counting freeze the engine (RN20, DEC-013).
@@ -216,12 +214,11 @@ function Execution({ session }: { session: ActiveSession }) {
   }, [count, pulse, reduceMotion]);
 
   const complete = async () => {
-    setError(null);
     try {
       await result.complete();
       setFinished(true);
     } catch (cause) {
-      setError(friendlyErrorMessage(cause));
+      show(friendlyErrorMessage(cause), 'error');
     }
   };
 
@@ -330,8 +327,6 @@ function Execution({ session }: { session: ActiveSession }) {
             {item.professional_guidance}
           </Text>
         ) : null}
-        {source ? <Text style={exercise.source}>{source}</Text> : null}
-        {error ? <InlineError message={error} /> : null}
         {snapshot.status === 'active' && !automaticCount ? (
           <Button
             icon="check"

@@ -64,9 +64,7 @@ describe('friendlyErrorMessage', () => {
     expect(
       friendlyErrorMessage(conflict, { workout_archived: 'Texto da tela.' }),
     ).toBe('Texto da tela.');
-    expect(friendlyErrorMessage(conflict)).toBe(
-      'Este treino foi arquivado e não pode mais ser editado.',
-    );
+    expect(friendlyErrorMessage(conflict)).toBe('Este treino está arquivado.');
   });
 
   it('falls back to the kind text for an unknown code', () => {

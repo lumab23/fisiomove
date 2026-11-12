@@ -68,7 +68,7 @@ export const layout = {
 export const motion = {
   breathMs: 4000,
   breathScale: 1.04,
-  stretchEveryMs: 12000,
+  stretchEveryMs: 4000,
   stretchMs: 900,
   stretchHoldMs: 1200,
 } as const;

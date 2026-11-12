@@ -1,7 +1,9 @@
+import { useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Body, Button, Card } from '../ui';
 import { colors, fonts, radii, spacing, typography } from '../theme/theme';
+import { useScreenMessage } from './ScreenMessage';
 
 export function LoadingState({ label }: { label: string }) {
   return (
@@ -53,18 +55,37 @@ export function ErrorState({
   retryLabel?: string;
   onRetry: () => void;
 }) {
+  const { show } = useScreenMessage();
+  const shown = useRef<string | null>(null);
+  const text = `${title}. ${message}`;
+  useEffect(() => {
+    if (shown.current === text) return;
+    shown.current = text;
+    show(text, 'error');
+  }, [show, text]);
   return (
-    <Card white>
-      <Text accessibilityRole="alert" style={styles.errorTitle}>
-        {title}
-      </Text>
-      <Body>{message}</Body>
-      <Button label={retryLabel} onPress={onRetry} />
-    </Card>
+    <View style={styles.errorAction}>
+      <Button secondary label={retryLabel} onPress={onRetry} />
+    </View>
   );
 }
 
-export function InlineError({ message }: { message: string }) {
+export function InlineError({
+  message,
+  static: isStatic,
+}: {
+  message: string;
+  /** Keep the message visible on screen (e.g. form validation). */
+  static?: boolean;
+}) {
+  const { show } = useScreenMessage();
+  const shown = useRef<string | null>(null);
+  useEffect(() => {
+    if (!message || isStatic || shown.current === message) return;
+    shown.current = message;
+    show(message, 'error');
+  }, [isStatic, message, show]);
+  if (!isStatic) return null;
   return (
     <View style={styles.inlineError} accessibilityRole="alert">
       <Text style={styles.inlineErrorText}>{message}</Text>
@@ -94,11 +115,7 @@ const styles = StyleSheet.create({
     ...typography.title,
     fontFamily: fonts.bold,
   },
-  errorTitle: {
-    color: colors.error,
-    ...typography.title,
-    fontFamily: fonts.bold,
-  },
+  errorAction: { alignItems: 'flex-start' },
   inlineError: {
     backgroundColor: colors.errorBackground,
     borderRadius: radii.md,

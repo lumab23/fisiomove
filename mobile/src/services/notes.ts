@@ -11,6 +11,7 @@ import type {
 export interface NoteWrite {
   content: string;
   visibility: NoteVisibility;
+  emoji?: string | null;
 }
 
 export class NoteService {
@@ -27,6 +28,10 @@ export class NoteService {
 
   create(patientId: UUID, payload: NoteWrite): Promise<Note> {
     return this.api.post(`/patients/${patientId}/notes`, payload);
+  }
+
+  delete(noteId: UUID): Promise<void> {
+    return this.api.delete(`/notes/${noteId}`);
   }
 
   update(noteId: UUID, payload: Partial<NoteWrite>): Promise<Note> {

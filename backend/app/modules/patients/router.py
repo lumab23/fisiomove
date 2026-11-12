@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db_session
@@ -68,6 +68,16 @@ def update_patient(
     session: DatabaseSession,
 ) -> PatientResponse:
     return PatientService(session).update(professional.id, patient_id, payload)
+
+
+@router.delete("/{patient_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_patient(
+    patient_id: UUID,
+    professional: Physiotherapist,
+    session: DatabaseSession,
+) -> Response:
+    PatientService(session).delete(professional.id, patient_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/{patient_id}/access", response_model=PatientAccessResponse)
