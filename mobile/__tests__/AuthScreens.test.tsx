@@ -98,16 +98,16 @@ async function type(label: string, value: string) {
 describe('welcome', () => {
   test('is the first screen and leads to login', async () => {
     await render(<RootNavigator />);
-    expect(text()).toContain('Olá! Vamos nos movimentar?');
-    expect(text()).toContain('Primeiro acesso');
-    await press('Entrar');
+    expect(text()).toContain('Vamos nos movimentar?');
+    expect(text()).toContain('Sou aluno');
+    await press('Sou professor');
     expect(text()).toContain('Qual é o seu e-mail?');
     expect(text()).toContain('Passo 1 de 2');
   });
 
   test('explains the first access and leads to login, without sign up', async () => {
     await render(<RootNavigator />);
-    await press('Primeiro acesso');
+    await press('Sou aluno');
     expect(text()).toContain('senha provisória');
     expect(text()).toContain('Esqueceu a senha?');
     expect(app!.root.findAll(node => node.type === TextInput).length).toBe(0);
@@ -119,7 +119,7 @@ describe('welcome', () => {
 describe('two step login', () => {
   async function openLogin() {
     await render(<RootNavigator />);
-    await press('Entrar');
+    await press('Sou professor');
   }
 
   test('an invalid e-mail does not advance', async () => {
@@ -303,7 +303,7 @@ describe('reduce motion', () => {
     await render(<RootNavigator />, true);
     const arm = app!.root.findByProps({ testID: 'auth-hero-arm' });
     const style = StyleSheet.flatten(arm.props.style);
-    const unit = 160 / 104;
+    const unit = 112 / 104;
     const shoulderX = (style.left as number) / unit + HERO_ARM.width / 2;
     const shoulderY = ((style.top as number) + (style.height as number)) / unit;
     // Right edge of the body at shoulder height (BODY path in AnimatedMascot:

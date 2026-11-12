@@ -17,8 +17,10 @@ import {
   Info,
   LogIn,
   LogOut,
+  Mail,
   MessageCircle,
   Pause,
+  Pencil,
   Phone,
   Play,
   Settings,
@@ -56,6 +58,8 @@ const icons = {
   circle: Circle,
   eye: Eye,
   eyeOff: EyeOff,
+  edit: Pencil,
+  mail: Mail,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof icons;

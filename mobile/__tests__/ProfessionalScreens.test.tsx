@@ -841,21 +841,37 @@ test('the physiotherapist edits the own display name', async () => {
     .mockRejectedValueOnce(new ApiError('network', 'offline'))
     .mockResolvedValueOnce({ full_name: 'Dra. Teste' });
   await openSettings('Meu perfil');
-  expect(hasText('Você ainda não informou seu nome')).toBe(true);
-  expect(field('Nome de exibição').props.value).toBe('');
-  await fill('Nome de exibição', ' A ');
-  await press('Salvar nome');
+  expect(hasText('Informações pessoais')).toBe(true);
+  expect(hasText('Não informado')).toBe(true);
+  expect(pressables('Salvar')).toHaveLength(0);
+  expect(
+    app.root.findAllByType(FormField).some(node => node.props.label === 'Nome'),
+  ).toBe(false);
+
+  await press('Editar nome');
+  expect(field('Nome').props.value).toBe('');
+  await fill('Nome', 'Rascunho');
+  await press('Cancelar');
+  expect(hasText('Rascunho')).toBe(false);
+  expect(hasText('Não informado')).toBe(true);
+
+  await press('Editar nome');
+  await fill('Nome', ' A ');
+  await press('Salvar');
   expect(hasText('Informe o nome com pelo menos 2 letras.')).toBe(true);
   expect(services.profile.updatePhysiotherapistProfile).not.toHaveBeenCalled();
 
-  await fill('Nome de exibição', '  Dra. Teste ');
-  await press('Salvar nome');
+  await fill('Nome', '  Dra. Teste ');
+  await press('Salvar');
   expect(hasText('Sem conexão com o servidor')).toBe(true);
-  await press('Salvar nome');
+  await press('Salvar');
   expect(
     services.profile.updatePhysiotherapistProfile,
   ).toHaveBeenLastCalledWith({ full_name: 'Dra. Teste' });
   expect(hasText('Nome salvo.')).toBe(true);
+  expect(pressables('Salvar')).toHaveLength(0);
+  expect(hasText('Dra. Teste')).toBe(true);
+  expect(pressables('Editar nome')).toHaveLength(1);
 });
 
 test('the own profile shows the saved name and recovers from a failure', async () => {
@@ -865,8 +881,10 @@ test('the own profile shows the saved name and recovers from a failure', async (
   await openSettings('Meu perfil');
   expect(hasText('Sem conexão com o servidor')).toBe(true);
   await press('Tentar novamente');
-  expect(field('Nome de exibição').props.value).toBe('Dra. Teste');
-  expect(hasText('Este é o nome que seus pacientes veem')).toBe(true);
+  expect(hasText('Dra. Teste')).toBe(true);
+  expect(hasText('Seus pacientes veem este nome')).toBe(true);
+  await press('Editar nome');
+  expect(field('Nome').props.value).toBe('Dra. Teste');
 });
 
 test('the reference library lists items with the seal, notice and attribution', async () => {

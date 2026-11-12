@@ -73,9 +73,9 @@ async function render() {
 
 test('without a session the app opens on the welcome screen', async () => {
   const json = await render();
-  expect(json).toContain('Olá! Vamos nos movimentar?');
-  expect(json).toContain('Entrar');
-  expect(json).toContain('Primeiro acesso');
+  expect(json).toContain('Vamos nos movimentar?');
+  expect(json).toContain('Sou professor');
+  expect(json).toContain('Sou aluno');
   expect(json).not.toContain('patient:');
 });
 
