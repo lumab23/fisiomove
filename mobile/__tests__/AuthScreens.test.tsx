@@ -217,6 +217,24 @@ describe('two step login', () => {
     });
   });
 
+  // Temporary password format from the backend: uppercase letters and hyphens,
+  // case-sensitive. The app must send it exactly as typed.
+  test('a temporary password like ABCD-EFGH-JKMN is sent unchanged', async () => {
+    await openLogin();
+    expect(field('E-mail').props.autoCapitalize).toBe('none');
+    expect(field('E-mail').props.autoCorrect).toBe(false);
+    await type('E-mail', 'maria@example.com');
+    await press('Continuar');
+    expect(field('Senha').props.autoCapitalize).toBe('none');
+    expect(field('Senha').props.autoCorrect).toBe(false);
+    await type('Senha', ' ABCD-EFGH-JKMN');
+    await press('Entrar');
+    expect(mockAuth.login).toHaveBeenCalledWith({
+      email: 'maria@example.com',
+      password: ' ABCD-EFGH-JKMN',
+    });
+  });
+
   test('a short password is rejected before calling the API', async () => {
     await openLogin();
     await type('E-mail', 'maria@example.com');
@@ -301,6 +319,22 @@ describe('create password', () => {
     await press('Salvar e começar');
     expect(mockAuth.changePassword).toHaveBeenCalledWith(
       'provisoria-123',
+      'minha-senha-nova',
+    );
+  });
+
+  test('the temporary password keeps its case and hyphens', async () => {
+    await render(<ChangePasswordScreen />);
+    for (const label of ['Senha provisória', 'Nova senha', 'Repita a senha']) {
+      expect(field(label).props.autoCapitalize).toBe('none');
+      expect(field(label).props.autoCorrect).toBe(false);
+    }
+    await type('Senha provisória', 'ABCD-EFGH-JKMN');
+    await type('Nova senha', 'minha-senha-nova');
+    await type('Repita a senha', 'minha-senha-nova');
+    await press('Salvar e começar');
+    expect(mockAuth.changePassword).toHaveBeenCalledWith(
+      'ABCD-EFGH-JKMN',
       'minha-senha-nova',
     );
   });

@@ -25,6 +25,11 @@
 - Hash Argon2id por `pwdlib`; senha nunca é armazenada em texto puro.
 - Comprimento aceito: 12 a 128 caracteres.
 - Contas criadas por provisionamento administrativo ou pelo serviço de paciente recebem `must_change_password=true`.
+- Senha temporária gerada pelo servidor (`temporary_password` de `POST /patients/{id}/access`): 12 símbolos sorteados com `secrets` em 3 grupos de 4 separados por hífen, total de 14 caracteres (ex.: `ABCD-EFGH-JKMN`).
+  - Alfabeto de 31 símbolos: `23456789ABCDEFGHJKMNPQRSTUVWXYZ` (maiúsculas e dígitos, sem `0`, `O`, `1`, `I`, `L`); cerca de 59 bits de entropia.
+  - Os hífens fazem parte da senha e a comparação diferencia maiúsculas de minúsculas: o cliente deve enviá-la exatamente como exibida.
+  - A troca no primeiro acesso continua obrigatória; a nova senha segue a regra geral de 12 a 128 caracteres.
+  - Senhas temporárias digitadas pelo operador na CLI de provisionamento não seguem esse formato; só precisam respeitar 12 a 128 caracteres.
 - `/auth/me` e `/auth/change-password` aceitam uma identidade com senha temporária.
 - Rotas de negócio devem usar `get_current_user`, que retorna `403 password_change_required` até a troca.
 - A troca exige a senha atual, rejeita reutilização, incrementa `auth_version` e revoga tokens de renovação.

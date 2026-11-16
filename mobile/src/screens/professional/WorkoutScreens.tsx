@@ -50,6 +50,7 @@ import {
 } from '../patient/workoutText';
 import {
   apiErrorMessage,
+  CheckboxField,
   ChoiceGroup,
   ResourceView,
   restText,
@@ -94,9 +95,18 @@ type ItemDraft = {
 const demoCountingRule: CountingRule = 'demo-elbow-flexion:v1';
 
 const automaticCountingLabel =
-  'Contagem automática demonstrativa (flexão de cotovelo)';
+  'Contagem pela câmera (só para flexão de cotovelo de um lado)';
 const automaticCountingNotice =
   'Não validada clinicamente; os valores são de demonstração acadêmica.';
+/** Per-item state, in the editor and in the review (plan of 2026-11-15, c1). */
+function countingStateText(on: boolean) {
+  return `Contagem pela câmera: ${on ? 'ligada' : 'desligada'}.`;
+}
+/** The patient only gets a new rule from a newly published revision. */
+const republishNotice =
+  'Para o paciente receber a contagem pela câmera, salve e publique o treino de novo.';
+const unpublishedCountingNotice =
+  'A contagem pela câmera só chega ao paciente depois que o treino for publicado.';
 
 /** Automatic counting follows one arm, so it needs the left or right side. */
 function oneSided(side: Side | null): side is 'left' | 'right' {
@@ -564,6 +574,8 @@ function ItemEditor({
   const localization = exercise ? exerciseLocalization(exercise) : null;
   const name = localization?.name ?? exercise?.name ?? `Exercício ${index + 1}`;
   const setCount = Number(draft.sets);
+  const resolvedSide = itemSide(draft, exercise);
+  const counting = draft.automaticCounting && oneSided(resolvedSide);
   const actions: {
     icon: IconName;
     label: string;
@@ -637,6 +649,31 @@ function ItemEditor({
           }
           error={errors.side}
         />
+      ) : null}
+      {/* DEC-013: off by default; one arm only, so left or right. */}
+      {exercise ? (
+        <CheckboxField
+          label={automaticCountingLabel}
+          checked={counting}
+          onChange={automaticCounting => onChange({ automaticCounting })}
+          disabledReason={
+            oneSided(resolvedSide)
+              ? undefined
+              : resolvedSide === 'bilateral'
+                ? 'Disponível só para o lado esquerdo ou direito: a contagem acompanha um braço por vez.'
+                : 'Escolha o lado esquerdo ou direito para ativar.'
+          }
+        >
+          <Text style={editorStyles.caption}>
+            {countingStateText(counting)}
+          </Text>
+          {counting ? (
+            <>
+              <Badge label={automaticCountingNotice} tone="warning" />
+              <Body>{republishNotice}</Body>
+            </>
+          ) : null}
+        </CheckboxField>
       ) : null}
       <View style={editorStyles.seriesRow}>
         <View style={editorStyles.seriesField}>
@@ -783,6 +820,10 @@ export function WorkoutReviewScreen() {
             {current.status === 'draft' ? (
               <Body>O paciente só vê o treino depois que ele é publicado.</Body>
             ) : null}
+            {current.status !== 'published' &&
+            current.items.some(item => item.counting_rule) ? (
+              <Badge label={unpublishedCountingNotice} tone="warning" />
+            ) : null}
             {[...current.items]
               .sort((a, b) => a.position - b.position)
               .map(item => (
@@ -896,11 +937,9 @@ function ReviewItem({ item }: { item: WorkoutItem }) {
       />
       <Body>{prescriptionText(item, prescribedSideLabels)}</Body>
       <Body>{restText(item)}</Body>
+      <Body>{countingStateText(Boolean(item.counting_rule))}</Body>
       {item.counting_rule ? (
-        <>
-          <Body>{`${automaticCountingLabel}: ativada.`}</Body>
-          <Badge label={automaticCountingNotice} tone="warning" />
-        </>
+        <Badge label={automaticCountingNotice} tone="warning" />
       ) : null}
       {item.professional_guidance ? (
         <Body>{item.professional_guidance}</Body>

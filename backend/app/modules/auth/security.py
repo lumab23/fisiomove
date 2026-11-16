@@ -15,6 +15,10 @@ from app.modules.auth.models import User, UserRole
 
 MIN_PASSWORD_LENGTH = 12
 MAX_PASSWORD_LENGTH = 128
+# Uppercase letters and digits without look-alikes (0/O, 1/I/L).
+TEMPORARY_PASSWORD_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"
+TEMPORARY_PASSWORD_GROUPS = 3
+TEMPORARY_PASSWORD_GROUP_SIZE = 4
 
 
 class PasswordManager:
@@ -153,4 +157,16 @@ class TokenService:
 
 
 def generate_temporary_password() -> str:
-    return secrets.token_urlsafe(18)
+    """Return a readable one-time password such as ``ABCD-EFGH-JKMN``.
+
+    12 random symbols from a 31-character alphabet (~59 bits) in groups of four;
+    the password must be changed on first access.
+    """
+    symbols = "".join(
+        secrets.choice(TEMPORARY_PASSWORD_ALPHABET)
+        for _ in range(TEMPORARY_PASSWORD_GROUPS * TEMPORARY_PASSWORD_GROUP_SIZE)
+    )
+    return "-".join(
+        symbols[start : start + TEMPORARY_PASSWORD_GROUP_SIZE]
+        for start in range(0, len(symbols), TEMPORARY_PASSWORD_GROUP_SIZE)
+    )

@@ -229,6 +229,31 @@ Ela não cria exercício: exige um registro ativo com contrato de parâmetros
 vazio. O operador deve disponibilizar somente um exercício aprovado para a
 demonstração; na ausência dele, o seed falha sem inventar dados clínicos.
 
+### Credenciais simples de teste
+
+O seed lê as variáveis `DEMO_*` do ambiente do processo (não do `.env`). Guarde
+os valores em `backend/.env.demo`, arquivo local já ignorado pelo Git (regra
+`.env.*` do `.gitignore`); `.env.example` traz só as chaves com placeholders.
+Use e-mails simples (por exemplo `fisio@example.com`, `maria@example.com`,
+`ana@example.com`) e senhas memoráveis de 12 a 128 caracteres: o mínimo de 12
+vale em todos os ambientes. Nunca coloque essas senhas em arquivos versionados.
+
+```bash
+cd backend
+set -a; . ./.env.demo; set +a
+python -m scripts.seed_demo                    # cria/garante os dados fictícios
+python -m scripts.seed_demo --reset-passwords  # redefine contas demo existentes
+```
+
+`--reset-passwords` não cria contas nem dados: para cada conta demo existente,
+aplica a senha da variável correspondente, incrementa `auth_version` e revoga as
+renovações ativas. Conta inexistente aparece como `missing`; conta já no estado
+desejado aparece como `unchanged` (idempotente). Todas as contas demo,
+inclusive a do fisioterapeuta, ficam sem troca obrigatória, para que a senha do
+`.env.demo` continue valendo nas demonstrações. O comando recusa `APP_ENV=production`, papel
+divergente, paciente sem perfil vinculado ao e-mail, conta inativa e senha fora
+de 12 a 128 caracteres, sem alterar nenhuma conta. A saída nunca mostra senhas.
+
 ## Integração do mobile
 
 O mobile deve persistir localmente, antes de iniciar uma execução,

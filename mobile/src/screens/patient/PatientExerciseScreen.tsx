@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
   Animated,
   AppState,
+  Platform,
   Pressable,
   StatusBar,
   StyleSheet,
   Text,
+  Vibration,
   View,
 } from 'react-native';
 import {
@@ -27,8 +30,11 @@ import {
   type ActiveSession,
 } from '../../features/session/ActiveSession';
 import { useSessionResult } from '../../features/session/useSessionResult';
+import { executionFeedback } from '../../features/session/executionFeedback';
+import type { SessionExecutionSnapshot } from '../../features/session/SessionExecution';
 import { LocalPoseCamera } from '../../features/vision/LocalPoseCamera';
 import { MovementEngine } from '../../features/exercise-engine/MovementEngine';
+import type { MovementUpdate } from '../../features/exercise-engine/types';
 import {
   demoRuleForItem,
   poseFrameFromObservation,
@@ -51,14 +57,19 @@ import {
   typography,
 } from '../../theme/theme';
 import { Button, EmptyState } from '../../ui';
-import {
-  exerciseText,
-  sideLabels,
-  textLanguage,
-} from './workoutText';
+import { exerciseText, sideLabels, textLanguage } from './workoutText';
 
 /** Screen refresh while active or resting; not a clinical value. */
 const CLOCK_REFRESH_MS = 1000;
+
+/** Last engine reading, shown only in development builds (DEC-012). */
+interface EngineDiagnostic {
+  update: MovementUpdate;
+  inference_duration_ms: number;
+  /** Time since the previous observation; `null` for the first one. */
+  interval_ms: number | null;
+  is_mirrored: boolean;
+}
 
 /**
  * Execution of the published workout: reads the in-memory session;
@@ -173,6 +184,41 @@ function Execution({ session }: { session: ActiveSession }) {
   const sets = progress?.sets ?? item.sets;
   const setNumber = Math.min((progress?.completed_sets ?? 0) + 1, sets);
   const text = exerciseText(item);
+  const [diagnostic, setDiagnostic] = useState<EngineDiagnostic | null>(null);
+  const lastObservationAt = useRef<number | null>(null);
+  useEffect(() => {
+    setDiagnostic(null);
+    lastObservationAt.current = null;
+  }, [movementEngine]);
+
+  // Repetition, set and next item feedback (Q-P2). The session decides what
+  // counts; nothing is told while paused (RN20) and nothing describes the
+  // movement (RN18).
+  const [notices, setNotices] = useState<string[]>([]);
+  const previousSnapshot = useRef<SessionExecutionSnapshot | null>(null);
+  const workoutItems = session.workout.items;
+  useEffect(() => {
+    const feedback = executionFeedback(
+      previousSnapshot.current,
+      snapshot,
+      index => {
+        const entry = workoutItems.find(
+          candidate => candidate.id === snapshot.items[index]?.workout_item_id,
+        );
+        return entry ? exerciseText(entry).name : `Exercício ${index + 1}`;
+      },
+    );
+    previousSnapshot.current = snapshot;
+    if (!feedback) {
+      return;
+    }
+    // Android would need the VIBRATE permission in the manifest (not added).
+    if (feedback.repetition && Platform.OS === 'ios') {
+      Vibration.vibrate();
+    }
+    AccessibilityInfo.announceForAccessibility(feedback.announcement);
+    setNotices(feedback.notices);
+  }, [snapshot, workoutItems]);
 
   // Pause, rest and manual counting freeze the engine (RN20, DEC-013).
   const engineRunning = automaticCount && snapshot.status === 'active';
@@ -193,6 +239,17 @@ function Execution({ session }: { session: ActiveSession }) {
         poseFrameFromObservation(observation),
         side,
       );
+      if (__DEV__) {
+        const previousAt = lastObservationAt.current;
+        lastObservationAt.current = observation.timestamp_ms;
+        setDiagnostic({
+          update,
+          inference_duration_ms: observation.inference_duration_ms,
+          interval_ms:
+            previousAt === null ? null : observation.timestamp_ms - previousAt,
+          is_mirrored: observation.is_mirrored,
+        });
+      }
       setFraming(framingFeedback(update));
       if (update.feedback === 'rep_completed') {
         countCameraRepetition();
@@ -286,11 +343,8 @@ function Execution({ session }: { session: ActiveSession }) {
 
       <SafeAreaView edges={['bottom', 'left', 'right']} style={exercise.panel}>
         <View style={exercise.counterRow}>
-          <View
-            accessible
-            accessibilityLabel={`Repetição ${count} de ${goal}`}
-            accessibilityLiveRegion="polite"
-          >
+          {/* Counted repetitions are announced once by the feedback effect. */}
+          <View accessible accessibilityLabel={`Repetição ${count} de ${goal}`}>
             <Text style={exercise.counterLabel}>Repetição</Text>
             <View style={exercise.countLine}>
               <Animated.Text
@@ -318,6 +372,15 @@ function Execution({ session }: { session: ActiveSession }) {
             style={[exercise.barFill, { width: `${(count / goal) * 100}%` }]}
           />
         </View>
+        {notices.length ? (
+          <View style={exercise.notice}>
+            {notices.map(notice => (
+              <Text key={notice} style={exercise.noticeText}>
+                {notice}
+              </Text>
+            ))}
+          </View>
+        ) : null}
         {item.professional_guidance ? (
           <Text
             style={exercise.guidance}
@@ -367,9 +430,62 @@ function Execution({ session }: { session: ActiveSession }) {
                   ? 'A câmera conta as repetições. Se preferir, toque em Contar manualmente.'
                   : 'Toque ao terminar cada repetição.'}
         </Text>
+        {__DEV__ ? (
+          <Text
+            testID="execution-diagnostic"
+            style={exercise.diagnostic}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          >
+            {diagnosticText({
+              countingRule: item.counting_rule ?? null,
+              automaticCount,
+              side: item.side,
+              joint: demoRule?.landmarks.joint ?? null,
+              diagnostic,
+            })}
+          </Text>
+        ) : null}
       </SafeAreaView>
     </View>
   );
+}
+
+/**
+ * Development-only reading for the device check (plan of 2026-11-15, step 1):
+ * which rule the item carries, whether the engine runs and its last reading.
+ */
+function diagnosticText({
+  countingRule,
+  automaticCount,
+  side,
+  joint,
+  diagnostic,
+}: {
+  countingRule: string | null;
+  automaticCount: boolean;
+  side: string;
+  joint: string | null;
+  diagnostic: EngineDiagnostic | null;
+}) {
+  const angle = diagnostic?.update.angle_degrees;
+  return [
+    `counting_rule: ${countingRule ?? 'nenhuma'}`,
+    `contagem automática: ${automaticCount ? 'ligada' : 'desligada'}`,
+    `lado seguido: ${side}${joint ? ` (${joint})` : ''}`,
+    `feedback: ${diagnostic?.update.feedback ?? '-'} · phase: ${
+      diagnostic?.update.phase ?? '-'
+    } · angle: ${
+      angle === null || angle === undefined ? '-' : `${Math.round(angle)}°`
+    }`,
+    `inferência: ${
+      diagnostic ? `${Math.round(diagnostic.inference_duration_ms)} ms` : '-'
+    } · intervalo: ${
+      diagnostic === null || diagnostic.interval_ms === null
+        ? '-'
+        : `${Math.round(diagnostic.interval_ms)} ms`
+    } · is_mirrored: ${diagnostic ? String(diagnostic.is_mirrored) : '-'}`,
+  ].join('\n');
 }
 
 function FloatingControl({
@@ -526,6 +642,23 @@ const exercise = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: fonts.regular,
     ...typography.caption,
+  },
+  notice: {
+    gap: spacing.xs,
+    padding: spacing.md,
+    borderRadius: radii.md,
+    backgroundColor: colors.successBackground,
+  },
+  noticeText: {
+    color: colors.success,
+    fontFamily: fonts.bold,
+    ...typography.bodySmall,
+    textAlign: 'center',
+  },
+  diagnostic: {
+    color: colors.textMuted,
+    fontFamily: fonts.regular,
+    ...typography.label,
   },
   hint: {
     color: colors.textMuted,

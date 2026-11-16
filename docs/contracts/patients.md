@@ -78,7 +78,7 @@ Para uma conta ativa, a redefinição é explícita:
 {"operation": "reset_temporary_password"}
 ```
 
-A resposta inclui a senha temporária somente nessa chamada. O hash permanece interno, todas as renovações anteriores são revogadas e o paciente deve trocar a senha antes de acessar funcionalidades de negócio. O registro deve estar ativo e possuir e-mail.
+A resposta inclui a senha temporária somente nessa chamada, no formato legível `ABCD-EFGH-JKMN` descrito em [autenticação](authentication.md#senhas-e-primeiro-acesso). O hash permanece interno, todas as renovações anteriores são revogadas e o paciente deve trocar a senha antes de acessar funcionalidades de negócio. O registro deve estar ativo e possuir e-mail.
 
 ## Erros relevantes
 

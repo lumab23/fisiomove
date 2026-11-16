@@ -3,9 +3,14 @@
 Required environment variables:
 DEMO_PRO_EMAIL, DEMO_PRO_PASSWORD, DEMO_MARIA_EMAIL, DEMO_MARIA_PASSWORD,
 DEMO_ANA_EMAIL, DEMO_ANA_PASSWORD. Run after ``alembic upgrade head``.
+
+``--reset-passwords`` only sets the existing demo accounts' passwords back to
+those variables (nothing is created); it is refused in production too.
 """
 
+import argparse
 import os
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from uuid import NAMESPACE_URL, uuid5
 
@@ -15,11 +20,16 @@ from sqlalchemy.orm import Session
 from app.core.config import Environment, Settings, get_settings
 from app.core.errors import ApiError
 from app.db.session import Database
-from app.modules.auth.models import User, UserRole
-from app.modules.auth.repositories import SqlAlchemyUserRepository
+from app.modules.auth.models import User, UserRole, utc_now
+from app.modules.auth.repositories import (
+    SqlAlchemyRefreshTokenRepository,
+    SqlAlchemyUserRepository,
+)
+from app.modules.auth.security import PasswordManager, validate_password
 from app.modules.auth.services import (
     AccountProvisioningService,
     AuthenticationService,
+    normalize_email,
 )
 from app.modules.exercises.models import Exercise
 from app.modules.patients.models import Patient, ProfessionalPatientLink
@@ -222,12 +232,98 @@ def seed_maria_example_session(
     )
 
 
-def main() -> int:
+def ensure_not_production() -> None:
     if os.getenv("APP_ENV", "development").lower() == Environment.PRODUCTION.value:
         raise ValueError("The fictitious demo seed cannot run in production")
+
+
+def reset_demo_passwords(
+    session: Session, accounts: dict[str, tuple[str, str]]
+) -> dict[str, str]:
+    """Set existing demo accounts' passwords to the configured values.
+
+    Leaves every demo account (professional included) without the mandatory
+    change, so the configured password keeps working for demos. All accounts
+    are validated before any change, and an account already in the target
+    state is left untouched (idempotent).
+    Returns ``name -> "updated" | "unchanged" | "missing"``; never passwords.
+    """
+    passwords = PasswordManager()
+    users = SqlAlchemyUserRepository(session)
+    planned: list[tuple[str, User, str, bool]] = []
+    outcome: dict[str, str] = {}
+    for name, (email, password) in accounts.items():
+        validate_password(password)  # 12-128 characters, before any change
+        normalized_email = normalize_email(email)
+        user = users.get_by_email_for_update(normalized_email)
+        if user is None:
+            outcome[name] = "missing"
+            continue
+        is_professional = name == "professional"
+        expected_role = (
+            UserRole.PHYSIOTHERAPIST if is_professional else UserRole.PATIENT
+        )
+        if user.role is not expected_role:
+            raise ValueError(f"{name} email belongs to an account with another role")
+        if not is_professional:
+            patient = session.scalar(
+                select(Patient).where(
+                    Patient.email == normalized_email, Patient.user_id == user.id
+                )
+            )
+            if patient is None:
+                raise ValueError(f"{name} email is not a demo patient account")
+        if not user.is_active:
+            raise ValueError(f"{name} demo account is inactive; reactivate it first")
+        planned.append((name, user, password, False))
+
+    refresh_tokens = SqlAlchemyRefreshTokenRepository(session)
+    for name, user, password, must_change_password in planned:
+        if (
+            passwords.verify(password, user.password_hash)
+            and user.must_change_password is must_change_password
+        ):
+            outcome[name] = "unchanged"
+            continue
+        now = utc_now()
+        user.password_hash = passwords.hash(password)
+        user.must_change_password = must_change_password
+        user.auth_version += 1
+        user.updated_at = now
+        refresh_tokens.revoke_active_for_user(user.id, now)
+        outcome[name] = "updated"
+    session.flush()
+    return outcome
+
+
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--reset-passwords",
+        action="store_true",
+        help="Reset existing demo accounts to the DEMO_* passwords and exit.",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    ensure_not_production()
+    args = parse_args(argv)
     accounts = configured_accounts()
     settings = get_settings()
+    if settings.environment is Environment.PRODUCTION:
+        # APP_ENV may come only from backend/.env, which os.getenv does not see.
+        raise ValueError("The fictitious demo seed cannot run in production")
     database = Database(settings.database_url, echo=settings.db_echo)
+    if args.reset_passwords:
+        try:
+            with database.session() as session:
+                outcome = reset_demo_passwords(session, accounts)
+            for name, status in outcome.items():
+                print(f"{name}: {status}")
+            return 0
+        finally:
+            database.dispose()
     try:
         with database.session() as session:
             professional = get_or_create_professional(

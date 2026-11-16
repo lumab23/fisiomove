@@ -1,5 +1,6 @@
 import type { SessionDraft } from '../src/sync/types';
 import { SessionExecution } from '../src/features/session/SessionExecution';
+import { executionFeedback } from '../src/features/session/executionFeedback';
 
 const draft: SessionDraft = {
   owner_user_id: '11111111-1111-4111-8111-111111111111',
@@ -158,4 +159,94 @@ test('pausa congela o motor e impede trocar a origem (RN20)', () => {
   expect(execution.switchToManualCounting().items[0].manual_counting).toBe(
     false,
   );
+});
+
+// Plan of 2026-11-15 (Q-P2): system feedback derived from two snapshots.
+describe('executionFeedback', () => {
+  const names = (index: number) => ['Primeiro teste', 'Segundo teste'][index];
+  const twoItems = [
+    { ...plan[0], sets: 2, repetitions: 2, rest_duration_ms: 0 },
+    {
+      ...plan[0],
+      workout_item_id: '66666666-6666-4666-8666-666666666666',
+      position: 2,
+      sets: 1,
+      repetitions: 1,
+      rest_duration_ms: 0,
+    },
+  ];
+
+  test('repetição, série concluída e próximo exercício', () => {
+    let now = 0;
+    const execution = new SessionExecution(draft, twoItems, () => now);
+    let previous = execution.start();
+    const step = (next: ReturnType<SessionExecution['snapshot']>) => {
+      const feedback = executionFeedback(previous, next, names);
+      previous = next;
+      return feedback;
+    };
+    now = 100;
+    expect(step(execution.completeRepetition())).toEqual({
+      announcement: 'Repetição 1 de 2.',
+      notices: [],
+      repetition: true,
+    });
+    now = 200;
+    expect(step(execution.completeRepetition())).toEqual({
+      announcement: 'Repetição 2 de 2. Série 1 de 2 concluída.',
+      notices: ['Série 1 de 2 concluída'],
+      repetition: true,
+    });
+    now = 300;
+    step(execution.completeRepetition());
+    now = 400;
+    // No rest: the set closes and the next item starts at once.
+    expect(step(execution.completeRepetition())).toEqual({
+      announcement:
+        'Repetição 2 de 2. Série 2 de 2 concluída. Próximo exercício: Segundo teste.',
+      notices: ['Série 2 de 2 concluída', 'Próximo exercício: Segundo teste'],
+      repetition: true,
+    });
+    now = 500;
+    // Last set of the plan: no "next exercise".
+    expect(step(execution.completeRepetition())).toEqual({
+      announcement: 'Repetição 1 de 1. Série 1 de 1 concluída.',
+      notices: ['Série 1 de 1 concluída'],
+      repetition: true,
+    });
+  });
+
+  test('tempo, pausa e retomada não geram aviso (RN20)', () => {
+    let now = 0;
+    const execution = new SessionExecution(draft, twoItems, () => now);
+    const started = execution.start();
+    now = 1000;
+    const ticked = execution.tick();
+    expect(executionFeedback(started, ticked, names)).toBeNull();
+    const paused = execution.pause();
+    expect(executionFeedback(ticked, paused, names)).toBeNull();
+    // A touch while paused does not count, so nothing is told.
+    const touched = execution.completeRepetition();
+    expect(executionFeedback(paused, touched, names)).toBeNull();
+    now = 2000;
+    expect(executionFeedback(touched, execution.resume(), names)).toBeNull();
+    expect(executionFeedback(null, execution.snapshot(), names)).toBeNull();
+  });
+
+  test('nunca anuncia além do prescrito (RN19)', () => {
+    let now = 0;
+    const execution = new SessionExecution(
+      draft,
+      [{ ...plan[0], sets: 1, repetitions: 1 }],
+      () => now,
+    );
+    execution.start();
+    now = 100;
+    const completed = execution.completeRepetition();
+    expect(completed.status).toBe('completed');
+    now = 200;
+    expect(
+      executionFeedback(completed, execution.completeRepetition(), names),
+    ).toBeNull();
+  });
 });

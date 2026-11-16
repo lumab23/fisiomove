@@ -4,7 +4,13 @@ import {
   lastNativeAlert,
 } from '../test-utils/nativeAlerts';
 import React from 'react';
-import { AppState, Image, Text } from 'react-native';
+import {
+  AccessibilityInfo,
+  AppState,
+  Image,
+  Text,
+  Vibration,
+} from 'react-native';
 import ReactTestRenderer, { act } from 'react-test-renderer';
 import { ApiError } from '../src/api/errors';
 import { appDependencies } from '../src/app/dependencies';
@@ -997,4 +1003,126 @@ test('cancelling the native session exit leaves the draft intact', async () => {
   expect(hasButton('Encerrar')).toBe(true);
   expect(mockSync.discardDraft).not.toHaveBeenCalled();
   expect(mockSync.finishDraft).not.toHaveBeenCalled();
+});
+
+// Plan of 2026-11-15, step 5 (Q-P2): system feedback per repetition, set and
+// item. Never during a pause (RN20) and never about the movement (RN18).
+const feedbackTexts = /^(Repetição|Série|Próximo exercício)/;
+
+function spyFeedback() {
+  const announce = jest
+    .spyOn(AccessibilityInfo, 'announceForAccessibility')
+    .mockImplementation(() => undefined);
+  const vibrate = jest
+    .spyOn(Vibration, 'vibrate')
+    .mockImplementation(() => undefined);
+  const announced = () =>
+    announce.mock.calls
+      .map(([message]) => message)
+      .filter(message => feedbackTexts.test(message));
+  return { announced, vibrate };
+}
+
+test('each touch repetition vibrates and is announced; a closed set is shown', async () => {
+  const { announced, vibrate } = spyFeedback();
+  await openFraming();
+  await press('Começar exercício');
+  expect(announced()).toEqual([]);
+  await press('Contar repetição');
+  expect(announced()).toEqual(['Repetição 1 de 3.']);
+  expect(vibrate).toHaveBeenCalledTimes(1);
+  expect(hasText('concluída')).toBe(false);
+  await press('Contar repetição');
+  await press('Contar repetição');
+  expect(announced().at(-1)).toBe('Repetição 3 de 3. Série 1 de 2 concluída.');
+  expect(vibrate).toHaveBeenCalledTimes(3);
+  expect(hasText('Série 1 de 2 concluída')).toBe(true);
+  // The next repetition replaces the notice.
+  await press('Contar repetição');
+  expect(hasText('Série 1 de 2 concluída')).toBe(false);
+  await press('Contar repetição');
+  await press('Contar repetição');
+  expect(announced().at(-1)).toBe('Repetição 3 de 3. Série 2 de 2 concluída.');
+  expect(hasText('Série 2 de 2 concluída')).toBe(true);
+  expect(vibrate).toHaveBeenCalledTimes(6);
+  // No movement description or correction in any message (RN18).
+  expect(announced().join(' ')).not.toMatch(/braço|cotovelo|posição|corrij/i);
+});
+
+test('the next item is shown and announced after the rest', async () => {
+  const { announced } = spyFeedback();
+  let clock = Date.now();
+  jest.spyOn(Date, 'now').mockImplementation(() => clock);
+  await startGuided();
+  for (let i = 0; i < 6; i += 1) {
+    if (!hasButton('Contar repetição')) {
+      clock += 31000;
+      await act(() => new Promise(resolve => setTimeout(resolve, 1100)));
+    }
+    await press('Contar repetição');
+  }
+  expect(hasText('Série 2 de 2 concluída')).toBe(true);
+  clock += 31000;
+  await act(() => new Promise(resolve => setTimeout(resolve, 1100)));
+  expect(hasText('Exercício 2 de 2')).toBe(true);
+  expect(hasText('Próximo exercício: Second test exercise')).toBe(true);
+  expect(announced().at(-1)).toBe('Próximo exercício: Second test exercise.');
+});
+
+test('camera repetitions get the same feedback, and none while paused (RN20)', async () => {
+  const { announced, vibrate } = spyFeedback();
+  await startCounted();
+  await press('Pausar');
+  await feed(syntheticCycle);
+  await press('Continuar exercício');
+  expect(announced()).toEqual([]);
+  expect(vibrate).not.toHaveBeenCalled();
+  await feed(syntheticCycle);
+  expect(announced()).toEqual(['Repetição 1 de 2.']);
+  expect(vibrate).toHaveBeenCalledTimes(1);
+});
+
+// Plan of 2026-11-15, step 1: technical reading for the device check, only in
+// development builds (DEC-012).
+function diagnosticText() {
+  const nodes = app.root.findAll(
+    node =>
+      node.props.testID === 'execution-diagnostic' &&
+      typeof node.type !== 'string',
+  );
+  return nodes.map(node => [node.props.children].flat().join('')).join('');
+}
+
+test('the development reading shows the rule and the engine state', async () => {
+  await startCounted();
+  expect(diagnosticText()).toContain('counting_rule: demo-elbow-flexion:v1');
+  expect(diagnosticText()).toContain('contagem automática: ligada');
+  expect(diagnosticText()).toContain('lado seguido: left (left_elbow)');
+  await feed([170, 165]);
+  expect(diagnosticText()).toMatch(/feedback: \w+ · phase: \w+ · angle: \d+°/);
+  expect(diagnosticText()).toContain('inferência: 20 ms');
+  expect(diagnosticText()).toContain('intervalo: 100 ms');
+  expect(diagnosticText()).toContain('is_mirrored: false');
+});
+
+test('an item without the rule says so in the development reading', async () => {
+  await openFraming();
+  await press('Começar exercício');
+  expect(diagnosticText()).toContain('counting_rule: nenhuma');
+  expect(diagnosticText()).toContain('contagem automática: desligada');
+});
+
+test('the development reading is absent outside __DEV__', async () => {
+  const globals = globalThis as unknown as { __DEV__: boolean };
+  const previous = globals.__DEV__;
+  globals.__DEV__ = false;
+  try {
+    await startCounted();
+    await feed([170, 165]);
+    expect(diagnosticText()).toBe('');
+    expect(hasText('counting_rule')).toBe(false);
+    expect(hasText('is_mirrored')).toBe(false);
+  } finally {
+    globals.__DEV__ = previous;
+  }
 });

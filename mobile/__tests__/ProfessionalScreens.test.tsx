@@ -571,11 +571,20 @@ test('workout values start empty and a single allowed side needs no choice', asy
   expect(hasText('Rascunho salvo')).toBe(true);
 });
 
-const countingLabel = 'Contagem automática demonstrativa (flexão de cotovelo)';
+const countingLabel =
+  'Contagem pela câmera (só para flexão de cotovelo de um lado)';
 const countingNotice =
   'Não validada clinicamente; os valores são de demonstração acadêmica.';
+const countingOn = 'Contagem pela câmera: ligada.';
+const countingOff = 'Contagem pela câmera: desligada.';
+const countingRepublish =
+  'Para o paciente receber a contagem pela câmera, salve e publique o treino de novo.';
+const unpublishedCounting =
+  'A contagem pela câmera só chega ao paciente depois que o treino for publicado.';
 
-test('the editor no longer offers automatic counting; new items go without it', async () => {
+// Plan of 2026-11-15, step 4 (Q-P1 = c1): per item, off by default, visible
+// state and a republish warning.
+test('the editor offers camera counting per one-sided item, off by default', async () => {
   services.exercises.list.mockResolvedValue(
     pageOf([{ ...exercise, allowed_sides: ['left', 'bilateral'] }]),
   );
@@ -583,26 +592,83 @@ test('the editor no longer offers automatic counting; new items go without it', 
   await openPatient();
   await press('Criar treino');
   await selectExercise();
-  expect(pressables(countingLabel)).toHaveLength(0);
+  const [checkbox] = pressables(countingLabel);
+  expect(checkbox.props.accessibilityRole).toBe('checkbox');
+  // No side yet: it cannot be turned on.
+  expect(checkbox.props.accessibilityState).toEqual({
+    checked: false,
+    disabled: true,
+  });
+  expect(hasText('Escolha o lado esquerdo ou direito para ativar.')).toBe(true);
+  expect(hasText(countingOff)).toBe(true);
   expect(hasText(countingNotice)).toBe(false);
-  expect(hasText('Escolha o lado esquerdo ou direito para ativar.')).toBe(
-    false,
-  );
-  // More than one allowed side: the physiotherapist chooses it.
-  expect(pressables('Lado esquerdo')).toHaveLength(1);
-  expect(pressables('Os dois lados')).toHaveLength(1);
+
+  await press('Os dois lados');
+  expect(pressables(countingLabel)[0].props.accessibilityState).toEqual({
+    checked: false,
+    disabled: true,
+  });
+  expect(
+    hasText(
+      'Disponível só para o lado esquerdo ou direito: a contagem acompanha um braço por vez.',
+    ),
+  ).toBe(true);
+
   await press('Lado esquerdo');
+  expect(pressables(countingLabel)[0].props.accessibilityState).toEqual({
+    checked: false,
+    disabled: false,
+  });
+  await press(countingLabel);
+  expect(pressables(countingLabel)[0].props.accessibilityState).toEqual({
+    checked: true,
+    disabled: false,
+  });
+  expect(hasText(countingOn)).toBe(true);
+  expect(hasText(countingNotice)).toBe(true);
+  expect(hasText(countingRepublish)).toBe(true);
+
   await fill('Séries', '3');
   await fill('Repetições por série', '12');
   await fill('Descanso (em segundos)', '30');
   await saveWorkout();
   expect(services.workouts.create).toHaveBeenCalledWith('patient-1', {
     instructions: null,
-    items: [expect.objectContaining({ side: 'left', counting_rule: null })],
+    items: [
+      expect.objectContaining({
+        side: 'left',
+        counting_rule: 'demo-elbow-flexion:v1',
+      }),
+    ],
   });
 });
 
-test('editing keeps an existing counting rule and the review shows the seal', async () => {
+test('switching to both sides turns camera counting off before saving', async () => {
+  services.exercises.list.mockResolvedValue(
+    pageOf([{ ...exercise, allowed_sides: ['left', 'bilateral'] }]),
+  );
+  services.workouts.create.mockResolvedValue(draftWorkout);
+  await openPatient();
+  await press('Criar treino');
+  await selectExercise();
+  await press('Lado esquerdo');
+  await press(countingLabel);
+  await press('Os dois lados');
+  expect(hasText(countingOff)).toBe(true);
+  expect(hasText(countingRepublish)).toBe(false);
+  await fill('Séries', '1');
+  await fill('Repetições por série', '5');
+  await fill('Descanso (em segundos)', '0');
+  await saveWorkout();
+  expect(services.workouts.create).toHaveBeenCalledWith('patient-1', {
+    instructions: null,
+    items: [
+      expect.objectContaining({ side: 'bilateral', counting_rule: null }),
+    ],
+  });
+});
+
+test('editing keeps an existing counting rule and the review shows its state', async () => {
   const counted: Workout = {
     ...draftWorkout,
     items: [
@@ -614,10 +680,15 @@ test('editing keeps an existing counting rule and the review shows the seal', as
   services.workouts.update.mockResolvedValue(counted);
   await openPatient();
   await press('Treino · Rascunho');
-  expect(hasText(`${countingLabel}: ativada.`)).toBe(true);
+  expect(hasText(countingOn)).toBe(true);
   expect(hasText(countingNotice)).toBe(true);
+  // A draft with the rule has not reached the patient yet.
+  expect(hasText(unpublishedCounting)).toBe(true);
   await press('Editar treino');
-  expect(pressables(countingLabel)).toHaveLength(0);
+  expect(pressables(countingLabel)[0].props.accessibilityState).toEqual({
+    checked: true,
+    disabled: false,
+  });
   await saveWorkout();
   expect(services.workouts.update).toHaveBeenCalledWith('workout-1', {
     instructions: null,
@@ -627,11 +698,30 @@ test('editing keeps an existing counting rule and the review shows the seal', as
   });
 });
 
-test('a review without the rule does not mention automatic counting', async () => {
+test('a published workout with the rule needs no republish warning', async () => {
+  const published: Workout = {
+    ...draftWorkout,
+    status: 'published',
+    published_at: '2026-11-02T12:00:00Z',
+    items: [
+      { ...draftWorkout.items[0], counting_rule: 'demo-elbow-flexion:v1' },
+    ],
+  };
+  services.workouts.listForPatient.mockResolvedValue(pageOf([published]));
+  services.workouts.get.mockResolvedValue(published);
+  await openPatient();
+  await press('Treino · Publicado');
+  expect(hasText(countingOn)).toBe(true);
+  expect(hasText(unpublishedCounting)).toBe(false);
+});
+
+test('a review without the rule shows camera counting as off', async () => {
   services.workouts.listForPatient.mockResolvedValue(pageOf([draftWorkout]));
   await openPatient();
   await press('Treino · Rascunho');
-  expect(hasText(countingLabel)).toBe(false);
+  expect(hasText(countingOff)).toBe(true);
+  expect(hasText(countingNotice)).toBe(false);
+  expect(hasText(unpublishedCounting)).toBe(false);
 });
 
 test('a library exercise without Portuguese text can be saved and uses the original name', async () => {
