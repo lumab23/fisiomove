@@ -13,7 +13,6 @@ export class MovementEngine {
   private repetitions = 0;
   private movementStartedAt: number | null = null;
   private lastTimestamp: number | null = null;
-  private lastAngle: number | null = null;
   private paused = false;
   private readonly recentAngles: number[] = [];
 
@@ -95,34 +94,26 @@ export class MovementEngine {
       if (isWithin(angle, initial_angle_degrees)) {
         this.phase = 'ascending';
         this.movementStartedAt = frame.timestamp_ms;
-        this.lastAngle = angle;
         return this.result('ready', angle);
       }
       return this.result('capture_adjustment', angle);
     }
 
+    // A cycle is defined only by the configured ranges: initial → peak →
+    // initial. Frame-to-frame direction is not checked, because pose noise
+    // and moving past the peak entry would discard real repetitions.
     if (this.phase === 'ascending') {
-      if (this.reversedFromLastAngle(angle, 'ascending')) {
-        this.resetCycle();
-        return this.result('movement_in_progress', angle);
-      }
       if (isWithin(angle, peak_angle_degrees)) {
         this.phase = 'descending';
-        this.lastAngle = angle;
         return this.result('movement_in_progress', angle);
       }
       if (this.movedOppositeDirection(angle)) {
         this.resetCycle();
         return this.result('movement_in_progress', angle);
       }
-      this.lastAngle = angle;
       return this.result('movement_in_progress', angle);
     }
 
-    if (this.reversedFromLastAngle(angle, 'descending')) {
-      this.resetCycle();
-      return this.result('movement_in_progress', angle);
-    }
     if (isWithin(angle, initial_angle_degrees)) {
       const startedAt = this.movementStartedAt;
       this.resetCycle();
@@ -136,7 +127,6 @@ export class MovementEngine {
       }
       return this.result('movement_in_progress', angle);
     }
-    this.lastAngle = angle;
     return this.result('movement_in_progress', angle);
   }
 
@@ -150,7 +140,6 @@ export class MovementEngine {
   private resetCycle(): void {
     this.phase = 'awaiting_initial';
     this.movementStartedAt = null;
-    this.lastAngle = null;
     this.lastTimestamp = null;
     this.recentAngles.length = 0;
   }
@@ -164,18 +153,6 @@ export class MovementEngine {
       this.recentAngles.reduce((sum, value) => sum + value, 0) /
       this.recentAngles.length
     );
-  }
-
-  private reversedFromLastAngle(
-    angle: number,
-    phase: 'ascending' | 'descending',
-  ): boolean {
-    if (this.lastAngle === null) {
-      return false;
-    }
-    const movesUp = this.rule.phases.direction_to_peak === 'increasing';
-    const shouldIncrease = phase === 'ascending' ? movesUp : !movesUp;
-    return shouldIncrease ? angle < this.lastAngle : angle > this.lastAngle;
   }
 
   private result(
