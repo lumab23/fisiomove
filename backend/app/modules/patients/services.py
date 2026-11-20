@@ -209,9 +209,7 @@ class PatientService:
             select(Note.id).where(Note.patient_id == patient_id),
             select(SessionResult.id).where(SessionResult.patient_id == patient_id),
         )
-        return any(
-            self._session.scalar(select(exists(query))) for query in checks
-        )
+        return any(self._session.scalar(select(exists(query))) for query in checks)
 
     def _user_for(self, patient: Patient) -> User | None:
         return self._users.get_by_id(patient.user_id) if patient.user_id else None

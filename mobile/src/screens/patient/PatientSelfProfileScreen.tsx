@@ -58,7 +58,11 @@ function InfoRow({
       <View style={ui.rowIcon}>
         <Icon name={icon} size={22} color={colors.primary} />
       </View>
-      <View accessible accessibilityLabel={`${label}: ${value}`} style={s.rowText}>
+      <View
+        accessible
+        accessibilityLabel={`${label}: ${value}`}
+        style={s.rowText}
+      >
         <Text style={s.label}>{label}</Text>
         <Text style={s.value}>{value}</Text>
       </View>

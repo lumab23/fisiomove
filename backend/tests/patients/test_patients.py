@@ -386,9 +386,7 @@ def test_professional_cannot_delete_another_professionals_patient(
         json={"full_name": "Protegido"},
     ).json()
 
-    response = client.delete(
-        f"/api/v1/patients/{patient['id']}", headers=other_headers
-    )
+    response = client.delete(f"/api/v1/patients/{patient['id']}", headers=other_headers)
     assert response.status_code == 404
     assert response.json()["code"] == "patient_not_found"
     assert (

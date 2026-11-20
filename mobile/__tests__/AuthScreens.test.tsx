@@ -128,14 +128,12 @@ describe('welcome', () => {
     expect(text()).toContain('Passo 1 de 2');
   });
 
-  test('explains the first access and leads to login, without sign up', async () => {
+  test('the patient access leads straight to login, without sign up', async () => {
     await render(<RootNavigator />);
     await press('Sou aluno');
-    expect(text()).toContain('senha provisória');
-    expect(text()).toContain('Esqueceu a senha?');
-    expect(app!.root.findAll(node => node.type === TextInput).length).toBe(0);
-    await press('Entrar com a senha provisória');
     expect(text()).toContain('Qual é o seu e-mail?');
+    expect(text()).toContain('Passo 1 de 2');
+    expect(text()).not.toMatch(/criar conta|cadastre-se/i);
   });
 });
 

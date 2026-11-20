@@ -26,11 +26,7 @@ import {
 import { notesTitle } from './PatientNotesScreen';
 import { SessionRow } from './SessionRow';
 import { StartWorkoutButton } from './StartWorkoutButton';
-import {
-  exerciseText,
-  prescriptionText,
-  textLanguage,
-} from './workoutText';
+import { exerciseText, prescriptionText, textLanguage } from './workoutText';
 
 export function firstNameOf(fullName: string) {
   return fullName.trim().split(/\s+/)[0] ?? '';

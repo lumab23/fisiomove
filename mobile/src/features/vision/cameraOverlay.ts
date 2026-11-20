@@ -150,10 +150,9 @@ export function cameraStatus({
 export function cameraDebugText(
   observation: RawPoseObservation | null,
   side: Side,
-  droppedFrames: number,
 ): string {
   const points = `${countVisibleArmPoints(observation, side)}/${requiredArmPoints(side)} pontos`;
   return observation
-    ? `${points} · ${observation.inference_duration_ms} ms · análise local · ${droppedFrames} quadros descartados`
+    ? `${points} · ${observation.inference_duration_ms} ms`
     : `${points} · aguardando pose`;
 }

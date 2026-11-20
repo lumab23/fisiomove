@@ -86,6 +86,8 @@ type CocoDetection = KeypointDetection<
   | 'rightAnkle'
 >;
 
+/** The front camera shows the patient as in a mirror. */
+const FRONT_OUTPUT_MIRRORED = true;
 export function LocalPoseCamera({
   side,
   active,
@@ -105,7 +107,6 @@ export function LocalPoseCamera({
   >({});
   const [previewSize, setPreviewSize] = useState({ width: 0, height: 0 });
   const [inferenceError, setInferenceError] = useState<string | null>(null);
-  const [droppedFrames, setDroppedFrames] = useState(0);
   const [appState, setAppState] = useState(AppState.currentState);
   const onObservationRef = useRef(onObservation);
   const previousDisplayRef = useRef<DisplayLandmarks | null>(null);
@@ -165,14 +166,21 @@ export function LocalPoseCamera({
       isMirrored: boolean,
       inferenceDuration: number,
     ) => {
-      const raw = toRawPoseObservation(detection, {
-        timestamp_ms: timestamp,
-        image_width: width,
-        image_height: height,
-        orientation: mapOrientation(orientation),
-        is_mirrored: isMirrored,
-        inference_duration_ms: inferenceDuration,
-      });
+      // The output is mirrored (selfie view). With a physically mirrored
+      // buffer `isMirrored` is false and the model saw flipped pixels, so its
+      // sides must be swapped back to the person's own (VisionCamera docs).
+      const raw = toRawPoseObservation(
+        detection,
+        {
+          timestamp_ms: timestamp,
+          image_width: width,
+          image_height: height,
+          orientation: mapOrientation(orientation),
+          is_mirrored: isMirrored,
+          inference_duration_ms: inferenceDuration,
+        },
+        FRONT_OUTPUT_MIRRORED && !isMirrored,
+      );
       const smoothed = smoothDisplayLandmarks(raw, previousDisplayRef.current);
       previousDisplayRef.current = {
         timestamp_ms: raw.timestamp_ms,
@@ -189,9 +197,6 @@ export function LocalPoseCamera({
 
   const onInferenceFailure = useCallback((message: string) => {
     setInferenceError(message);
-  }, []);
-  const recordDroppedFrame = useCallback(() => {
-    setDroppedFrames(count => count + 1);
   }, []);
 
   const frameOutput: CameraFrameOutput = useFrameOutput({
@@ -238,10 +243,6 @@ export function LocalPoseCamera({
         resized?.dispose();
         frame.dispose();
       }
-    },
-    onFrameDropped() {
-      'worklet';
-      scheduleOnRN(recordDroppedFrame);
     },
   });
 
@@ -338,6 +339,7 @@ export function LocalPoseCamera({
         outputs={outputs}
         isActive={active && appState === 'active'}
         orientationSource="interface"
+        mirrorMode={FRONT_OUTPUT_MIRRORED ? 'on' : 'off'}
         resizeMode="contain"
         onError={() => setCameraFailed(true)}
         onInterruptionStarted={setInterruption}
@@ -396,7 +398,7 @@ export function LocalPoseCamera({
           <Text style={styles.badge}>
             {errorDetail !== undefined
               ? cameraErrorMessage(errorDetail, true)
-              : cameraDebugText(latest, side, droppedFrames)}
+              : cameraDebugText(latest, side)}
           </Text>
         ) : null}
         {latest &&

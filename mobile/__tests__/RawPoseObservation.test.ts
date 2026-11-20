@@ -65,3 +65,15 @@ test('normaliza pontos e desfaz letterbox sem inventar confiança', () => {
 test('ausência de detecção produz observação vazia', () => {
   expect(toRawPoseObservation(undefined, metadata).landmarks).toEqual({});
 });
+
+test('com pixels espelhados, o lado do modelo vira o lado da própria pessoa', () => {
+  const plain = toRawPoseObservation(detection, metadata);
+  const mirrored = toRawPoseObservation(detection, metadata, true);
+  // The model's "left" points become the person's right, same positions.
+  expect(mirrored.landmarks.right_shoulder).toEqual(
+    plain.landmarks.left_shoulder,
+  );
+  expect(mirrored.landmarks.right_elbow).toEqual(plain.landmarks.left_elbow);
+  expect(mirrored.landmarks.right_wrist).toEqual(plain.landmarks.left_wrist);
+  expect(mirrored.landmarks.left_shoulder).toBeUndefined();
+});

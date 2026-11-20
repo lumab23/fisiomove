@@ -102,12 +102,8 @@ describe('camera texts', () => {
   it('counts the visible points and describes the analysis', () => {
     const latest = observation({ left_shoulder: point, left_elbow: point });
     expect(countVisibleArmPoints(latest, 'left')).toBe(2);
-    expect(cameraDebugText(latest, 'left', 3)).toBe(
-      '2/3 pontos · 42 ms · análise local · 3 quadros descartados',
-    );
-    expect(cameraDebugText(null, 'left', 0)).toBe(
-      '0/3 pontos · aguardando pose',
-    );
+    expect(cameraDebugText(latest, 'left')).toBe('2/3 pontos · 42 ms');
+    expect(cameraDebugText(null, 'left')).toBe('0/3 pontos · aguardando pose');
   });
 });
 

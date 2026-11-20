@@ -14,7 +14,14 @@ import {
   useFrontendNavigation,
   type FrontendStackParamList,
 } from '../../navigation/frontendTypes';
-import { colors, fonts, layout, radii, spacing, typography } from '../../theme/theme';
+import {
+  colors,
+  fonts,
+  layout,
+  radii,
+  spacing,
+  typography,
+} from '../../theme/theme';
 import { Button, SectionTitle } from '../../ui';
 import {
   apiErrorMessage,
@@ -28,7 +35,18 @@ const visibilityOptions = (
   ['patient_visible', 'professional_only'] as const
 ).map(value => [value, visibilityLabels[value]] as const);
 
-const noteEmojis = ['💪', '👏', '👍', '🙂', '🤝', '⭐', '🏃', '🧘', '🦵', '❤️'] as const;
+const noteEmojis = [
+  '💪',
+  '👏',
+  '👍',
+  '🙂',
+  '🤝',
+  '⭐',
+  '🏃',
+  '🧘',
+  '🦵',
+  '❤️',
+] as const;
 
 /** Writes or edits a note; the visibility is always an explicit choice. */
 export function NoteEditorScreen() {

@@ -34,7 +34,6 @@ import { executionFeedback } from '../../features/session/executionFeedback';
 import type { SessionExecutionSnapshot } from '../../features/session/SessionExecution';
 import { LocalPoseCamera } from '../../features/vision/LocalPoseCamera';
 import { MovementEngine } from '../../features/exercise-engine/MovementEngine';
-import type { MovementUpdate } from '../../features/exercise-engine/types';
 import {
   demoRuleForItem,
   poseFrameFromObservation,
@@ -57,19 +56,17 @@ import {
   typography,
 } from '../../theme/theme';
 import { Button, EmptyState } from '../../ui';
-import { exerciseText, sideLabels, textLanguage } from './workoutText';
+import {
+  exerciseSourceText,
+  exerciseText,
+  sideLabels,
+  textLanguage,
+} from './workoutText';
 
 /** Screen refresh while active or resting; not a clinical value. */
 const CLOCK_REFRESH_MS = 1000;
 
 /** Last engine reading, shown only in development builds (DEC-012). */
-interface EngineDiagnostic {
-  update: MovementUpdate;
-  inference_duration_ms: number;
-  /** Time since the previous observation; `null` for the first one. */
-  interval_ms: number | null;
-  is_mirrored: boolean;
-}
 
 /**
  * Execution of the published workout: reads the in-memory session;
@@ -184,12 +181,8 @@ function Execution({ session }: { session: ActiveSession }) {
   const sets = progress?.sets ?? item.sets;
   const setNumber = Math.min((progress?.completed_sets ?? 0) + 1, sets);
   const text = exerciseText(item);
-  const [diagnostic, setDiagnostic] = useState<EngineDiagnostic | null>(null);
-  const lastObservationAt = useRef<number | null>(null);
-  useEffect(() => {
-    setDiagnostic(null);
-    lastObservationAt.current = null;
-  }, [movementEngine]);
+  // CC BY-NC 4.0 requires the attribution wherever library content is shown.
+  const source = exerciseSourceText(item);
 
   // Repetition, set and next item feedback (Q-P2). The session decides what
   // counts; nothing is told while paused (RN20) and nothing describes the
@@ -239,17 +232,6 @@ function Execution({ session }: { session: ActiveSession }) {
         poseFrameFromObservation(observation),
         side,
       );
-      if (__DEV__) {
-        const previousAt = lastObservationAt.current;
-        lastObservationAt.current = observation.timestamp_ms;
-        setDiagnostic({
-          update,
-          inference_duration_ms: observation.inference_duration_ms,
-          interval_ms:
-            previousAt === null ? null : observation.timestamp_ms - previousAt,
-          is_mirrored: observation.is_mirrored,
-        });
-      }
       setFraming(framingFeedback(update));
       if (update.feedback === 'rep_completed') {
         countCameraRepetition();
@@ -384,10 +366,15 @@ function Execution({ session }: { session: ActiveSession }) {
         {item.professional_guidance ? (
           <Text
             style={exercise.guidance}
-            numberOfLines={3}
+            numberOfLines={2}
             accessibilityLabel={`Orientação do profissional: ${item.professional_guidance}`}
           >
             {item.professional_guidance}
+          </Text>
+        ) : null}
+        {source ? (
+          <Text style={exercise.source} numberOfLines={1}>
+            {source}
           </Text>
         ) : null}
         {snapshot.status === 'active' && !automaticCount ? (
@@ -401,7 +388,7 @@ function Execution({ session }: { session: ActiveSession }) {
         {automaticCount && snapshot.status !== 'completed' ? (
           <Button
             secondary
-            icon="check"
+            compact
             label="Contar manualmente"
             accessibilityHint="Desliga a contagem pela câmera neste exercício. Depois, toque ao terminar cada repetição."
             disabled={snapshot.status !== 'active'}
@@ -427,65 +414,12 @@ function Execution({ session }: { session: ActiveSession }) {
               : snapshot.status === 'completed'
                 ? 'Você fez tudo o que foi prescrito.'
                 : automaticCount
-                  ? 'A câmera conta as repetições. Se preferir, toque em Contar manualmente.'
+                  ? 'A câmera conta as repetições sozinha.'
                   : 'Toque ao terminar cada repetição.'}
         </Text>
-        {__DEV__ ? (
-          <Text
-            testID="execution-diagnostic"
-            style={exercise.diagnostic}
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-          >
-            {diagnosticText({
-              countingRule: item.counting_rule ?? null,
-              automaticCount,
-              side: item.side,
-              joint: demoRule?.landmarks.joint ?? null,
-              diagnostic,
-            })}
-          </Text>
-        ) : null}
       </SafeAreaView>
     </View>
   );
-}
-
-/**
- * Development-only reading for the device check (plan of 2026-11-15, step 1):
- * which rule the item carries, whether the engine runs and its last reading.
- */
-function diagnosticText({
-  countingRule,
-  automaticCount,
-  side,
-  joint,
-  diagnostic,
-}: {
-  countingRule: string | null;
-  automaticCount: boolean;
-  side: string;
-  joint: string | null;
-  diagnostic: EngineDiagnostic | null;
-}) {
-  const angle = diagnostic?.update.angle_degrees;
-  return [
-    `counting_rule: ${countingRule ?? 'nenhuma'}`,
-    `contagem automática: ${automaticCount ? 'ligada' : 'desligada'}`,
-    `lado seguido: ${side}${joint ? ` (${joint})` : ''}`,
-    `feedback: ${diagnostic?.update.feedback ?? '-'} · phase: ${
-      diagnostic?.update.phase ?? '-'
-    } · angle: ${
-      angle === null || angle === undefined ? '-' : `${Math.round(angle)}°`
-    }`,
-    `inferência: ${
-      diagnostic ? `${Math.round(diagnostic.inference_duration_ms)} ms` : '-'
-    } · intervalo: ${
-      diagnostic === null || diagnostic.interval_ms === null
-        ? '-'
-        : `${Math.round(diagnostic.interval_ms)} ms`
-    } · is_mirrored: ${diagnostic ? String(diagnostic.is_mirrored) : '-'}`,
-  ].join('\n');
 }
 
 function FloatingControl({
@@ -583,9 +517,9 @@ const exercise = StyleSheet.create({
     borderTopRightRadius: radii.xl,
     marginTop: -radii.xl,
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-    gap: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+    gap: spacing.sm,
   },
   counterRow: {
     flexDirection: 'row',
@@ -654,11 +588,6 @@ const exercise = StyleSheet.create({
     fontFamily: fonts.bold,
     ...typography.bodySmall,
     textAlign: 'center',
-  },
-  diagnostic: {
-    color: colors.textMuted,
-    fontFamily: fonts.regular,
-    ...typography.label,
   },
   hint: {
     color: colors.textMuted,

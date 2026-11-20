@@ -110,6 +110,7 @@ test('each role reaches only its own routes', () => {
     'PatientExercise',
     'PatientNotes',
     'PatientPreparation',
+    'PatientSelfProfile',
     'PatientTabs',
     'PhysiotherapistInfo',
     'SessionInterrupted',

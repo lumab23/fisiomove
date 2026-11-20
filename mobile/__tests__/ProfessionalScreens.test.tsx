@@ -836,6 +836,7 @@ test('notes require content and an explicit visibility', async () => {
   expect(services.notes.create).toHaveBeenCalledWith('patient-1', {
     content: 'Anotação de teste.',
     visibility: 'professional_only',
+    emoji: null,
   });
 });
 
@@ -851,13 +852,14 @@ test('an existing note is edited with its visibility', async () => {
   expect(services.notes.update).toHaveBeenCalledWith('note-1', {
     content: 'Anotação de teste.',
     visibility: 'patient_visible',
+    emoji: null,
   });
 });
 
 test('monitoring shows the linked patient sessions and progress, without achievements', async () => {
   services.workouts.listForPatient.mockResolvedValue(pageOf([draftWorkout]));
   await openPatient();
-  await press('Ver sessões de progresso');
+  await press('Progresso');
   expect(hasText('Sessões concluídas: 1')).toBe(true);
   expect(hasText('Repetições: 36 de 36 prescritas')).toBe(true);
   expect(hasText('Treino concluído')).toBe(true);
@@ -880,7 +882,7 @@ test('monitoring without a selected patient and with no data shows empty states'
     completed_sessions: 0,
   });
   await press('Joana Teste');
-  await press('Ver sessões de progresso');
+  await press('Progresso');
   expect(hasText('Nenhuma sessão nesta semana')).toBe(true);
   expect(hasText('Nenhuma sessão registrada')).toBe(true);
   expect(hasText('conquista')).toBe(false);
@@ -1444,12 +1446,17 @@ test('the translation of a catalog exercise is edited with the original beside i
   expect(hasText('1. First step text.')).toBe(true);
   expect(hasText(republish)).toBe(true);
 
+  // The translation is optional (f1deb19), but one field alone is an error.
+  await fill('Nome em português (opcional)', 'Item de referência de teste');
   await press('Salvar tradução');
-  expect(hasText('Escreva o nome em português.')).toBe(true);
+  expect(
+    hasText(
+      'Escreva também os passos em português, ou deixe os dois campos vazios.',
+    ),
+  ).toBe(true);
   expect(services.exercises.updateLocalization).not.toHaveBeenCalled();
 
-  await fill('Nome em português', 'Item de referência de teste');
-  await fill('Passos em português', 'Primeiro passo de teste.');
+  await fill('Passos em português (opcional)', 'Primeiro passo de teste.');
   await press('Salvar tradução');
   expect(services.exercises.updateLocalization).toHaveBeenCalledWith(
     'exercise-imported',
@@ -1477,10 +1484,10 @@ test('an existing translation is prefilled and a 404 is explained', async () => 
   await openSettings('Biblioteca de referência');
   await press('Reference Item Test');
   await press('Tradução em português');
-  expect(field('Nome em português').props.value).toBe(
+  expect(field('Nome em português (opcional)').props.value).toBe(
     'Item de referência de teste',
   );
-  expect(field('Passos em português').props.value).toBe(
+  expect(field('Passos em português (opcional)').props.value).toBe(
     'Primeiro passo de teste.\nSegundo passo de teste.',
   );
   expect(hasText('Tradução atual feita por Dra. Teste.')).toBe(true);
@@ -1642,7 +1649,9 @@ test('follow-up updates the exclusive workout action after creation and removal'
   services.workouts.create.mockResolvedValue(draftWorkout);
   await openPatient();
   expect(pressables('Criar treino')).toHaveLength(1);
-  expect(pressables('Ver sessões de progresso')).toHaveLength(0);
+  // Progress is always reachable once the workouts loaded, even before the
+  // first workout exists (follow-up layout from f1deb19).
+  expect(pressables('Progresso')).toHaveLength(1);
   await press('Criar treino');
   await selectExercise();
   await press('Lado esquerdo');
@@ -1653,15 +1662,16 @@ test('follow-up updates the exclusive workout action after creation and removal'
   await saveWorkout();
   await press('Voltar para Paciente');
   expect(pressables('Criar treino')).toHaveLength(0);
-  expect(pressables('Ver sessões de progresso')).toHaveLength(1);
-  await press('Ver sessões de progresso');
+  expect(pressables('Criar outro treino')).toHaveLength(1);
+  expect(pressables('Progresso')).toHaveLength(1);
+  await press('Progresso');
   expect(services.sessions.listForPatient).toHaveBeenCalledWith('patient-1', {
     page_size: 10,
   });
   services.workouts.listForPatient.mockResolvedValue(pageOf([]));
   await press('Voltar para Joana Teste');
   expect(pressables('Criar treino')).toHaveLength(1);
-  expect(pressables('Ver sessões de progresso')).toHaveLength(0);
+  expect(pressables('Criar outro treino')).toHaveLength(0);
 });
 
 test('follow-up does not assume an empty workout list during loading or failure', async () => {
@@ -1670,13 +1680,13 @@ test('follow-up does not assume an empty workout list during loading or failure'
   );
   await openPatient();
   expect(pressables('Criar treino')).toHaveLength(0);
-  expect(pressables('Ver sessões de progresso')).toHaveLength(0);
+  expect(pressables('Progresso')).toHaveLength(0);
   services.workouts.listForPatient.mockImplementation(
     () => new Promise(() => undefined),
   );
   await press('Tentar novamente');
   expect(pressables('Criar treino')).toHaveLength(0);
-  expect(pressables('Ver sessões de progresso')).toHaveLength(0);
+  expect(pressables('Progresso')).toHaveLength(0);
 });
 
 test('patient deletion uses a native destructive confirmation and preserves error feedback', async () => {
@@ -2004,7 +2014,7 @@ test('creates another workout for the same patient without replacing existing wo
   services.workouts.get.mockResolvedValue(second);
   await openPatient();
   expect(pressables('Treino · Rascunho')).toHaveLength(1);
-  expect(pressables('Ver sessões de progresso')).toHaveLength(1);
+  expect(pressables('Progresso')).toHaveLength(1);
   await press('Criar outro treino');
   expect(hasText('Adicione os exercícios do treino')).toBe(true);
   await selectExercise();

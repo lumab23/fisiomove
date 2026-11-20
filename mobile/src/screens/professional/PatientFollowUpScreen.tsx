@@ -81,7 +81,9 @@ export function PatientFollowUpScreen() {
               secondary
               label="Progresso"
               onPress={() =>
-                navigation.navigate('ProfessionalPatientProgress', { patientId })
+                navigation.navigate('ProfessionalPatientProgress', {
+                  patientId,
+                })
               }
             />
           </>

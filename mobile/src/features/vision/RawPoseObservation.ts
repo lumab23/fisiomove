@@ -52,16 +52,34 @@ type CocoDetection = KeypointDetection<
   | 'rightAnkle'
 >;
 
+/** The person's right arm is the model's "left" in a mirrored image. */
+const oppositeSide: Record<CocoLandmark, CocoLandmark> = {
+  leftShoulder: 'rightShoulder',
+  rightShoulder: 'leftShoulder',
+  leftElbow: 'rightElbow',
+  rightElbow: 'leftElbow',
+  leftWrist: 'rightWrist',
+  rightWrist: 'leftWrist',
+};
+
+/**
+ * `pixelsMirrored` tells that the pixels given to the model were already
+ * flipped (front camera output with a physically mirrored buffer). The model
+ * names sides as seen in the image, so they are swapped back to the person's
+ * own right and left; positions stay as they are, matching the preview.
+ */
 export function toRawPoseObservation(
   detection: CocoDetection | undefined,
   metadata: Omit<RawPoseObservation, 'landmarks'>,
+  pixelsMirrored = false,
 ): RawPoseObservation {
   const landmarks: RawPoseObservation['landmarks'] = {};
   if (detection && metadata.image_width > 0 && metadata.image_height > 0) {
-    for (const [modelId, outputId] of Object.entries(trackedLandmarks) as [
+    for (const [personId, outputId] of Object.entries(trackedLandmarks) as [
       CocoLandmark,
       RawPoseLandmarkId,
     ][]) {
+      const modelId = pixelsMirrored ? oppositeSide[personId] : personId;
       const point = detection.landmarks[modelId];
       if (!point) continue;
       const scale = Math.min(

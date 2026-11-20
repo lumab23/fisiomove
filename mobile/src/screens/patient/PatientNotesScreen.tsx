@@ -68,7 +68,11 @@ function NoteCard({ note }: { note: OwnNote }) {
           {edited ? <Text style={notes.date}>{edited}</Text> : null}
         </View>
         {note.emoji ? (
-          <Text accessibilityElementsHidden importantForAccessibility="no" style={notes.emoji}>
+          <Text
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+            style={notes.emoji}
+          >
             {note.emoji}
           </Text>
         ) : null}

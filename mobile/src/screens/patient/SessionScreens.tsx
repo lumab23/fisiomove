@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useRoute, type RouteProp } from '@react-navigation/native';
 import { friendlyErrorMessage } from '../../api/errors';
 import { appDependencies } from '../../app/dependencies';
+import { ExerciseImageGallery } from '../../components/ExerciseImageGallery';
 import { Screen } from '../../components/Screen';
 import type { UUID } from '../../contracts/common';
 import type { CountingMode } from '../../contracts/domain';
@@ -39,7 +40,9 @@ import { useSessionSync } from '../../sync/SessionSyncContext';
 import type { PublicSessionSyncStatus } from '../../sync/types';
 import { spacing } from '../../theme/theme';
 import {
+  exerciseImages,
   exerciseName,
+  exerciseSourceText,
   exerciseText,
   sideLabels,
   textLanguage,
@@ -67,8 +70,9 @@ function MissingSession() {
 
 /**
  * "Como fazer": the snapshot text (pt-BR when translated, otherwise the
- * original with a seal), the physiotherapist's guidance and the steps. No
- * corrective text is written by the app (RN18). Opening it pauses the session.
+ * original with a seal), its images, the physiotherapist's guidance, the
+ * steps and the source. No corrective text is written by the app (RN18).
+ * Opening it pauses the session.
  */
 export function MovementGuidanceScreen() {
   const { clientSessionId } = useSessionRoute();
@@ -88,6 +92,8 @@ function MovementGuidance({ session }: { session: ActiveSession }) {
   const item = currentWorkoutItem(session);
   const content = exerciseText(item);
   const language = textLanguage(content.original);
+  // CC BY-NC 4.0 requires the attribution wherever library content is shown.
+  const source = exerciseSourceText(item);
   const guidance = [item.professional_guidance, session.workout.instructions]
     .map(text => text?.trim())
     .filter((text): text is string => Boolean(text));
@@ -109,6 +115,7 @@ function MovementGuidance({ session }: { session: ActiveSession }) {
         </Text>
         <Body>{sideLabels[item.side]}</Body>
       </Card>
+      <SessionExerciseImages item={item} name={content.name} />
       {guidance.length ? (
         <Card white title="Orientação do profissional">
           {guidance.map(text => (
@@ -131,8 +138,60 @@ function MovementGuidance({ session }: { session: ActiveSession }) {
       ) : (
         <Body>Este exercício não tem passos escritos.</Body>
       )}
+      {source ? <Text style={styles.demo}>{source}</Text> : null}
     </Screen>
   );
+}
+
+/** Reuse the image saved with the prescription; fetch it for older snapshots. */
+function SessionExerciseImages({
+  item,
+  name,
+}: {
+  item: ReturnType<typeof currentWorkoutItem>;
+  name: string;
+}) {
+  const [images, setImages] = useState(() =>
+    exerciseImages(item.exercise_snapshot),
+  );
+
+  useEffect(() => {
+    let active = true;
+    const snapshotImages = exerciseImages(item.exercise_snapshot);
+    setImages(snapshotImages);
+    const fromLibrary = exerciseSourceText(item) !== null;
+    if (snapshotImages.length > 0 || !fromLibrary) {
+      return () => {
+        active = false;
+      };
+    }
+    if (!appDependencies.exercises) {
+      setImages([]);
+      return () => {
+        active = false;
+      };
+    }
+
+    Promise.resolve()
+      .then(() => appDependencies.exercises.get(item.exercise_id))
+      .then(
+        exercise => {
+          if (active) setImages(exercise ? exerciseImages(exercise) : []);
+        },
+        () => {
+          if (active) setImages([]);
+        },
+      );
+    return () => {
+      active = false;
+    };
+  }, [item]);
+
+  return images.length ? (
+    <ExerciseImageGallery images={images} exerciseName={name} />
+  ) : exerciseSourceText(item) ? (
+    <Body>Imagem não disponível para este exercício.</Body>
+  ) : null;
 }
 
 export function ConfirmExitScreen() {

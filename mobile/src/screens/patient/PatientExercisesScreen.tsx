@@ -29,11 +29,7 @@ import { useSessionSync } from '../../sync/SessionSyncContext';
 import type { PendingSession } from '../../sync/types';
 import { PendingSessionRow, SessionRow } from './SessionRow';
 import { StartWorkoutButton } from './StartWorkoutButton';
-import {
-  exerciseText,
-  prescriptionText,
-  textLanguage,
-} from './workoutText';
+import { exerciseText, prescriptionText, textLanguage } from './workoutText';
 
 const sections = [
   ['workout', 'Meu treino'],
@@ -73,12 +69,8 @@ export function PatientExercisesScreen() {
         />
       ) : null}
       {section === 'workout' && <MyWorkout />}
-      {section === 'history' && (
-        <History onStart={() => setSection('workout')} />
-      )}
-      {section === 'progress' && (
-        <Progress onStart={() => setSection('workout')} />
-      )}
+      {section === 'history' && <History />}
+      {section === 'progress' && <Progress />}
     </Screen>
   );
 }
@@ -152,7 +144,7 @@ const filters = [
   ['interrupted', 'Interrompidas'],
 ] as const;
 
-function History({ onStart }: { onStart: () => void }) {
+function History() {
   const { state, reload, refresh } = useMySessions(historyPageSize);
   const { pending, lastReport } = useSessionSync();
   const [filter, setFilter] = useState<(typeof filters)[number][0]>('all');
@@ -243,7 +235,7 @@ function formatDay(date: string) {
   });
 }
 
-function Progress({ onStart }: { onStart: () => void }) {
+function Progress() {
   const [period] = useState(() => currentWeek(new Date()));
   const { state, reload } = useMyProgress(period);
   const weekLabel = `Semana de ${formatDay(period.period_start)} a ${formatDay(

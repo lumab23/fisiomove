@@ -55,7 +55,7 @@ export function ErrorState({
   retryLabel?: string;
   onRetry: () => void;
 }) {
-  const { show } = useScreenMessage();
+  const { show, clear, message: current } = useScreenMessage();
   const shown = useRef<string | null>(null);
   const text = `${title}. ${message}`;
   useEffect(() => {
@@ -63,6 +63,18 @@ export function ErrorState({
     shown.current = text;
     show(text, 'error');
   }, [show, text]);
+  // A retry or a successful reload removes this state; its failure message
+  // must not stay on screen next to the content that loaded.
+  const currentText = useRef(current?.text);
+  currentText.current = current?.text;
+  useEffect(
+    () => () => {
+      if (shown.current !== null && currentText.current === shown.current) {
+        clear();
+      }
+    },
+    [clear],
+  );
   return (
     <View style={styles.errorAction}>
       <Button secondary label={retryLabel} onPress={onRetry} />
