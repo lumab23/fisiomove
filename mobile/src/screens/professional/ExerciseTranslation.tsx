@@ -152,7 +152,8 @@ export function OriginalExerciseText({
 
 /**
  * Catalog exercise as the physiotherapist sees it in the workout editor:
- * first image (API), pt-BR text when it exists, the original and the source.
+ * first image (API), the pt-BR text and the source; the English original only
+ * while there is no translation.
  */
 export function CatalogExerciseText({
   exercise,
@@ -180,19 +181,14 @@ export function CatalogExerciseText({
       ) : null}
       {source ? (
         <>
-          <Text style={t.label}>
-            {localization
-              ? 'Referência da fonte'
-              : 'Tradução em português pendente'}
-          </Text>
-          {localization ? (
-            <Text accessibilityLanguage="en" style={t.name}>
-              {exercise.name}
-            </Text>
-          ) : null}
-          <Text accessibilityLanguage="en" style={t.body}>
-            {exercise.instructions}
-          </Text>
+          {localization ? null : (
+            <>
+              <Text style={t.label}>Tradução em português pendente</Text>
+              <Text accessibilityLanguage="en" style={t.body}>
+                {exercise.instructions}
+              </Text>
+            </>
+          )}
           <Text style={t.caption}>{attributionText(source, localization)}</Text>
           {onEditTranslation ? (
             <Button

@@ -56,6 +56,7 @@ export function exerciseLocalization(
     instructions: value.instructions,
     translated_by_name: value.translated_by_name,
     translated_at: value.translated_at,
+    reviewed_by_physiotherapist: value.reviewed_by_physiotherapist !== false,
   };
 }
 
@@ -144,7 +145,11 @@ export function attributionText(
   if (!localization) {
     return sourceLabel(source);
   }
-  return `Adaptado de ${shortSourceName(source)} (${source.license}). Nome e passos traduzidos para o português por ${localization.translated_by_name} em ${dateBr(localization.translated_at)}.`;
+  const review =
+    localization.reviewed_by_physiotherapist === false
+      ? ' Tradução sem revisão de fisioterapeuta.'
+      : '';
+  return `Adaptado de ${shortSourceName(source)} (${source.license}). Nome e passos traduzidos para o português por ${localization.translated_by_name} em ${dateBr(localization.translated_at)}.${review}`;
 }
 
 /** Short attribution, e.g. "Fonte: OpenExerciseBase (CC BY-NC 4.0)". */

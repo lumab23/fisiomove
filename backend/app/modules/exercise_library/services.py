@@ -1,10 +1,12 @@
 import logging
+import unicodedata
 from typing import NoReturn
 
 from app.core.errors import ApiError
 from app.modules.exercise_library.providers import (
     ExerciseLibraryProvider,
     ExternalLibraryUnavailableError,
+    LibraryExerciseDetail,
     LibraryExerciseSummary,
 )
 from app.modules.exercise_library.schemas import (
@@ -14,13 +16,46 @@ from app.modules.exercise_library.schemas import (
     LibraryExerciseSummaryResponse,
     LibraryInstructionStepResponse,
 )
+from app.modules.exercise_library.translations import library_translation
 
 logger = logging.getLogger("fisiomove.exercise_library")
 
 
 def _normalize(value: str) -> str:
-    """Case/spacing-insensitive form; the provider mixes `full_body`/`full body`."""
-    return " ".join(value.casefold().replace("_", " ").split())
+    """Case/spacing/accent-insensitive form ("Elevação" finds "elevacao").
+
+    The provider also mixes `full_body` and `full body`.
+    """
+    decomposed = unicodedata.normalize("NFKD", value.casefold().replace("_", " "))
+    plain = "".join(char for char in decomposed if not unicodedata.combining(char))
+    return " ".join(plain.split())
+
+
+def _display_name(item: LibraryExerciseSummary) -> str:
+    translation = library_translation(item.external_id)
+    return translation.name if translation else item.name
+
+
+def _translated_steps(
+    detail: LibraryExerciseDetail,
+) -> tuple[str | None, list[LibraryInstructionStepResponse] | None]:
+    """pt-BR name and steps, only while the source text is the translated one."""
+    translation = library_translation(detail.external_id)
+    if translation is None:
+        return None, None
+    original = "\n".join(
+        f"{step.step_number}. {step.description}" for step in detail.instructions
+    )
+    if not translation.matches(detail.name, original):
+        return None, None
+    return translation.name, [
+        LibraryInstructionStepResponse(
+            step_number=step.step_number, description=description
+        )
+        for step, description in zip(
+            detail.instructions, translation.instructions, strict=True
+        )
+    ]
 
 
 UNAVAILABLE_MESSAGE = "The external exercise library is unavailable."
@@ -60,13 +95,16 @@ class ExerciseLibraryService:
             (
                 item
                 for item in exercises
-                if needle in _normalize(item.name)
+                if (
+                    needle in _normalize(item.name)
+                    or needle in _normalize(_display_name(item))
+                )
                 and (
                     not wanted_part
                     or any(_normalize(part) == wanted_part for part in item.body_parts)
                 )
             ),
-            key=lambda item: (item.name.casefold(), item.external_id),
+            key=lambda item: (_normalize(_display_name(item)), item.external_id),
         )
         total = len(matches)
         start = (page - 1) * page_size
@@ -91,9 +129,12 @@ class ExerciseLibraryService:
                 code="library_exercise_not_found",
                 message="The reference exercise was not found.",
             )
+        name_pt_br, instructions_pt_br = _translated_steps(detail)
         return LibraryExerciseDetailResponse(
             external_id=detail.external_id,
             name=detail.name,
+            name_pt_br=name_pt_br,
+            instructions_pt_br=instructions_pt_br,
             categories=list(detail.categories),
             body_parts=list(detail.body_parts),
             equipment=list(detail.equipment),
@@ -111,9 +152,11 @@ class ExerciseLibraryService:
 
     @staticmethod
     def _summary(item: LibraryExerciseSummary) -> LibraryExerciseSummaryResponse:
+        translation = library_translation(item.external_id)
         return LibraryExerciseSummaryResponse(
             external_id=item.external_id,
             name=item.name,
+            name_pt_br=(translation.name if translation else None),
             categories=list(item.categories),
             body_parts=list(item.body_parts),
             equipment=list(item.equipment),

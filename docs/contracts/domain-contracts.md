@@ -74,18 +74,24 @@ Hashes de senha e de renovação nunca fazem parte de DTOs de resposta.
   `"Name and instructions from <fonte>, licensed under <licença>. Text is kept in the original language without edits."`;
   com tradução, indica a alteração exigida pela CC BY-NC:
   `"Adapted from <fonte>, licensed under <licença>. Name and instructions translated into Portuguese by <tradutor> on <AAAA-MM-DD>; the original English text is preserved."`
-  (data em UTC; `<tradutor>` é o mesmo valor de `translated_by_name`).
+  (data em UTC; `<tradutor>` é o mesmo valor de `translated_by_name`). Na
+  tradução da equipe do FisioMove, a data vem seguida de
+  `" (not reviewed by a physiotherapist)"`.
 - `images: ExerciseImageResponse[]` (`{ position: int, url: string }`), em
   ordem de `position`; `url` é relativa à raiz do servidor
   (`/api/v1/exercises/{id}/images/{position}`, prefixo padrão) e exige o
   mesmo `Authorization: Bearer` das demais rotas. Lista vazia quando não há
   imagem.
 - `localization: ExerciseLocalizationResponse | null`:
-  `{ language: "pt-BR", name, instructions, translated_by_name, translated_at }`.
+  `{ language: "pt-BR", name, instructions, translated_by_name, translated_at, reviewed_by_physiotherapist }`.
   `instructions` usa o mesmo formato de texto do original (`"1. ...\n2. ..."`);
   `translated_by_name` é o nome do perfil do fisioterapeuta
   (`physiotherapist_profiles.full_name`) ou, sem perfil, o texto neutro "fisioterapeuta do FisioMove" — nunca o e-mail (DEC-005).
-  `null` sem tradução: o cliente mostra o original com o selo de idioma.
+  Sem tradução de fisioterapeuta, um item da biblioteca cujo texto ainda é o
+  traduzido recebe a tradução da equipe (`translated_by_name: "equipe do
+  FisioMove"`, `reviewed_by_physiotherapist: false`; DEC-011). Nos demais
+  casos `reviewed_by_physiotherapist` é `true` (snapshots antigos não têm o
+  campo). `null` sem tradução: o cliente mostra o original com o selo de idioma.
 
 O `exercise_snapshot` guarda o `ExerciseResponse` do momento em que os itens do
 treino são definidos (criação ou `PATCH` com `items`); `publish` copia os itens

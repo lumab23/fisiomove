@@ -31,8 +31,10 @@ ATTRIBUTION = {
     "license": "CC BY-NC 4.0",
     "license_url": "https://creativecommons.org/licenses/by-nc/4.0/",
     "changes": (
-        "Only selected descriptive fields are shown; text is kept in the original "
-        "language without edits. Performance metrics and variations are omitted."
+        "Only selected descriptive fields are shown. Names and instructions are "
+        "translated into Portuguese by the FisioMove team (not reviewed by a "
+        "physiotherapist); the original English text is preserved. Performance "
+        "metrics and variations are omitted."
     ),
 }
 
@@ -142,6 +144,7 @@ def test_search_lists_sorted_page_with_attribution(
     assert body["items"][1] == {
         "external_id": "EX-shoulder-press-01",
         "name": "Shoulder Press",
+        "name_pt_br": None,
         "categories": ["mobility"],
         "body_parts": ["shoulders", "arms"],
         "equipment": [],
@@ -204,6 +207,7 @@ def test_detail_exposes_only_reference_fields(
     assert response.json() == {
         "external_id": "EX-shoulder-press-01",
         "name": "Shoulder Press",
+        "name_pt_br": None,
         "categories": ["mobility"],
         "body_parts": ["shoulders", "arms"],
         "equipment": ["chair"],
@@ -212,6 +216,7 @@ def test_detail_exposes_only_reference_fields(
             {"step_number": 2, "description": "Raise both arms."},
         ],
         "instructions_language": "en",
+        "instructions_pt_br": None,
         "image_urls": ["https://images.example.test/EX-shoulder-press-01/image_1.png"],
         "review_status": "accepted_with_edits",
         "created_by": "professional",

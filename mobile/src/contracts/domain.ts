@@ -40,6 +40,8 @@ export interface ExerciseLocalization {
   instructions: string;
   translated_by_name: string;
   translated_at: ISODateTime;
+  /** `false` for the FisioMove team translation of the library (DEC-011). */
+  reviewed_by_physiotherapist?: boolean;
 }
 
 export interface Exercise {
@@ -293,6 +295,8 @@ export interface LibraryAttribution {
 export interface LibraryExerciseSummary {
   external_id: string;
   name: string;
+  /** Portuguese name from the FisioMove translation, when there is one. */
+  name_pt_br?: string | null;
   categories: string[];
   body_parts: string[];
   equipment: string[];
@@ -316,6 +320,8 @@ export interface LibraryExerciseDetail extends Omit<
 > {
   instructions: LibraryInstructionStep[];
   instructions_language: string;
+  /** Portuguese steps with the same numbering; `null` without translation. */
+  instructions_pt_br?: LibraryInstructionStep[] | null;
   image_urls: string[];
   created_by: string | null;
   usage_notice: string;

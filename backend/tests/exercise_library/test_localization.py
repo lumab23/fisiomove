@@ -98,6 +98,7 @@ def test_any_physiotherapist_translates_without_touching_approval(
         "instructions": STORED_STEPS,
         "translated_by_name": TRANSLATOR_FALLBACK_NAME,
         "translated_at": body["localization"]["translated_at"],
+        "reviewed_by_physiotherapist": True,
     }
     assert body["name"] == "Shoulder Press"
     assert body["instructions"] == "1. Sit on a chair.\n2. Raise both arms."

@@ -68,6 +68,24 @@ describe('patient text (DEC-011)', () => {
     );
   });
 
+  test('the FisioMove team translation says it was not reviewed', () => {
+    const item = snapshot({
+      name: 'Original Test',
+      instructions: '1. Original step.',
+      source,
+      localization: {
+        ...localization,
+        translated_by_name: 'equipe do FisioMove',
+        translated_at: '2026-11-21T00:00:00Z',
+        reviewed_by_physiotherapist: false,
+      },
+    });
+    expect(exerciseText(item).steps).toBe(localization.instructions);
+    expect(exerciseSourceText(item)).toBe(
+      'Adaptado de OpenExerciseBase (CC BY-NC 4.0). Nome e passos traduzidos para o português por equipe do FisioMove em 21/11/2026. Tradução sem revisão de fisioterapeuta.',
+    );
+  });
+
   test('does not expose untranslated library instructions to the patient', () => {
     const library = snapshot({
       name: 'Original Test',

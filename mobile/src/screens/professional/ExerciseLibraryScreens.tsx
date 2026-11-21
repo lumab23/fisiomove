@@ -74,8 +74,9 @@ import {
 import { apiErrorMessage, MultiChoiceGroup } from './shared';
 
 /**
- * The library is reference material for the physiotherapist only. The
- * provider's texts are shown as received (original language, no edits). Only
+ * The library is reference material for the physiotherapist only. Names and
+ * steps are shown in Portuguese (FisioMove team translation, DEC-011); the
+ * English original is shown only when there is no translation. Only
  * the explicit "Adicionar ao catálogo" action creates a catalog exercise
  * (DEC-006), with the sides chosen here; prescription values are always typed
  * in the workout editor.
@@ -358,8 +359,8 @@ export function ExerciseLibraryScreen() {
       <View style={s.searchRow}>
         <View style={s.searchField}>
           <FormField
-            label="Buscar exercícios (em inglês)"
-            placeholder="Buscar exercícios (em inglês)"
+            label="Buscar exercícios"
+            placeholder="Buscar exercícios"
             hideLabel
             leadingIcon="search"
             value={draft}
@@ -474,7 +475,7 @@ export function ExerciseLibraryScreen() {
                 <ListRow
                   key={item.external_id}
                   icon="info"
-                  title={item.name}
+                  title={item.name_pt_br ?? item.name}
                   description={summaryText(item)}
                   accessibilityHint="Abre o material de referência."
                   onPress={() =>
@@ -523,73 +524,85 @@ export function ExerciseLibraryDetailScreen() {
   return (
     <Screen professional back="Biblioteca">
       <LibraryView resource={exercise} loadingLabel="Carregando o exercício">
-        {data => (
-          <>
-            <Title>{data.name}</Title>
-            <CatalogSeal status={data.catalog_exercise} />
-            {isAiGenerated(data.created_by) ? (
-              <Card white title="Conteúdo gerado por IA">
+        {data => {
+          const translatedSteps = data.instructions_pt_br ?? null;
+          const translated = Boolean(data.name_pt_br && translatedSteps);
+          const name =
+            translated && data.name_pt_br ? data.name_pt_br : data.name;
+          const steps = translatedSteps ?? data.instructions;
+          return (
+            <>
+              <Title>{name}</Title>
+              <CatalogSeal status={data.catalog_exercise} />
+              {isAiGenerated(data.created_by) ? (
+                <Card white title="Conteúdo gerado por IA">
+                  <Body>
+                    Segundo a fonte, este conteúdo foi criado com inteligência
+                    artificial.
+                  </Body>
+                  {data.review_status ? (
+                    <Body>{`Situação de revisão na fonte: ${data.review_status}`}</Body>
+                  ) : null}
+                </Card>
+              ) : null}
+              {data.image_urls.map((url, index) => (
+                <Image
+                  key={url}
+                  source={{ uri: url }}
+                  resizeMode="contain"
+                  accessibilityIgnoresInvertColors
+                  accessibilityLabel={`Imagem ${index + 1} de ${data.image_urls.length} do exercício ${name}`}
+                  style={s.image}
+                />
+              ))}
+              <Card white title="Informações da fonte">
                 <Body>
-                  Segundo a fonte, este conteúdo foi criado com inteligência
-                  artificial.
+                  {`Partes do corpo: ${data.body_parts.map(bodyPartLabel).join(', ') || 'não informadas'}`}
                 </Body>
-                {data.review_status ? (
+                <Body>
+                  {`Equipamento: ${data.equipment.join(', ') || 'não informado'}`}
+                </Body>
+                {data.created_by && !isAiGenerated(data.created_by) ? (
+                  <Body>{`Autoria informada pela fonte: ${data.created_by}`}</Body>
+                ) : null}
+                {data.review_status && !isAiGenerated(data.created_by) ? (
                   <Body>{`Situação de revisão na fonte: ${data.review_status}`}</Body>
                 ) : null}
               </Card>
-            ) : null}
-            {data.image_urls.map((url, index) => (
-              <Image
-                key={url}
-                source={{ uri: url }}
-                resizeMode="contain"
-                accessibilityIgnoresInvertColors
-                accessibilityLabel={`Imagem ${index + 1} de ${data.image_urls.length} do exercício ${data.name}`}
-                style={s.image}
-              />
-            ))}
-            <Card white title="Informações da fonte">
-              <Body>
-                {`Partes do corpo: ${data.body_parts.map(bodyPartLabel).join(', ') || 'não informadas'}`}
-              </Body>
-              <Body>
-                {`Equipamento: ${data.equipment.join(', ') || 'não informado'}`}
-              </Body>
-              {data.created_by && !isAiGenerated(data.created_by) ? (
-                <Body>{`Autoria informada pela fonte: ${data.created_by}`}</Body>
-              ) : null}
-              {data.review_status && !isAiGenerated(data.created_by) ? (
-                <Body>{`Situação de revisão na fonte: ${data.review_status}`}</Body>
-              ) : null}
-            </Card>
-            <SectionTitle>Passos</SectionTitle>
-            <Badge label="Texto de referência" />
-            {data.instructions.length ? (
-              [...data.instructions]
-                .sort((a, b) => a.step_number - b.step_number)
-                .map(step => (
-                  <View key={step.step_number} style={s.step}>
-                    <Text style={s.stepNumber}>{`${step.step_number}.`}</Text>
-                    <View style={s.stepText}>
-                      <OriginalText language={data.instructions_language}>
-                        {step.description}
-                      </OriginalText>
+              <SectionTitle>Passos</SectionTitle>
+              {translated ? null : <Badge label="Texto de referência" />}
+              {steps.length ? (
+                [...steps]
+                  .sort((a, b) => a.step_number - b.step_number)
+                  .map(step => (
+                    <View key={step.step_number} style={s.step}>
+                      <Text style={s.stepNumber}>{`${step.step_number}.`}</Text>
+                      <View style={s.stepText}>
+                        {translated ? (
+                          <Text style={s.body}>{step.description}</Text>
+                        ) : (
+                          <OriginalText language={data.instructions_language}>
+                            {step.description}
+                          </OriginalText>
+                        )}
+                      </View>
                     </View>
-                  </View>
-                ))
-            ) : (
-              <Body>A fonte não informou passos para este exercício.</Body>
-            )}
-            <CatalogAction
-              externalId={data.external_id}
-              originalName={data.name}
-              status={data.catalog_exercise}
-              pickFor={pickFor}
-              onAdded={exercise.reload}
-            />
-            <AttributionCard attribution={data.attribution} />
-          </>
-        )}
+                  ))
+              ) : (
+                <Body>A fonte não informou passos para este exercício.</Body>
+              )}
+              <CatalogAction
+                externalId={data.external_id}
+                originalName={data.name}
+                translated={translated}
+                status={data.catalog_exercise}
+                pickFor={pickFor}
+                onAdded={exercise.reload}
+              />
+              <AttributionCard attribution={data.attribution} />
+            </>
+          );
+        }}
       </LibraryView>
     </Screen>
   );
@@ -597,18 +610,22 @@ export function ExerciseLibraryDetailScreen() {
 
 /**
  * "Adicionar ao catálogo": the sides start unselected and at least one is
- * required. In pick mode the chosen exercise goes back to the workout editor,
+ * required. With the FisioMove translation (`translated`) the Portuguese text
+ * comes from the API and no form is shown; without it, the physiotherapist
+ * may write one (DEC-011). In pick mode the chosen exercise goes back to the workout editor,
  * which keeps its draft and fills only the exercise of the waiting item.
  */
 function CatalogAction({
   externalId,
   originalName,
+  translated,
   status,
   pickFor,
   onAdded,
 }: {
   externalId: string;
   originalName: string;
+  translated: boolean;
   status: CatalogExerciseStatus | null;
   pickFor?: LibraryPickTarget;
   onAdded: () => void;
@@ -666,7 +683,9 @@ function CatalogAction({
     if (busy) {
       return;
     }
-    const built = buildTranslation(translation, false);
+    const built = translated
+      ? { translation: null }
+      : buildTranslation(translation, false);
     if ('errors' in built) {
       setTranslationErrors(built.errors);
     }
@@ -714,23 +733,27 @@ function CatalogAction({
         }}
         error={error}
       />
-      <SectionTitle>Texto em português (opcional)</SectionTitle>
-      <Body>
-        Sem tradução, o paciente vê o nome e os passos originais em inglês.
-        Preencha os dois campos ou deixe os dois vazios. O original continua
-        guardado e aparece acima como referência.
-      </Body>
-      <Text style={s.caption}>Nome original</Text>
-      <OriginalText>{originalName}</OriginalText>
-      <TranslationFields
-        optional
-        draft={translation}
-        errors={translationErrors}
-        onChange={value => {
-          setTranslation(value);
-          setTranslationErrors({});
-        }}
-      />
+      {translated ? null : (
+        <>
+          <SectionTitle>Texto em português (opcional)</SectionTitle>
+          <Body>
+            Sem tradução, o paciente vê o nome e os passos originais em inglês.
+            Preencha os dois campos ou deixe os dois vazios. O original continua
+            guardado e aparece acima como referência.
+          </Body>
+          <Text style={s.caption}>Nome original</Text>
+          <OriginalText>{originalName}</OriginalText>
+          <TranslationFields
+            optional
+            draft={translation}
+            errors={translationErrors}
+            onChange={value => {
+              setTranslation(value);
+              setTranslationErrors({});
+            }}
+          />
+        </>
+      )}
       <Button
         label={
           busy

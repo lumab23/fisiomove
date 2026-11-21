@@ -23,9 +23,11 @@
   (nome original, tradução pt-BR se houver, imagens pela API e atribuição no
   `exercise_snapshot`). Nenhum dado de paciente é
   enviado ao provedor (as chamadas não levam identificação de usuário).
-- Nome e instruções originais ficam em inglês, sem edição. A tradução pt-BR é
-  opcional, escrita ou revisada pelo fisioterapeuta e guardada à parte
-  (DEC-011, ver "Tradução pt-BR"); não há tradução automática.
+- Nome e instruções originais ficam em inglês, sem edição, e continuam
+  guardados. O português vem de uma tradução fixa da equipe do FisioMove para
+  os 191 itens da trilha `validated` (sem revisão de fisioterapeuta) ou da
+  tradução gravada por um fisioterapeuta, que tem prioridade (DEC-011, ver
+  "Tradução pt-BR"). Não há serviço de tradução externo.
 - Toda resposta traz `usage_notice` e o bloco `attribution`; a tela que exibe o
   conteúdo **deve** mostrar a atribuição e o aviso.
 
@@ -54,11 +56,11 @@
 | Origem (provedor) | Exposto como | Observação |
 | --- | --- | --- |
 | `id` | `external_id` | validado por `^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$` |
-| `name` | `name` | |
+| `name` | `name` | `name_pt_br`: nome da tradução da equipe, ou `null` |
 | `categories` | `categories` | |
 | `bodyParts` | `body_parts` | valores originais (o provedor mistura `full_body`/`full body`) |
 | `equipment` | `equipment` | |
-| `instructions[{stepNumber, description}]` | `instructions[{step_number, description}]` | ordenadas por `step_number`; idioma em `instructions_language` (`"en"`) |
+| `instructions[{stepNumber, description}]` | `instructions[{step_number, description}]` | ordenadas por `step_number`; idioma em `instructions_language` (`"en"`); `instructions_pt_br` (só no detalhe) traz os passos traduzidos com a mesma numeração, ou `null` |
 | `imageUrl` (lista) / `mediaContent.imageURLs` (detalhe) | `image_url` / `image_urls` | só arquivos dentro de `images/{id}/`; outros hosts ou `..` são descartados |
 | `reviewStatus` (lista) / `metadata.reviewStatus` (detalhe) | `review_status` | |
 | `metadata.createdBy` | `created_by` | só no detalhe |
@@ -219,7 +221,7 @@ preenchido:
 ```
 
 Com tradução, `localization` vem preenchido e `source.attribution` indica a
-alteração (formato em `domain-contracts.md`):
+alteração (formato em `domain-contracts.md`). Tradução de fisioterapeuta:
 
 ```json
 "localization": {
@@ -227,9 +229,15 @@ alteração (formato em `domain-contracts.md`):
   "name": "Nome em português",
   "instructions": "1. Primeiro passo.\n2. Segundo passo.",
   "translated_by_name": "Nome do perfil do fisioterapeuta (sem perfil: \"fisioterapeuta do FisioMove\"; nunca o e-mail — DEC-005)",
-  "translated_at": "2026-11-06T12:00:00Z"
+  "translated_at": "2026-11-06T12:00:00Z",
+  "reviewed_by_physiotherapist": true
 }
 ```
+
+Sem tradução de fisioterapeuta, um item da biblioteca recebe a tradução da
+equipe (`translated_by_name: "equipe do FisioMove"`, `translated_at:
+"2026-11-21T00:00:00Z"`, `reviewed_by_physiotherapist: false`), e a atribuição
+termina com `(not reviewed by a physiotherapist)`.
 
 | HTTP | Quando |
 | --- | --- |
@@ -302,6 +310,17 @@ algum item (pode ser repetido), senão `0`, e lista os itens sem imagem válida
 ou que saíram da fonte.
 
 ## Tradução pt-BR (DEC-011)
+
+### Tradução da equipe do FisioMove
+
+`app/modules/exercise_library/translations_pt_br.json` traz, para cada
+`external_id` da trilha `validated`, o nome e os passos em português e o
+SHA-256 do texto em inglês traduzido (nome + passos no formato `"n. passo"`).
+A tradução só é usada enquanto esse hash bate com o texto atual: se o provedor
+mudar o original, a busca, o detalhe e o catálogo voltam ao inglês até a
+tradução ser refeita. Ela não é gravada em `exercises`; é aplicada na leitura,
+por isso vale também para itens adicionados antes dela. A busca encontra o
+nome em português ou em inglês, sem diferenciar acentos.
 
 ### `PUT /api/v1/exercises/{exercise_id}/localization`
 

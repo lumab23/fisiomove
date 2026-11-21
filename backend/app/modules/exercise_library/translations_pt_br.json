@@ -1,0 +1,1898 @@
+{
+ "EX-ab-hold-01KZ3V3DYS3422TGERTFBDCBSP": {
+  "instructions": [
+   "Deite-se de costas com as pernas estendidas e os braços ao lado do corpo.",
+   "Tire a parte de cima das costas e as pernas do colchonete, mantendo o abdômen contraído e a lombar encostada no colchonete.",
+   "Mantenha essa posição e depois volte devagar ao início."
+  ],
+  "name": "Sustentação abdominal",
+  "source_sha256": "65471b38a39ab68d6ba79345f5727fed3a6b4a4375169a09c3bf4dfcc8b8d9e8"
+ },
+ "EX-ab-rock-01KZ3V3DYS3422TGERTFBDCBSS": {
+  "instructions": [
+   "Deite-se de costas com as pernas estendidas e os braços ao lado do corpo.",
+   "Tire a parte de cima das costas e as pernas do colchonete, mantendo a lombar encostada no colchonete.",
+   "Use os músculos do abdômen para balançar devagar para frente e para trás nessa posição, mantendo o corpo levemente curvado."
+  ],
+  "name": "Balanço abdominal",
+  "source_sha256": "19c5602eeb039e458ab603641c8fb81f0eee005dddded559e0500b8d0bcd72c4"
+ },
+ "EX-adductor-rock-back-148VRJ2BHJD0CJMF58WDWQ4B5C": {
+  "instructions": [
+   "Comece apoiado nas mãos e nos joelhos e estenda uma perna para o lado.",
+   "Mantenha o pé estendido apoiado e o tronco controlado.",
+   "Leve o quadril para trás até sentir um alongamento leve na parte interna da coxa.",
+   "Volte para frente e repita antes de trocar de lado."
+  ],
+  "name": "Balanço para trás com alongamento dos adutores",
+  "source_sha256": "9a2ed3c150a691ff382d7f289c98e72b75cc24c187c40b50cf4313f90591418e"
+ },
+ "EX-alternate-heel-touches-01KZ3V3DYMQ0JFE1ZDQWY74XFD": {
+  "instructions": [
+   "Deite-se de costas no chão ou no colchonete e dobre as pernas, com as solas dos pés apoiadas no chão.",
+   "Solte o ar e levante o tronco até as escápulas ficarem um pouco acima do chão.",
+   "Continue com o tronco elevado e estenda os braços ao lado do corpo, indo devagar de um lado para o outro para tocar a parte de fora do tornozelo com a mão do mesmo lado, sem encostar o queixo no peito.",
+   "Mantenha as escápulas fora do colchonete durante todo o exercício."
+  ],
+  "name": "Toque alternado nos calcanhares",
+  "source_sha256": "f1097113407fafc2e3d0d6704e8553a157f9ecd9f2e587e7f866fc96d080e015"
+ },
+ "EX-ankle-alphabets-01KZ3V3DYX6ZS73404ZXY1K7AM": {
+  "instructions": [
+   "Sente-se ou fique em pé numa posição relaxada.",
+   "Tire uma perna um pouco do chão e comece a movimentar o tornozelo.",
+   "Tente desenhar cada letra do alfabeto no ar com o pé, mantendo o resto da perna parado.",
+   "Troque de lado e repita com o outro pé."
+  ],
+  "name": "Alfabeto com o tornozelo",
+  "source_sha256": "def308c8d1bb956d28704aa70d2cdfd94031a38f0de75b7f2656766cea750b2c"
+ },
+ "EX-arm-circles-0DXGRHFKJ8183YP0FET4194KH8": {
+  "instructions": [
+   "Fique em pé, com a postura alta e os pés mais ou menos na largura dos ombros. Estenda os braços para os lados na altura dos ombros, com os cotovelos totalmente esticados.",
+   "Gire os dois braços para frente devagar, fazendo círculos pequenos e controlados, de cerca de 30 cm de diâmetro. Mantenha o movimento suave e controlado.",
+   "Aumente aos poucos o tamanho dos círculos, se estiver confortável, mantendo os braços estendidos e a postura ereta.",
+   "Complete o número de repetições ou o tempo combinado numa direção e depois troque, girando os braços para trás. Mantenha o movimento controlado o tempo todo."
+  ],
+  "name": "Círculos com os braços",
+  "source_sha256": "c636356e62100d49da13689620ace0895fdc0e1dae9e550f696caccb2535d246"
+ },
+ "EX-arm-pulses-01KZ3V3DYS3422TGERTFBDCBSX": {
+  "instructions": [
+   "Fique em pé, com a postura alta e os pés na largura do quadril.",
+   "Levante os braços para os lados e comece a movê-los para cima e para baixo, rápido e numa amplitude controlada, mantendo o resto do corpo parado."
+  ],
+  "name": "Pulsos com os braços",
+  "source_sha256": "22ca14c728a89c1f998027f0869921d383275e4d9b5b5a68e1a290601e3d51d3"
+ },
+ "EX-assisted-pull-up-68JE9TCX2XQBYA1NP6127HY7ZM": {
+  "instructions": [
+   "Prenda um elástico de resistência em laço na barra e apoie um pé ou um joelho com segurança na parte de baixo do elástico. Segure a barra com as palmas para frente, com as mãos um pouco mais afastadas que a largura dos ombros.",
+   "Fique pendurado com os braços totalmente estendidos e o corpo estável e reto. Contraia o abdômen, mantenha as costelas recolhidas e ative os ombros, puxando de leve as escápulas para baixo e para trás.",
+   "Leve os cotovelos para baixo e para trás, em direção ao quadril, enquanto puxa o peito em direção à barra. Mantenha o corpo controlado e evite balançar ou usar impulso. Continue até o queixo passar da barra.",
+   "Desça devagar até a posição inicial, até os braços ficarem confortavelmente estendidos. Mantenha a tensão durante toda a descida e fique pendurado de forma controlada por um instante antes da próxima repetição."
+  ],
+  "name": "Barra fixa com auxílio de elástico",
+  "source_sha256": "4023d840feb5924b4cb856b9e99d7865b5ca0149f50d84efe53514f90a5a891d"
+ },
+ "EX-back-of-the-neck-stretch-01KZ3V3DYVRGF8XTCP211A7W97": {
+  "instructions": [
+   "Sente-se.",
+   "Deixe os pés no chão, um pouco mais afastados que a largura dos ombros.",
+   "Alongue a coluna, sentando bem ereto.",
+   "Segure a parte de trás da cabeça e olhe para baixo.",
+   "Abaixe os dois ombros e recolha o queixo.",
+   "Agora puxe com as mãos, com cuidado, até sentir um leve alongamento no pescoço.",
+   "Respire de forma regular.",
+   "Sinta o alongamento e mantenha pelo tempo indicado."
+  ],
+  "name": "Alongamento da nuca",
+  "source_sha256": "9dcd680aaf87c9646fe6e0c6a0583f046842b70c30d0e33d5d27d6500be83b21"
+ },
+ "EX-backward-walking-with-support-7G8F8B3F4HM065TM0FYV4RMVYR": {
+  "instructions": [
+   "Fique em pé entre apoios estáveis, com o caminho livre atrás de você.",
+   "Dê um passo para trás com um pé e apoie-o com segurança.",
+   "Continue com passos curtos, olhando para frente.",
+   "Pare antes de chegar ao fim da área de apoio."
+  ],
+  "name": "Caminhada para trás com apoio",
+  "source_sha256": "bb1eb2ca09c04cd19de373a2df40d5de03fca0dbd63c3d460b74d9ad0b0433b2"
+ },
+ "EX-ball-toss-in-stable-stance-5A49VT076D2BD0XQ98Z4NK8SFJ": {
+  "instructions": [
+   "Fique em pé, com os pés mais ou menos na largura do quadril ou um pouco mais afastados, joelhos levemente dobrados e abdômen levemente contraído. Segure uma bola macia com as duas mãos.",
+   "Jogue a bola de leve de uma mão para a outra, ou troque passes com outra pessoa. Faça arremessos leves e controlados.",
+   "Acompanhe a bola com os olhos ao pegar e soltar. Mantenha os pés fixos no chão e a postura estável e ereta.",
+   "Continue pelo tempo desejado. Se sentir menos equilíbrio, pare, recupere o equilíbrio e afaste um pouco mais os pés antes de continuar."
+  ],
+  "name": "Arremesso de bola em base estável",
+  "source_sha256": "c7c257d54a723fa2243a1af21287daefceb4b0ed9d00a0568e384d4585dc0656"
+ },
+ "EX-barbell-hip-hinge-deadlift-0TE617K6ZEVETTH0404XTV8FTN": {
+  "instructions": [
+   "Fique em pé com a barra perto da canela e os pés firmes.",
+   "Incline o quadril para trás e dobre os joelhos para segurar a barra, mantendo o tronco controlado.",
+   "Empurre o chão com os pés e levante, com a barra passando perto do corpo.",
+   "Abaixe a barra inclinando primeiro o quadril e depois dobrando os joelhos, se precisar."
+  ],
+  "name": "Levantamento terra com barra",
+  "source_sha256": "655476cad4330933e45893a0bf82ddd532c1b19f6c0fbcd864bdb90df4c82af0"
+ },
+ "EX-bear-with-shoulder-touches-01KZ3V3DYVRGF8XTCP211A7W94": {
+  "instructions": [
+   "Comece em prancha alta, com as mãos logo abaixo dos ombros e as pernas totalmente estendidas para trás. Deixe os pés mais ou menos na largura do quadril e o abdômen contraído.",
+   "Mantenha a prancha estável e passe um pouco do peso para um braço. Levante a outra mão e toque o ombro oposto.",
+   "Apoie a mão de volta no chão e passe o peso para o outro lado. Toque o ombro oposto com a outra mão.",
+   "Continue alternando os lados de forma lenta e controlada. Mantenha as pernas estendidas e o corpo estável durante todo o movimento."
+  ],
+  "name": "Prancha com toque nos ombros",
+  "source_sha256": "869fea99a8763750a832f616fa81c6f36277e36639913e89a559aa05674b3382"
+ },
+ "EX-biceps-curl-5YAEAAX06FCK6GRY0G5RNKTAQ2": {
+  "instructions": [
+   "Fique em pé com os halteres ao lado do corpo e as palmas das mãos para frente.",
+   "Mantenha a parte de cima dos braços junto ao tronco.",
+   "Dobre os cotovelos para levantar os pesos, sem balançar o corpo.",
+   "Abaixe os pesos com controle."
+  ],
+  "name": "Rosca bíceps",
+  "source_sha256": "41e430c95687769c835c639a5b4235c539ed47932ddf0a531c4c17d0aec1f602"
+ },
+ "EX-bicycle-crunches-01KZ3V3DYMQ0JFE1ZDQWY74XFE": {
+  "instructions": [
+   "Deite-se de costas com as pernas elevadas, os joelhos dobrados a cerca de 90° e as canelas mais ou menos paralelas ao chão. Apoie as mãos de leve atrás da cabeça, com os cotovelos abertos.",
+   "Contraia o abdômen com suavidade e tire um pouco a cabeça e os ombros do chão. Mantenha a lombar estável e o pescoço relaxado.",
+   "Leve o joelho direito em direção ao peito enquanto gira o tronco, para que o cotovelo esquerdo vá em direção ao joelho direito. Ao mesmo tempo, estenda a perna esquerda.",
+   "Passe pelo centro e troque de lado: leve o joelho esquerdo em direção ao peito enquanto a perna direita se estende e o cotovelo direito vai em direção ao joelho esquerdo.",
+   "Continue alternando os lados num ritmo suave e controlado. Mantenha o abdômen contraído o tempo todo e evite puxar a cabeça ou o pescoço."
+  ],
+  "name": "Abdominal bicicleta",
+  "source_sha256": "2ac0e46c8ca33cb20665e28b14f1fb22fe67ff8a8f762f42ce4d36f0c2ccddad"
+ },
+ "EX-bird-dog-2J9HRH7GAZ0721D0GQSBMCGQBM": {
+  "instructions": [
+   "Comece apoiado nas mãos e nos joelhos, com as mãos abaixo dos ombros.",
+   "Estenda um braço para frente e, ao mesmo tempo, a perna oposta para trás, mantendo a pelve nivelada para formar uma linha horizontal contínua da mão estendida até o pé estendido.",
+   "Volte devagar e alterne os lados."
+  ],
+  "name": "Perdigueiro",
+  "source_sha256": "ca9676c85a8872a6e1a3ea23383cc7530773e7549a833b82991e2880f5ecc657"
+ },
+ "EX-boat-pose-01KZ3V3DYR43D2FTV12ZVQHG18": {
+  "instructions": [
+   "Sente-se no chão com os joelhos dobrados e os pés apoiados no chão. Incline o tronco um pouco para trás, mantendo a coluna alongada e o peito aberto. Contraia o abdômen para manter a posição estável.",
+   "Tire os pés do chão e estenda as pernas para cima até um ângulo confortável, buscando cerca de 45 graus. Estenda os braços para frente na altura dos ombros, paralelos ao chão. Equilibre-se sobre os ossos do quadril, sem arredondar nem afundar a lombar.",
+   "Mantenha a posição de 30 segundos a 1 minuto, respirando de forma regular. Mantenha o abdômen contraído e a postura controlada e estável o tempo todo."
+  ],
+  "name": "Postura do barco",
+  "source_sha256": "5821f49aa8ad06561a3e7b63143c042b8c6c89e41e20c95e6bb6914d79901344"
+ },
+ "EX-boat-pose-arm-pulses-01KZ3V3DYVRGF8XTCP211A7W95": {
+  "instructions": [
+   "Sente-se no chão com os joelhos dobrados e os pés apoiados. Incline o tronco um pouco para trás, mantendo a coluna alongada e o peito aberto.",
+   "Contraia o abdômen e tire os pés do chão. Estenda as pernas o quanto for confortável e forme um V com o tronco e as coxas. Estenda os braços para frente, mais ou menos na altura dos ombros.",
+   "Mantenha a postura do barco enquanto faz pulsos pequenos e controlados com os braços, para cima e para baixo. Mantenha o movimento pequeno e o tronco firme e estável.",
+   "Continue pelo tempo desejado, respirando de forma regular e mantendo o abdômen contraído."
+  ],
+  "name": "Postura do barco com pulsos dos braços",
+  "source_sha256": "7bf9af0377fd46ae74521fe7f9f3acc02617de3dcedfeb155d8e6f9e033a64b2"
+ },
+ "EX-body-scan-01KZ3V3DYVRGF8XTCP211A7W9B": {
+  "instructions": [
+   "Inspire e expire profundamente.",
+   "Feche os olhos e relaxe aos poucos.",
+   "Vá percebendo o corpo inteiro, pouco a pouco.",
+   "Comece pelos pés e vá subindo até a cabeça, aos poucos, a cada respiração."
+  ],
+  "name": "Escaneamento corporal",
+  "source_sha256": "89e02c48d3582e92f63128381539029cca36c7e505d07eaf17eeda441f7c9811"
+ },
+ "EX-bodyweight-squat-2FP4KQNHB49CQ16VXE3742VSZA": {
+  "instructions": [
+   "Fique em pé com os pés um pouco mais afastados que a largura dos ombros e os braços posicionados para ajudar no equilíbrio.",
+   "Dobre o quadril e os joelhos como se fosse sentar para trás, mantendo o pé inteiro apoiado.",
+   "Desça só até onde tiver controle e conforto, levando as mãos para frente para melhorar o equilíbrio e a estabilidade.",
+   "Empurre o chão com os pés para voltar a ficar em pé, soltando o ar."
+  ],
+  "name": "Agachamento livre",
+  "source_sha256": "08f7469f554523aba27ae6a1c7e81684533f52407e74b61f9e5789ae3cfc332f"
+ },
+ "EX-box-breathing-without-breath-holds-3V2PZXZHJDDA6QSSMWQW4H9SZ3": {
+  "instructions": [
+   "Sente-se confortavelmente e relaxe os ombros.",
+   "Inspire com suavidade, contando num ritmo confortável.",
+   "Expire pela mesma contagem confortável, sem pausar.",
+   "Continue sem prender a respiração e sem fazer força."
+  ],
+  "name": "Respiração quadrada sem prender o ar",
+  "source_sha256": "5bf0351674cc0720e5a4057f95eedf2301c76f76183218c4db2f529e52ff2ebe"
+ },
+ "EX-breathing-exercise-01KZ3V3DYVRGF8XTCP211A7W98": {
+  "instructions": [
+   "Inspire pelo nariz e, devagar e com atenção, solte o ar também pelo nariz.",
+   "Enquanto solta o ar, diga devagar em pensamento uma palavra de duas sílabas, por exemplo 'calma'.",
+   "Você pode ajustar a inspiração e a expiração ao ritmo da palavra."
+  ],
+  "name": "Exercício de respiração",
+  "source_sha256": "9ccf120250de75f1ab4b1c666e1275ccc1e5124205b2a47c906f07b638226fd5"
+ },
+ "EX-brisk-walking-intervals-6AE8NYD60CN8QGKBRQAJ1420MN": {
+  "instructions": [
+   "Caminhe com tranquilidade para encontrar um ritmo confortável.",
+   "Aumente o ritmo durante um intervalo planejado, mantendo a técnica relaxada e um movimento ativo e coordenado dos braços.",
+   "Volte a um ritmo mais leve para se recuperar.",
+   "Repita as fases mais rápida e mais leve conforme tolerar."
+  ],
+  "name": "Intervalos de caminhada rápida",
+  "source_sha256": "0ca397ccc6456d1c44ba3adba20e4cd784878f847868fa0455e1b1a4b4da62ae"
+ },
+ "EX-burpee-01KZ3V3DYJQ0B83JNMDWZ8R58V": {
+  "instructions": [
+   "Agache com os pés apontados para frente, os calcanhares no chão e os joelhos alinhados com a ponta dos pés.",
+   "Salte com as pernas para trás até a posição de prancha e aterrisse com o abdômen contraído, sem arquear as costas.",
+   "Desça para a flexão de braço mantendo o cóccix encaixado e apertando as escápulas uma contra a outra e para baixo.",
+   "Termine a flexão e salte de volta para a posição de agachamento, com os calcanhares no chão, os joelhos para frente e os pés retos.",
+   "Salte para cima e desça para repetir."
+  ],
+  "name": "Burpee",
+  "source_sha256": "50e5d8701e214cfefec02cc01b289bef792b56296893044afc89e64d1d948f8d"
+ },
+ "EX-butt-kicks-01KZ3V3DYKP7H891JXAGSWKWPV": {
+  "instructions": [
+   "Fique em pé, com a postura alta, os pés mais ou menos na largura do quadril e os braços relaxados ao lado do corpo. Mantenha o peito aberto e o abdômen levemente contraído.",
+   "Comece a correr devagar no lugar, apoiado na parte da frente dos pés. Dobre um joelho para levar o calcanhar em direção ao glúteo do mesmo lado.",
+   "Apoie o pé com suavidade enquanto o outro calcanhar sobe em direção ao glúteo. Continue alternando os lados num ritmo rápido e regular. Balance os braços naturalmente, como numa corrida leve, e aumente a velocidade aos poucos até um ritmo confortável.",
+   "Mantenha a postura ereta e o ritmo controlado pelo tempo combinado. Concentre-se em aterrissagens suaves e silenciosas e num movimento constante."
+  ],
+  "name": "Chute no glúteo",
+  "source_sha256": "21d6b42051323e581375182fb19593da6199b635477df4d69363f4a03f97d957"
+ },
+ "EX-butterfly-pose-01KZ3V3DYR43D2FTV12ZVQHG16": {
+  "instructions": [
+   "Sente-se no colchonete, dobre os joelhos, junte as solas dos pés e deixe os joelhos caírem para os lados.",
+   "Alongue o tronco, segure os dedões dos pés e fique nessa postura de 1 a 2 minutos."
+  ],
+  "name": "Postura da borboleta",
+  "source_sha256": "ff12d255250047e342af4c844f1b3b6e59dbae0c0b6c9c160edf4a03daca204a"
+ },
+ "EX-cable-triceps-pressdown-5EECQM8KH6N6CFPYWYBVCMT3NZ": {
+  "instructions": [
+   "Fique em pé de frente para o cabo, com os cotovelos dobrados e junto ao corpo.",
+   "Empurre a pegada para baixo esticando os cotovelos.",
+   "Faça uma pausa sem travar as articulações com força.",
+   "Deixe os cotovelos dobrarem devagar até voltar ao início."
+  ],
+  "name": "Tríceps no cabo (pulley)",
+  "source_sha256": "c26b37210c9b88f2338a5b784479061be28a78e8d2da26808a4a0da4ca534719"
+ },
+ "EX-cable-wood-chop-3S8F3TJ192TNXJDEPKFC030YHR": {
+  "instructions": [
+   "Fique de lado para o aparelho de cabo, com a polia acima da altura dos ombros. Deixe os pés mais ou menos na largura dos ombros e os joelhos levemente dobrados. Segure a pegada com as duas mãos e estenda os braços em direção ao cabo.",
+   "Contraia o abdômen e mantenha a base estável. Mantenha o peito aberto e os ombros relaxados, de frente para o cabo.",
+   "Puxe a pegada na diagonal, cruzando o corpo em direção ao quadril oposto. Gire o tronco e o quadril juntos, deixando os pés girarem naturalmente se precisar. Mantenha os braços quase retos e deixe a rotação do tronco conduzir o movimento.",
+   "Inverta o movimento devagar e leve a pegada de volta à posição inicial, mantendo o cabo tensionado. Complete as repetições combinadas, vire-se e repita do outro lado."
+  ],
+  "name": "Lenhador no cabo",
+  "source_sha256": "4631aa120fd229999e6caed6d1b15b014647eb3c4376d44ee0d8c21df0704311"
+ },
+ "EX-calf-raise-5WK6XGTFDNEHCQFR8D51TDVB20": {
+  "instructions": [
+   "Fique em pé, com a postura alta, os pés paralelos apontando para frente e um apoio por perto.",
+   "Suba na ponta dos pés sem deixar os tornozelos virarem para fora.",
+   "Faça uma pausa rápida lá em cima.",
+   "Abaixe os calcanhares devagar até a posição inicial."
+  ],
+  "name": "Elevação de panturrilha",
+  "source_sha256": "28c134bd2e3cd50a0d9c849a0e03f792a0ffc9086e5492792ae59a3e2d647dfd"
+ },
+ "EX-cat-cow-spinal-mobility-43SMTHQT8TZHH3AY1ACDWDP3H4": {
+  "instructions": [
+   "Comece apoiado nas mãos e nos joelhos, com as mãos logo abaixo dos ombros e os joelhos abaixo do quadril. Mantenha a coluna numa posição neutra e confortável e o pescoço relaxado.",
+   "Ao soltar o ar, encaixe a pelve com suavidade e arredonde a coluna, deixando a cabeça acompanhar naturalmente, sem puxar o queixo com força em direção ao peito.",
+   "Ao puxar o ar, inverta o movimento: incline a pelve com suavidade e estenda a coluna. Abra o peito e deixe a cabeça acompanhar naturalmente, sem forçar o pescoço nem arquear demais a lombar.",
+   "Continue alternando devagar entre as duas posições, com movimentos suaves acompanhando a respiração e dentro de uma amplitude confortável."
+  ],
+  "name": "Gato-vaca para mobilidade da coluna",
+  "source_sha256": "d15a0c851a972fce9130a4367c5f86d32cc26eb1fec9aab92c095e66843559e9"
+ },
+ "EX-chair-sit-to-stand-7QWZ974F6EBC5XQGNGQXACFFNW": {
+  "instructions": [
+   "Sente-se perto da beirada de uma cadeira estável, com os pés na largura dos ombros e bem apoiados no chão.",
+   "Incline o tronco um pouco para frente e empurre o chão com os dois pés.",
+   "Fique totalmente em pé sem usar impulso; use os braços da cadeira, se precisar.",
+   "Leve o quadril para trás e desça com controle até sentar."
+  ],
+  "name": "Sentar e levantar da cadeira",
+  "source_sha256": "3692c29464f8fe3907c9b2a6535a725417872091d2a837821d66566a5c56ecef"
+ },
+ "EX-chest-opener-forward-fold-01KZ3V3DYQG2ZAZAGXM9YXKZ45": {
+  "instructions": [
+   "Fique em pé numa posição relaxada, com os pés na largura do quadril e os joelhos levemente dobrados.",
+   "Entrelace os dedos atrás das costas e comece a inclinar o tronco para frente devagar, empurrando as mãos para cima, em direção ao teto.",
+   "Desça até onde for confortável e mantenha a posição por algumas respirações profundas; depois volte devagar à posição inicial."
+  ],
+  "name": "Abertura do peito com flexão do tronco à frente",
+  "source_sha256": "8839bb32d98f75c97c946d2ffb7487e019f9c068c2dbee30c3ec8606a6b309ac"
+ },
+ "EX-child-s-pose-side-reach-3E8CBY5TXMV6SN44ZTTGD8XWVE": {
+  "instructions": [
+   "Comece apoiado nas mãos e nos joelhos e leve o quadril devagar para trás, em direção aos calcanhares.",
+   "Estenda os dois braços para frente, com as palmas no chão. Leve as mãos devagar para um lado até sentir um alongamento leve ao longo do lado oposto do tronco.",
+   "Respire de forma lenta e profunda, expandindo a lateral das costelas a cada inspiração. Mantenha o quadril relaxado e perto dos calcanhares.",
+   "Leve as mãos de volta ao centro e retorne à posição inicial. Repita o alongamento do outro lado."
+  ],
+  "name": "Postura da criança com alcance lateral",
+  "source_sha256": "f01105972835483adb70df79fbba4aee428a2139836b2e345df37f6ae2c80b8c"
+ },
+ "EX-clock-reach-balance-drill-27JK3VAQWFB2MSDDST7BKWXBJD": {
+  "instructions": [
+   "Fique em pé ao lado de uma cadeira, equilibrando-se principalmente numa perna.",
+   "Leve o pé livre para frente, como se fosse tocar um número de um relógio.",
+   "Volte ao centro e depois leve o pé para outra direção.",
+   "Troque a perna de apoio depois de completar a sequência."
+  ],
+  "name": "Equilíbrio com alcance em relógio",
+  "source_sha256": "9b2b16aee308234acd49d28fb4df3cfae7a28f61b292dcba97382081b3b3006c"
+ },
+ "EX-comfortable-pace-walking-5KMWKKZ8K30N2CA01M3Q2M9MZJ": {
+  "instructions": [
+   "Fique em pé, com a postura alta, e comece a caminhar num ritmo confortável.",
+   "Deixe os braços balançarem naturalmente e apoie cada pé com suavidade.",
+   "Ajuste o ritmo para que a respiração continue tranquila.",
+   "Diminua o ritmo aos poucos antes de parar."
+  ],
+  "name": "Caminhada em ritmo confortável",
+  "source_sha256": "0c49270aa301f098de66b85e9e8c681c1aa52882557a233f0058d563c6aa7d0d"
+ },
+ "EX-cone-weave-walk-25A4PGF1PK5CM0DXM46BJ89NW1": {
+  "instructions": [
+   "Coloque alguns cones numa linha, bem espaçados.",
+   "Caminhe entre eles fazendo curvas suaves.",
+   "Mantenha a cabeça erguida e encurte os passos perto de cada curva.",
+   "Termine numa área livre antes de parar."
+  ],
+  "name": "Caminhada em zigue-zague entre cones",
+  "source_sha256": "495ac6e3a6aa690ff45b058d2f9081d6e83a37b550ba2b9b761543c7dbabc363"
+ },
+ "EX-core-engagement-01KZ3V3DYW2R5BX5WFZN2A3N58": {
+  "instructions": [
+   "Contraia os músculos do abdômen por 10 segundos, sem dobrar o corpo.",
+   "Depois relaxe por 5 segundos.",
+   "Repita esses passos várias vezes."
+  ],
+  "name": "Ativação do abdômen",
+  "source_sha256": "86a19831e56dbd8320d2a5c2458cb83685faeb7b6af06be070d84fdfcc55ed12"
+ },
+ "EX-cradle-walk-01KZ3V3DYKP7H891JXAGSWKWPN": {
+  "instructions": [
+   "Em pé, apoie-se numa perna e coloque a outra na posição de \"4\".",
+   "Abaixe-se e segure o tornozelo e o joelho da perna que não está apoiada, com as palmas das mãos voltadas para baixo.",
+   "Puxe a perna para cima mantendo o peito aberto e estendendo a perna de apoio.",
+   "Solte a perna e desça devagar até a posição inicial.",
+   "Dê um passo à frente e repita com a outra perna pelo número de repetições desejado."
+  ],
+  "name": "Caminhada com perna em berço",
+  "source_sha256": "f954fdd3e24db0de99a55971141241ed93a1a54d23a71b84eea1a78f84cd6b8c"
+ },
+ "EX-crescent-lunge-01KZ3V3DYND08RZF4CTKT9VFTH": {
+  "instructions": [
+   "Comece em pé com o tronco flexionado à frente e, ao puxar o ar, leve a perna direita reta para trás, com o pé direito apontando para frente.",
+   "Levante o tronco e leve os braços pelas laterais até acima da cabeça.",
+   "Fique na postura de avanço crescente de 30 segundos a 1 minuto.",
+   "Solte o ar, apoie as mãos no chão, leve a perna esquerda para trás, ao lado da direita, e caminhe com as mãos até voltar ao tronco flexionado à frente em pé.",
+   "Repita com a outra perna."
+  ],
+  "name": "Avanço crescente",
+  "source_sha256": "e39c1ba45cfa5b3ce5930f03a1f8531e5f3fe1fa9bb5cf2d62195446d231d1c7"
+ },
+ "EX-cross-body-arm-swings-01KZ3V3DYKP7H891JXAGSWKWPM": {
+  "instructions": [
+   "Fique em pé, com os pés na largura do quadril, os joelhos levemente relaxados e o abdômen levemente contraído. Estenda os dois braços retos para frente, mais ou menos na altura do peito.",
+   "Leve os braços devagar para os lados, abrindo o peito. Deixe as escápulas se aproximarem naturalmente e sinta um alongamento leve no peito.",
+   "Traga os braços de volta ao centro num movimento controlado, deixando que se cruzem confortavelmente à frente do corpo.",
+   "Continue alternando qual braço fica por cima ao cruzar, com o movimento suave e relaxado, sem forçar a amplitude."
+  ],
+  "name": "Balanço dos braços cruzando à frente do corpo",
+  "source_sha256": "56d1da44b6db514fc844524f142dd8c47d275aa51d3825af4bbe8f3d5ee54b95"
+ },
+ "EX-cross-body-march-4AN4SPZE44XWDH31EBEDCBAPGD": {
+  "instructions": [
+   "Fique em pé, com a postura alta, os pés mais ou menos na largura do quadril e os braços relaxados ao lado do corpo. Mantenha o peito aberto e o abdômen levemente contraído.",
+   "Levante um joelho até mais ou menos a altura do quadril enquanto leva a mão oposta, cruzando o corpo, em direção ao joelho levantado. Mantenha o tronco ereto, sem desabar para frente ou para o lado.",
+   "Abaixe o pé até o chão com controle e volte o braço à posição inicial. Depois levante o outro joelho e leve a outra mão em direção a ele.",
+   "Alterne os lados num ritmo lento e regular. Concentre-se em subir os joelhos com controle, transferir o peso com equilíbrio e cruzar os braços com suavidade."
+  ],
+  "name": "Marcha cruzada em pé",
+  "source_sha256": "c471de1e926caa57bc75fda39ea5700e7e57d4582d759634b05eea7b0b7ad202"
+ },
+ "EX-curtsy-lunge-01KZ3V3DYT59YPX0KBDFY9QZX7": {
+  "instructions": [
+   "Fique em pé, com a postura alta e os pés na largura do quadril.",
+   "Mantendo o peso no pé direito, dê um passo grande para trás com a perna esquerda, cruzando-a atrás da perna direita.",
+   "Comece a descer o corpo dobrando os joelhos, até a coxa direita ficar paralela ao chão.",
+   "Volte à posição inicial e repita do outro lado."
+  ],
+  "name": "Avanço cruzado (reverência)",
+  "source_sha256": "0302fe44b88650c92137e800fb1ee12d39783e0ebfefadf29ce6a60d78b960dc"
+ },
+ "EX-dead-bug-403Z20MSBAQ73W292PMSXTDY3J": {
+  "instructions": [
+   "Deite-se de costas com o quadril e os joelhos dobrados, as canelas paralelas ao chão e os braços estendidos para cima.",
+   "Contraia o abdômen com suavidade, sem deixar de respirar.",
+   "Abaixe o braço e a perna opostos só até onde conseguir manter a posição do tronco, formando uma linha reta da mão até o pé.",
+   "Volte ao início e alterne os lados."
+  ],
+  "name": "Inseto morto",
+  "source_sha256": "3221c8afd0b56e333ee016861e4564f90003e9b1a1cc799c0093e86b9128466f"
+ },
+ "EX-diaphragmatic-breathing-7QS7T5B5YGYG5NAG74CQBQVT2M": {
+  "instructions": [
+   "Deite-se ou sente-se confortavelmente, com uma mão sobre o abdômen.",
+   "Puxe o ar suavemente pelo nariz e deixe as costelas de baixo e o abdômen se expandirem.",
+   "Solte o ar devagar, sem empurrar nem fazer força.",
+   "Continue num ritmo tranquilo e confortável."
+  ],
+  "name": "Respiração diafragmática",
+  "source_sha256": "c707d69976344b65b076a9ec44d04f7aba7272a51b3a58faace5041d80fcfd9b"
+ },
+ "EX-dolphin-push-up-01KZ3V3DYPMJ0VD30AKHABF5NZ": {
+  "instructions": [
+   "Comece na posição de cachorro olhando para baixo, com as mãos na largura dos ombros, as pernas estendidas e o quadril bem alto. Mantenha os braços retos e o abdômen contraído.",
+   "Dobre os cotovelos e desça devagar a parte de cima do corpo, levando a cabeça em direção ao chão entre as mãos. Mantenha o quadril alto e o corpo controlado durante todo o movimento.",
+   "Empurre o chão com firmeza pelas mãos e estique os braços para subir de novo. Volte à posição inicial com o quadril alto.",
+   "Repita o movimento devagar e com controle, mantendo o abdômen contraído e evitando mexer demais a lombar."
+  ],
+  "name": "Flexão golfinho",
+  "source_sha256": "3009c36743c6eae7055d31e795dc9465510d4a7c875372a2fcb525d434018fb6"
+ },
+ "EX-donkey-leg-pulses-01KZ3V3DYT59YPX0KBDFY9QZX6": {
+  "instructions": [
+   "Fique apoiado nas mãos e nos joelhos, com as mãos abaixo dos ombros.",
+   "Estenda uma perna para trás e contraia os glúteos; mantenha a perna ali e faça pequenos movimentos para cima e para baixo.",
+   "Abaixe a perna e repita do outro lado."
+  ],
+  "name": "Pulsos de perna em quatro apoios (coice)",
+  "source_sha256": "90cf50406bfcaab1085954a5b419db6b5029590bc3fc56a31564aee2b5e3a16f"
+ },
+ "EX-doorway-chest-stretch-37FNBGMB8FB8ZC7WMP3SA0TBXE": {
+  "instructions": [
+   "Fique de lado, junto ao vão da porta, e apoie um antebraço no batente, com o cotovelo um pouco abaixo da altura do ombro e dobrado a cerca de 90°.",
+   "Dê um passo devagar para frente com o pé mais próximo da porta até sentir um alongamento leve no peito e na frente do ombro.",
+   "Mantenha o tronco ereto, os ombros relaxados e o quadril voltado para frente. Respire devagar e confortavelmente enquanto mantém o alongamento.",
+   "Dê um passo para trás para soltar o alongamento, abaixe o braço e repita do outro lado."
+  ],
+  "name": "Alongamento do peito no batente da porta",
+  "source_sha256": "c548a5e9502edebef925fe37adb3a27655b5e503cbc087c7fa493222e4164881"
+ },
+ "EX-downward-dog-01KZ3V3DYND08RZF4CTKT9VFTB": {
+  "instructions": [
+   "Apoie as mãos espalmadas no chão, ficando com as mãos e os joelhos no chão.",
+   "Eleve bem o quadril e tire os joelhos do colchonete, mantendo os braços retos.",
+   "Ajude a alinhar as costas aproximando as escápulas.",
+   "Mantenha a cabeça baixa e alinhada com os braços, olhando para o chão."
+  ],
+  "name": "Cachorro olhando para baixo",
+  "source_sha256": "9412e5b96d5f60c669e4fe949ec3a1b1f227a5edbbdc064d2452f6f99eb16ea1"
+ },
+ "EX-dumbbell-bench-press-3J2GPJPQMF8JKD4DS1N2KYT2M9": {
+  "instructions": [
+   "Deite-se confortavelmente num banco, com os pés bem apoiados no chão. Segure os halteres um pouco para fora e um pouco acima do peito, com os cotovelos dobrados a cerca de 45° do tronco e as palmas para frente ou levemente voltadas para dentro.",
+   "Posicione os ombros puxando de leve as escápulas para trás e para baixo, contra o banco. Contraia o abdômen e mantenha a curva natural da lombar. Mantenha os punhos neutros e alinhados com os antebraços.",
+   "Puxe o ar fundo e contraia o abdômen. Empurre os halteres para cima num leve arco, aproximando um do outro conforme sobem. Mantenha os braços estendidos sem travar totalmente os cotovelos.",
+   "Faça uma pausa rápida lá em cima, com os halteres logo acima dos ombros, concentrando-se em contrair o peito. Depois abaixe os halteres devagar pelo mesmo arco, mantendo o controle.",
+   "Abaixe os pesos até sentir um alongamento confortável no peito, sem levar os ombros para trás em excesso. Solte o ar ao empurrar e puxe o ar ao abaixar. Repita pelo número de repetições desejado, com o movimento controlado o tempo todo."
+  ],
+  "name": "Supino com halteres",
+  "source_sha256": "4019df9c6660edff8907e2bb22670ea91937802c85fc884c5aac4250d6d63d38"
+ },
+ "EX-dumbbell-lateral-raise-4GDQTWWKGHDSK0WB60WGCRCYAX": {
+  "instructions": [
+   "Fique em pé ou sentado com a postura alta, segurando halteres leves ao lado das coxas.",
+   "Com os cotovelos levemente dobrados, levante os braços para os lados.",
+   "Pare mais ou menos na altura dos ombros, ou antes, se precisar.",
+   "Abaixe os halteres devagar, sem balançar."
+  ],
+  "name": "Elevação lateral com halteres",
+  "source_sha256": "3be1f92f4e79656885c2b6f225f8bf413449e94e67ae42a21b498610e637b96f"
+ },
+ "EX-dumbbell-overhead-press-5539C7HG9NPKT7W1XH00XDETDS": {
+  "instructions": [
+   "Fique em pé, com a postura alta, os pés mais ou menos na largura dos ombros e um halter em cada mão na altura dos ombros. Segure com as palmas para frente e os cotovelos um pouco abertos para os lados.",
+   "Contraia o abdômen e aperte levemente os glúteos para estabilizar o corpo. Mantenha o peito erguido e evite inclinar o tronco para trás ou arquear a lombar.",
+   "Empurre os dois halteres para cima numa trajetória vertical e controlada, até os braços ficarem totalmente estendidos acima da cabeça. Quando os halteres chegarem lá em cima, leve a cabeça levemente para frente, para que o corpo fique alinhado logo abaixo dos pesos.",
+   "Abaixe os halteres devagar até a altura dos ombros, mantendo os pesos sob controle e sem deixar que se desloquem muito para frente ou para trás."
+  ],
+  "name": "Desenvolvimento com halteres",
+  "source_sha256": "85792dcdd01e1377f48ea13e3b59d760197a64f3b37249a7918bdc474dae2b05"
+ },
+ "EX-dynamic-leg-swing-with-support-6WNSVN5K060NXRBVK3A1JM2VNH": {
+  "instructions": [
+   "Fique em pé ao lado de uma cadeira estável, de uma parede ou de outro apoio firme e segure-o com uma mão. Fique com a postura alta, os pés mais ou menos na largura do quadril e o abdômen levemente contraído.",
+   "Passe o peso para a perna de apoio e balance a outra perna suavemente para frente e para trás, numa amplitude confortável.",
+   "Mantenha o tronco ereto e a pelve estável. Deixe o movimento sair do quadril, com a perna que balança relaxada.",
+   "Diminua o movimento aos poucos, apoie o pé de volta no chão e repita do outro lado."
+  ],
+  "name": "Balanço dinâmico da perna com apoio",
+  "source_sha256": "8fae8eca8025be9b88a712ac6040d42f0e258e8daece612fa3eb930c8504228d"
+ },
+ "EX-easy-jogging-0WZJGZ7DS2DE9WQWKX4STCMSTY": {
+  "instructions": [
+   "Comece com uma caminhada tranquila e depois passe para uma corrida leve.",
+   "Dê passos curtos e relaxados e pise com suavidade.",
+   "Mantenha os ombros e as mãos relaxados e a respiração regular.",
+   "Volte a caminhar antes de parar."
+  ],
+  "name": "Corrida leve",
+  "source_sha256": "62f3c8e5beaae324674ee6daaf55eac8714c6b9c46c64b5d7b5548fd945e5828"
+ },
+ "EX-easy-seat-01KZ3V3DYR43D2FTV12ZVQHG14": {
+  "instructions": [
+   "Sente-se no chão com as pernas estendidas à frente. Dobre os joelhos e traga os pés para perto.",
+   "Cruze as pernas confortavelmente e coloque cada pé embaixo ou um pouco à frente do joelho oposto. Distribua o peso igualmente sobre os dois ossos do quadril e alongue a coluna, com os ombros relaxados.",
+   "Apoie as mãos confortavelmente nas coxas ou nos joelhos. Mantenha a cabeça e o pescoço numa posição neutra e respire de forma lenta, profunda e confortável.",
+   "Mantenha a posição pelo tempo que for confortável. Fique relaxado, mantenha a postura ereta e continue respirando naturalmente, sem forçar a posição."
+  ],
+  "name": "Postura fácil (sentado de pernas cruzadas)",
+  "source_sha256": "87cf03efdeba79b479f484e22be5e981ebfa03782cd23044366f32505790fe7e"
+ },
+ "EX-easy-twist-01KZ3V3DYR43D2FTV12ZVQHG19": {
+  "instructions": [
+   "Comece em avanço, gire o tronco para a esquerda e solte o ar enquanto apoia a mão esquerda no chão, do lado de dentro do pé direito.",
+   "Estenda o braço direito por cima da cabeça, com as pontas dos dedos apontando na mesma direção dos dedos do pé da frente, e olhe para o teto.",
+   "Mantenha a postura de 30 segundos a 1 minuto e depois repita do outro lado."
+  ],
+  "name": "Torção fácil",
+  "source_sha256": "12b46d270eb7da07075d3c9dba20253dc076dbc11f77e953bfd68b8fdb951628"
+ },
+ "EX-elbow-plank-with-reach-01KZ3V3DYS3422TGERTFBDCBST": {
+  "instructions": [
+   "Comece em prancha, apoiado nos cotovelos e nas pontas dos pés.",
+   "Mantendo o corpo parado e o abdômen firme, passe o peso para um braço e estenda o outro braço reto para frente.",
+   "Traga o braço de volta e troque de lado."
+  ],
+  "name": "Prancha nos cotovelos com alcance",
+  "source_sha256": "733c9b76cb0928f5ae8622a202650ea6074262a89e520b3530b220c270c81509"
+ },
+ "EX-elliptical-trainer-5HRYMGGZHCWN092GB5DFAA8MW3": {
+  "instructions": [
+   "Suba nos pedais parados segurando nas barras.",
+   "Comece a se mover devagar e encontre o equilíbrio.",
+   "Faça passadas suaves, com o tronco ereto.",
+   "Diminua a resistência e a velocidade antes de descer."
+  ],
+  "name": "Elíptico",
+  "source_sha256": "93433eebfa7dd1b6293cdd90254589914b096d45c0e3fd3c55b1e452bd46c572"
+ },
+ "EX-extended-exhale-breathing-2W5V0CY8ARMJS84ZGN81A3W9WJ": {
+  "instructions": [
+   "Acomode-se numa posição sentada ou deitada confortável. Relaxe os ombros, a mandíbula e o pescoço e deixe o corpo descansar naturalmente.",
+   "Puxe o ar de forma suave e confortável pelo nariz, deixando o abdômen e as costelas de baixo se expandirem naturalmente.",
+   "Solte o ar devagar e de forma contínua pelo nariz ou pela boca, fazendo a expiração um pouco mais longa que a inspiração. Mantenha a respiração relaxada e evite fazer força ou prender o ar.",
+   "Continue por várias respirações confortáveis. Se sentir a cabeça leve, tontura ou desconforto, pare o exercício e volte a respirar normalmente."
+  ],
+  "name": "Respiração com expiração prolongada",
+  "source_sha256": "3e0f85df5d085368278ee9a38daa5f7c5d8acc67074db4381e352f3dca26000e"
+ },
+ "EX-extended-triangle-pose-01KZ3V3DYND08RZF4CTKT9VFTK": {
+  "instructions": [
+   "Comece em pé, com os pés na largura dos ombros, e, ao soltar o ar, afaste bem os pés.",
+   "Gire o pé direito para fora, a 90 graus, e, ao puxar o ar, levante os braços para os lados até ficarem paralelos ao chão.",
+   "Ao soltar o ar, leve a mão direita ao chão, do lado de dentro ou de fora do pé direito, estenda o braço esquerdo em direção ao teto e olhe para o polegar esquerdo.",
+   "Mantenha a postura de 30 segundos a 1 minuto e depois repita do lado esquerdo."
+  ],
+  "name": "Postura do triângulo estendido",
+  "source_sha256": "a718be11cb5c94c588f2ca97d8b7e43a8d0067dec5b875e1f1d198c7186591f3"
+ },
+ "EX-fantasy-trip-01KZ3V3DYW2R5BX5WFZN2A3N54": {
+  "instructions": [
+   "Sente-se confortavelmente.",
+   "Escolha uma posição em que se sinta bem.",
+   "Feche os olhos e venha comigo numa caminhada à beira-mar.",
+   "É uma manhã agradável de verão e você decidiu caminhar na praia.",
+   "Você tira os sapatos e sente a areia morna sob as solas dos pés.",
+   "Cada vez que as ondas trazem a água até a areia, ela toca os seus pés.",
+   "A água está agradavelmente fresca e o mar faz você se sentir renovado.",
+   "Você aproveita o cheiro da água salgada e a brisa leve."
+  ],
+  "name": "Viagem imaginária",
+  "source_sha256": "21c87114553d9447d943d7b4bb127d7173d4b06b0eacc910503111645b957f37"
+ },
+ "EX-farmer-carry-733B47QMQ0P9DZC56Z4XXCMF81": {
+  "instructions": [
+   "Fique em pé entre dois halteres, com os pés mais ou menos na largura do quadril. Incline o quadril para trás e dobre os joelhos para descer, mantendo as costas neutras. Segure os halteres com firmeza e levante-se empurrando o chão com os pés e estendendo o quadril.",
+   "Já em pé, segure os halteres ao lado do corpo com os braços retos. Contraia o abdômen, mantenha o peito aberto e afaste os ombros das orelhas.",
+   "Caminhe para frente com passos curtos e controlados, mantendo o tronco ereto. Mantenha os halteres perto do corpo, sem deixar que balancem.",
+   "Depois da distância desejada, pare e abaixe os halteres até o chão inclinando o quadril para trás com controle. Mantenha as costas neutras e apoie os pesos com cuidado."
+  ],
+  "name": "Caminhada do fazendeiro",
+  "source_sha256": "3eaad12ca8faf550bf64d7cfea3a969d10e014b72bf092a60c6006f312789144"
+ },
+ "EX-figure-four-glute-stretch-0VSEE6MYDYFQMXDVPKKCVJ6C4R": {
+  "instructions": [
+   "Sente-se com a postura alta numa cadeira estável.",
+   "Apoie um tornozelo sobre a coxa oposta.",
+   "Incline um pouco o tronco para frente até sentir um alongamento leve nos glúteos.",
+   "Volte a ficar ereto e troque de lado."
+  ],
+  "name": "Alongamento do glúteo em \"4\"",
+  "source_sha256": "a82049e750ac9b09f894ba91152193bd6aae73fba230dd2d5226e4e1a43fc3d5"
+ },
+ "EX-fingertip-touches-01KZ3V3DYQG2ZAZAGXM9YXKZ43": {
+  "instructions": [
+   "Estenda a mão com os dedos afastados.",
+   "Um por um, toque a ponta de cada dedo na ponta do polegar.",
+   "Faça algumas rodadas antes de trocar de mão."
+  ],
+  "name": "Toque das pontas dos dedos",
+  "source_sha256": "31fc69a759c3b6dd66fd29cbd3bfec3eb97771982f68e8d66cadd2bb2b9d4f26"
+ },
+ "EX-flutter-kicks-01KZ3V3DYND08RZF4CTKT9VFT8": {
+  "instructions": [
+   "Deite-se de costas e estenda as pernas para cima, num ângulo de 45 graus.",
+   "Mantenha os braços retos e rente ao chão, com as palmas para baixo.",
+   "Tire um pouco a cabeça, o pescoço e os ombros do chão, mantendo o queixo afastado do peito.",
+   "Com as pernas bem esticadas, juntas e as pontas dos pés esticadas, comece a abaixar uma perna.",
+   "Suba a perna que abaixou e abaixe a outra, mantendo o abdômen contraído.",
+   "Continue o movimento, alternando as pernas."
+  ],
+  "name": "Tesoura com as pernas",
+  "source_sha256": "427043c3bb72cdbc97f8f2866ea12210b3b55df64cdcc7b6abe48fc15d2c4550"
+ },
+ "EX-foam-roller-thoracic-extension-00QY1MPN4PNFGZW2ZMXB5490HB": {
+  "instructions": [
+   "Coloque um rolo de espuma atravessado sob a parte de cima das costas e apoie a cabeça com as mãos.",
+   "Mantenha o quadril no chão e estenda as costas sobre o rolo com suavidade.",
+   "Volte à posição neutra sem forçar as costelas para cima.",
+   "Mude o rolo um pouco de lugar e repita, conforme for confortável."
+  ],
+  "name": "Extensão torácica no rolo de espuma",
+  "source_sha256": "3a372de2c523e065859493c132620313166511ded65f4ab4e85c0d8a06c06ecb"
+ },
+ "EX-front-kicks-01KZ3V3DYS3422TGERTFBDCBSN": {
+  "instructions": [
+   "Fique em pé, com a postura alta e os pés na largura dos ombros.",
+   "Levante uma perna o mais alto que conseguir num movimento rápido e controlado, com o pé apontado para cima e sem estender demais nem a perna que chuta nem a de apoio.",
+   "Use os braços ativamente para manter o equilíbrio e a estabilidade.",
+   "Volte à posição inicial e repita com a outra perna.",
+   "Continue alternando as pernas até completar a série."
+  ],
+  "name": "Chutes frontais",
+  "source_sha256": "f8c0c65e625283b12217ed710fd87bcb00dabd5c76f3d5ee1a325dc30fe3c60c"
+ },
+ "EX-front-leg-raises-01KZ3V3DYKP7H891JXAGSWKWPS": {
+  "instructions": [
+   "Comece numa posição relaxada, com os pés na largura dos ombros e as mãos na cintura. Mantenha os ombros relaxados e a pelve neutra, sem arquear demais a lombar. Imagine a pelve como uma tigela com água e mantenha-a nivelada para a água não derramar nem para frente nem para trás.",
+   "Levante a perna no ar, mantendo-a reta, com o joelho apenas levemente dobrado. Contraia o abdômen e mantenha uma tensão controlada no tronco, deixando o tronco participar naturalmente do movimento, com a postura estável e controlada.",
+   "Levante a perna até 90 graus e depois volte a ficar em pé; repita do outro lado."
+  ],
+  "name": "Elevação frontal da perna",
+  "source_sha256": "678c747ce22cd0e2708f7ba7522d69ff7aedfd29518b6e03e88e1ad75bf98d61"
+ },
+ "EX-front-plank-2MCVVADVSQBQVAQMMRV3BH3HQA": {
+  "instructions": [
+   "Apoie os antebraços no chão, com os cotovelos abaixo dos ombros.",
+   "Estenda as pernas ou mantenha os joelhos no chão para ter mais apoio.",
+   "Mantenha o tronco numa linha reta confortável, sem deixar de respirar.",
+   "Termine antes de o quadril cair ou de os ombros ficarem desconfortáveis."
+  ],
+  "name": "Prancha frontal",
+  "source_sha256": "738ae1bd1680c4b3cf7ebe37cdb2a3cab957494dde3bbee31e7b7ea51dcd2a38"
+ },
+ "EX-glute-bridge-7NKPSGPPB6R29146E405BGRGG1": {
+  "instructions": [
+   "Deite-se de costas com os joelhos dobrados e os pés apoiados no chão, mais ou menos na largura do quadril. Posicione os pés com os calcanhares relativamente perto do quadril e os braços apoiados ao lado do corpo.",
+   "Contraia levemente o abdômen e os glúteos. Comece o movimento pelo quadril, inclinando a pelve suavemente para trás e levando o osso púbico em direção ao umbigo. Isso ajuda a manter a lombar neutra e evita arqueá-la demais.",
+   "Dessa posição, empurre os pés com firmeza contra o chão e levante o quadril contraindo os glúteos. Continue subindo até o corpo formar uma linha reta e confortável dos ombros aos joelhos. Mantenha a pelve inclinada durante todo o movimento e evite arquear a lombar para subir mais o quadril.",
+   "Faça uma pausa rápida lá em cima, com os glúteos contraídos, e depois desça o quadril devagar e com controle. Volte à posição inicial e repita, mantendo a coluna neutra."
+  ],
+  "name": "Ponte de glúteo",
+  "source_sha256": "c93efe79606331a27fde32ea704f0467b4232ef13bd7d66623749f935ce762f4"
+ },
+ "EX-glute-squeezes-01KZ3V3DYW2R5BX5WFZN2A3N5E": {
+  "instructions": [
+   "Sente-se com a postura alta na cadeira, com as costas retas.",
+   "Contraia os glúteos o máximo que conseguir por 10 a 30 segundos.",
+   "Relaxe e repita."
+  ],
+  "name": "Contração dos glúteos",
+  "source_sha256": "645b60cd125123d0f0b7ee9409c773aee9cf99b71ecc24bb40980f276777a7e5"
+ },
+ "EX-goblet-squat-0C4G448Z5SRV4JYT0F4YD83G4P": {
+  "instructions": [
+   "Segure um halter junto ao peito com as duas mãos.",
+   "Fique em pé com os pés numa base confortável e contraia o tronco com suavidade.",
+   "Dobre o quadril e os joelhos ao mesmo tempo, mantendo o peso perto do corpo.",
+   "Faça uma pausa numa profundidade confortável e depois fique em pé de forma suave, soltando o ar."
+  ],
+  "name": "Agachamento com halter à frente (goblet)",
+  "source_sha256": "53072e30a032d2d8489a098201d3846e0e27107be1fdc109c1276f96d4cd746b"
+ },
+ "EX-half-jackknife-01KZ3V3DYT59YPX0KBDFY9QZX8": {
+  "instructions": [
+   "Deite-se no chão com os braços estendidos acima da cabeça.",
+   "Ao soltar o ar, levante os ombros e uma perna, levando os braços em direção à perna levantada.",
+   "Desça de volta e repita com a outra perna."
+  ],
+  "name": "Meio canivete",
+  "source_sha256": "d59146b04944eeda871575f78b76e418655b62810486a6d63029cd1ee9b7602b"
+ },
+ "EX-head-massage-01KZ3V3DYW2R5BX5WFZN2A3N5A": {
+  "instructions": [
+   "Fique numa posição confortável.",
+   "Coloque os dedos na testa.",
+   "Comece massageando a pele na linha do cabelo com movimentos circulares.",
+   "Use as pontas dos dedos e massageie com pressão leve.",
+   "Depois vá descendo devagar pelo alto da cabeça até a nuca.",
+   "Lembre-se também das têmporas e da região ao redor das orelhas."
+  ],
+  "name": "Massagem na cabeça",
+  "source_sha256": "020c4c9f8178d89cbad076cd79fb9f613bc1029b75eb8fe2796793ebbca87535"
+ },
+ "EX-heel-to-toe-walk-4FM99RZ8DTRDT1GQQM7BPJXXKQ": {
+  "instructions": [
+   "Fique em pé perto de uma parede ou de um corrimão.",
+   "Coloque um pé logo à frente do outro, encostando o calcanhar na ponta do pé de trás.",
+   "Continue com passos lentos e cuidadosos.",
+   "Afaste os pés para recuperar o equilíbrio quando precisar."
+  ],
+  "name": "Caminhada calcanhar com ponta do pé",
+  "source_sha256": "7019e53f06beadb8569612d6e4f630093de44d5b2f024b78b54d397afaa9a5ce"
+ },
+ "EX-high-knees-01KZ3V3DYQG2ZAZAGXM9YXKZ47": {
+  "instructions": [
+   "Fique em pé, com a postura ereta e os pés na largura do quadril.",
+   "Leve um joelho para cima até 90 graus enquanto estende a outra perna e empurra o pé contra o chão.",
+   "Aumente o ritmo aos poucos e use os braços como contrapeso para gerar o movimento."
+  ],
+  "name": "Joelho alto (skipping)",
+  "source_sha256": "b25ec0d27395879b5889ab19f9b168f717469788ad6366371d719688dc662290"
+ },
+ "EX-hip-90-90-rotation-0WJDZXRY3VAKZVHK39JNTGCC1F": {
+  "instructions": [
+   "Sente-se com os dois joelhos dobrados e os pés mais afastados que o quadril.",
+   "Abaixe os dois joelhos para um lado, mantendo as mãos atrás como apoio.",
+   "Volte pelo centro sem forçar o quadril.",
+   "Alterne os lados de forma suave."
+  ],
+  "name": "Rotação do quadril 90-90",
+  "source_sha256": "36e395570b8081f9332253d4c729c2a5d18fd21c169decb46abab762070fb9c7"
+ },
+ "EX-incline-push-up-6PYPR4RGH5GBRPPFEFT3QDCGJK": {
+  "instructions": [
+   "Apoie as mãos num banco estável, um pouco mais afastadas que a largura dos ombros.",
+   "Leve os pés para trás e alinhe o tronco confortavelmente da cabeça aos calcanhares.",
+   "Abaixe o peito em direção ao banco, sem encostar, dobrando os cotovelos com controle e mantendo o corpo alinhado.",
+   "Empurre de volta ao início mantendo o tronco controlado."
+  ],
+  "name": "Flexão de braço inclinada",
+  "source_sha256": "60b2bab2c16a75fcbeec5cccf9ea208d538277834e5a6648fdd8a6d9ecd36110"
+ },
+ "EX-jump-rope-1P0S66WME2NR9F760HGMWB1WVH": {
+  "instructions": [
+   "Fique em pé com a corda atrás dos calcanhares e as pegadas ao lado do corpo.",
+   "Gire a corda com os punhos e dê pequenos saltos quando ela passar.",
+   "Aterrisse com suavidade, com os joelhos levemente dobrados.",
+   "Pare antes de perder o ritmo ou o controle da aterrissagem."
+  ],
+  "name": "Pular corda",
+  "source_sha256": "5b2057038c72c0a630f3ea5c1086936567525f8e02b382222e48d7014c2656b6"
+ },
+ "EX-jump-squat-01KZ3V3DYPMJ0VD30AKHABF5P0": {
+  "instructions": [
+   "Fique em pé com os pés na largura dos ombros e as pontas dos pés levemente voltadas para fora.",
+   "Dobre os joelhos levando o quadril para trás, como se fosse sentar numa cadeira.",
+   "Empurrando o chão com os calcanhares, salte para cima.",
+   "Aterrisse com os joelhos levemente dobrados e volte à posição de agachamento."
+  ],
+  "name": "Agachamento com salto",
+  "source_sha256": "9a985aa4018f0db005c725e174eab0d9b2fbc1cd70819c9e8a12d7d5ee55a117"
+ },
+ "EX-jumping-jacks-01KZ3V3DYVRGF8XTCP211A7W96": {
+  "instructions": [
+   "Fique em pé, com a postura ereta, os pés juntos e as mãos ao lado do corpo.",
+   "Salte, afaste os pés e junte as duas mãos acima da cabeça.",
+   "Salte de novo e volte à posição inicial.",
+   "Repita o movimento."
+  ],
+  "name": "Polichinelo",
+  "source_sha256": "c6ba1cd9edbe9d37dc7146edfe38592e1f38c11fa1dfd7ef122127283f48a790"
+ },
+ "EX-kettlebell-deadlift-4HP7EKDAN24FZJ46MM76E5Q53K": {
+  "instructions": [
+   "Fique em pé com um kettlebell no chão, entre os pés.",
+   "Incline o quadril para trás e dobre os joelhos o suficiente para segurar a alça.",
+   "Contraia o tronco com suavidade e fique em pé empurrando o chão com os pés.",
+   "Leve o kettlebell de volta ao chão inclinando o quadril para trás com controle."
+  ],
+  "name": "Levantamento terra com kettlebell",
+  "source_sha256": "df0474e6e28a6e1fd41e56157dc8a5b8eb0491465cdde73bef94313ba6ff9f94"
+ },
+ "EX-knee-push-ups-01KZ3V3DYR43D2FTV12ZVQHG11": {
+  "instructions": [
+   "Ajoelhe-se no chão e apoie as mãos um pouco mais afastadas que a largura dos ombros, logo abaixo ou um pouco à frente deles. Mantenha os joelhos no chão e forme uma linha reta da cabeça aos joelhos.",
+   "Cruze os tornozelos, se for confortável. Contraia o abdômen e aperte levemente os glúteos para manter o corpo estável. Mantenha a cabeça e o pescoço neutros.",
+   "Dobre os cotovelos a cerca de 45 graus do corpo e abaixe o peito devagar em direção ao chão. Mantenha o corpo em linha reta, sem deixar o quadril cair ou subir.",
+   "Empurre o chão por igual com as palmas para voltar à posição inicial, estendendo os braços quase totalmente. Mantenha o abdômen contraído e repita o movimento com controle, em toda a amplitude."
+  ],
+  "name": "Flexão de braço com os joelhos no chão",
+  "source_sha256": "66cdc5252caf59f569180c7b2cfd17b246e5e745b0e43d003ba530432c487d5c"
+ },
+ "EX-knee-to-wall-ankle-mobility-6YK3JWWD50WDQB0D0RY7D64553": {
+  "instructions": [
+   "Fique em pé de frente para uma parede, com um pé perto dela.",
+   "Mantenha o calcanhar no chão e leve o joelho em direção à parede.",
+   "Vá só até onde o calcanhar continuar no chão.",
+   "Volte e repita antes de trocar de lado."
+  ],
+  "name": "Mobilidade do tornozelo com joelho na parede",
+  "source_sha256": "88704f4dd4dd8389ed511fa14a6d16c1d3d3debe4df1618cbc10869b24296f93"
+ },
+ "EX-knees-to-chest-01KZ3V3DYR43D2FTV12ZVQHG12": {
+  "instructions": [
+   "Deite-se de costas com as pernas estendidas e os braços apoiados confortavelmente ao lado do corpo.",
+   "Dobre os dois joelhos e traga-os com suavidade em direção ao peito. Segure os joelhos ou as canelas com os dois braços e mantenha a lombar relaxada no chão.",
+   "Respire de forma lenta e profunda e relaxe no alongamento. A cada expiração, traga os joelhos um pouco mais perto do peito, se for confortável."
+  ],
+  "name": "Joelhos ao peito",
+  "source_sha256": "3859a6415322bf485b2e2564097be42f3464aa16b97d61864b9635c1c35b3fa5"
+ },
+ "EX-lap-swimming-6FMFHX9WCDVJMKFRD9B2JBKFDF": {
+  "instructions": [
+   "Entre na piscina com segurança e comece com uma braçada leve.",
+   "Mantenha um ritmo relaxado e solte o ar dentro da água quando for o caso.",
+   "Vire ou descanse antes de a técnica piorar.",
+   "Termine com movimentos leves antes de sair."
+  ],
+  "name": "Natação em piscina",
+  "source_sha256": "b9727e8d98c915ec952178ac5f100bbbeeba22d90320f054cc5b5f2979528892"
+ },
+ "EX-lat-pulldown-60Y3WQ802BGA7R7H1MPEMAGSN9": {
+  "instructions": [
+   "Sente-se com as coxas presas no apoio do aparelho e segure a barra confortavelmente, com as palmas das mãos voltadas para frente.",
+   "Comece com os braços acima da cabeça e o tronco ereto.",
+   "Puxe a barra em direção à parte de cima do peito, levando os cotovelos para baixo e mantendo o peito erguido.",
+   "Controle a volta até os braços ficarem estendidos."
+  ],
+  "name": "Puxada alta (pulldown)",
+  "source_sha256": "6b256bc989e83b10e852a0b94ea58a40f4766de21a10246008816b8f3605411f"
+ },
+ "EX-lateral-weight-shift-35Q564NRGNTC3SCC8VDM32NK5S": {
+  "instructions": [
+   "Fique em pé com os pés mais afastados que a largura do quadril e um apoio por perto.",
+   "Passe o peso do corpo para um pé sem levantar o outro.",
+   "Volte pelo centro e passe o peso para o outro lado.",
+   "Mantenha os dois joelhos levemente dobrados e o movimento controlado."
+  ],
+  "name": "Transferência lateral de peso",
+  "source_sha256": "72c33e802ca9fb52db4c653a1cde971e97a021adbdaf6539ce71fd3c5adfb4ec"
+ },
+ "EX-laugh-01KZ3V3DYVRGF8XTCP211A7W9G": {
+  "instructions": [
+   "Coloque as mãos sobre o coração.",
+   "Inspire e expire com calma.",
+   "Sorria por dentro.",
+   "Agora abra os braços devagar e ria cada vez mais alto.",
+   "Continue até estar com os braços bem abertos, rindo.",
+   "Depois feche os braços devagar e deixe o riso ficar mais baixo.",
+   "Sinta o riso dentro de você quando as mãos voltarem ao coração."
+  ],
+  "name": "Riso",
+  "source_sha256": "ddd34284cc02542ee377b87cf940765f45b7d49aa02a1a75290592cfdbbc2584"
+ },
+ "EX-leg-press-machine-7KHB19HHE2XFNZVXR6EPBD3PSA": {
+  "instructions": [
+   "Sente-se confortavelmente no aparelho, com as costas e o quadril bem apoiados e o banco ajustado numa posição confortável.",
+   "Apoie os dois pés inteiros na plataforma, mais ou menos na largura dos ombros.",
+   "Empurre a plataforma até os joelhos ficarem confortavelmente estendidos, sem esticar demais nem travar os joelhos.",
+   "Volte devagar até uma profundidade controlada."
+  ],
+  "name": "Leg press",
+  "source_sha256": "c761994630e030d84ca7bf9fbf5e1d8076ef56ccd44ae5bc0911af885ba2796b"
+ },
+ "EX-leg-raises-01KZ3V3DYND08RZF4CTKT9VFT9": {
+  "instructions": [
+   "Deite-se de costas com as pernas estendidas e juntas. Apoie os braços ao lado do corpo, com as palmas para baixo. Pressione as mãos de leve contra o chão para ter apoio.",
+   "Contraia o abdômen e mantenha a lombar levemente pressionada contra o chão. Levante as pernas devagar, mantendo-as estendidas.",
+   "Continue subindo até o ponto mais alto em que a lombar ainda fique encostada no chão. Não suba mais se a lombar começar a arquear ou a sair do chão.",
+   "Faça uma pausa rápida lá em cima e depois abaixe as pernas devagar, mantendo o abdômen contraído e a lombar encostada no chão.",
+   "Pare logo antes de os pés tocarem o chão e comece a próxima repetição, mantendo o controle durante todo o movimento."
+  ],
+  "name": "Elevação de pernas",
+  "source_sha256": "8fede23f343f5751631529c9f0c0487a3a6d560b90834f3683037c3a0a543fb1"
+ },
+ "EX-low-impact-dance-1YVS1M67DN3TNRXK0FZ17TT3QD": {
+  "instructions": [
+   "Escolha uma sequência de passos simples que se repita.",
+   "Mova-se no ritmo com passos confortáveis para os lados e para frente.",
+   "Acrescente movimentos leves com os braços, se o equilíbrio permitir.",
+   "Simplifique os passos antes que o cansaço atrapalhe a coordenação."
+  ],
+  "name": "Dança de baixo impacto",
+  "source_sha256": "0bf80c0186913f2da0d769f70bb81e4477081c174754f516edc95ab459b87ca5"
+ },
+ "EX-low-step-aerobics-54NWNGRZAJJCAWFY08AF323BE4": {
+  "instructions": [
+   "Fique em pé de frente para um step baixo e estável.",
+   "Suba com um pé, leve o outro pé para cima e depois desça.",
+   "Alterne o pé que começa, mantendo o ritmo controlado.",
+   "Diminua o ritmo ou pare se começar a errar onde apoia os pés."
+  ],
+  "name": "Aeróbica em step baixo",
+  "source_sha256": "706198667e0ae4857f41ba9db879355314f7f7278f30b1b9b169ce5c8f2f34dc"
+ },
+ "EX-low-step-up-418FG27WCJQQT1WK21QW4JDBXS": {
+  "instructions": [
+   "Fique de frente para um step estável e apoie um pé inteiro sobre ele.",
+   "Incline-se um pouco para frente e empurre com o pé que está em cima.",
+   "Fique em pé sobre o step sem empurrar com força com o pé de trás.",
+   "Desça com controle e repita antes de trocar de lado."
+  ],
+  "name": "Subida em step baixo",
+  "source_sha256": "e55ab5f75e070a31d88df450b82eb30e9ff4fb101030fbaa6bb2f115d4c3a5fa"
+ },
+ "EX-lunge-01KZ3V3DYHXH4EXHPN509HZ77G": {
+  "instructions": [],
+  "name": "Avanço",
+  "source_sha256": "a899d9d02d96923fa41cb6f66ebd680573f343efe25bd7e5eb63980494067c31"
+ },
+ "EX-lying-raised-leg-toe-taps-01KZ3V3DYT59YPX0KBDFY9QZXF": {
+  "instructions": [
+   "Deite-se de costas com as pernas estendidas para cima, mais ou menos perpendiculares ao chão. Estenda os braços acima da cabeça em direção às pernas e mantenha a lombar confortavelmente apoiada no chão.",
+   "Contraia o abdômen e solte o ar enquanto tira a cabeça e os ombros do colchonete com suavidade. Leve as duas mãos em direção aos pés, sem puxar o pescoço.",
+   "Desça a cabeça e os ombros devagar até o colchonete, mantendo as pernas elevadas e o abdômen contraído.",
+   "Repita o movimento num ritmo controlado, levando as mãos em direção aos pés a cada repetição."
+  ],
+  "name": "Toque nos pés com as pernas elevadas, deitado",
+  "source_sha256": "f4dc58a277a483fe3bb3682b270a1540a94f3794519d81a4797fdf55b4d4d7f2"
+ },
+ "EX-lying-side-leg-raises-01KZ3V3DYQG2ZAZAGXM9YXKZ4B": {
+  "instructions": [
+   "Deite-se de lado com as duas pernas estendidas e a cabeça apoiada no braço de baixo.",
+   "Levante a perna de cima o mais alto que conseguir com conforto, sem girar o quadril para trás.",
+   "Abaixe a perna e repita."
+  ],
+  "name": "Elevação lateral da perna, deitado de lado",
+  "source_sha256": "b272be1f73267a912a43acf85147d65c8034f46cf47a5853924ad4f99ce528bf"
+ },
+ "EX-marching-in-place-5HESMBWR20JA4WTN5ZABGKM916": {
+  "instructions": [
+   "Fique em pé, com a postura alta e um apoio por perto, se precisar.",
+   "Levante um joelho, abaixe e alterne os lados.",
+   "Coordene um balanço confortável dos braços, levando para frente o braço oposto a cada joelho que sobe.",
+   "Mantenha um ritmo que permita respirar de forma regular."
+  ],
+  "name": "Marcha no lugar",
+  "source_sha256": "e40e4545f27d307f4c83b0a745ce92a5bf66c5be0f3a7c9431b401d3474d5198"
+ },
+ "EX-mindful-walking-with-paced-breathing-41H2RHZCA75HAS3DFNFX760JWD": {
+  "instructions": [
+   "Comece a caminhar num ritmo leve, numa área livre.",
+   "Perceba o contato de cada pé com o chão.",
+   "Deixe a respiração entrar num ritmo natural com os passos.",
+   "Mantenha a atenção no movimento e no ambiente, sem forçar uma contagem fixa."
+  ],
+  "name": "Caminhada atenta com respiração ritmada",
+  "source_sha256": "d80a9f0f9f94a037e6ee2b7952e18e001d7c3665cd9f936c3d7011d561128283"
+ },
+ "EX-mindfulness-01KZ3V3DYVRGF8XTCP211A7W9A": {
+  "instructions": [
+   "Sente-se ou fique em pé numa posição confortável, em que consiga ficar relaxado e atento.",
+   "Sente-se ou fique em pé numa posição confortável, em que consiga ficar relaxado e atento.",
+   "Leve a atenção com suavidade para o ambiente ao seu redor e perceba o que está acontecendo à sua volta.",
+   "Perceba o que você consegue ver, ouvir, cheirar e sentir. Receba cada sensação sem precisar se fixar nela nem mudá-la.",
+   "Permita-se notar até os detalhes pequenos ou sutis, dando atenção a cada experiência conforme ela surge naturalmente.",
+   "Observe tudo sem julgar, analisar ou tentar reagir. Deixe cada experiência vir e ir embora sem precisar fazer nada a respeito."
+  ],
+  "name": "Atenção plena",
+  "source_sha256": "cdf01e8518e413e993a781e06bd302c896f879d6b64ed9bc2b4616f7faa9037c"
+ },
+ "EX-mountain-climber-01KZ3V3DYJQ0B83JNMDWZ8R58T": {
+  "instructions": [
+   "Comece em prancha alta.",
+   "Contraia o abdômen para puxar as costelas para baixo e mantenha o cóccix encaixado.",
+   "Mantenha o tronco firme e mova só o quadril, trazendo um joelho de cada vez para frente."
+  ],
+  "name": "Escalador",
+  "source_sha256": "dfe5c88d8386f129eb3acf2c532625dc3813f6d215480f9a9ebed5c316111f45"
+ },
+ "EX-neck-strength-back-01KZ3V3DYX6ZS73404ZXY1K7AT": {
+  "instructions": [
+   "Sente-se com a coluna ereta e entrelace as mãos atrás da cabeça.",
+   "Empurre as mãos contra a parte de trás da cabeça.",
+   "Mantenha a cabeça parada, resistindo ao movimento.",
+   "Mantenha a tensão por pelo menos 5 segundos."
+  ],
+  "name": "Extensão do pescoço (isometria)",
+  "source_sha256": "6a6a06375d51f9fea485849714c2b28645bbbbd15bcc2e0b8eda9f352f4cf36d"
+ },
+ "EX-neck-strength-front-01KZ3V3DYX6ZS73404ZXY1K7AS": {
+  "instructions": [
+   "Sente-se ou fique em pé com a coluna ereta, os ombros relaxados e a coluna numa posição neutra. Apoie a base de uma ou das duas mãos com suavidade na testa.",
+   "Contraia levemente o abdômen e mantenha a cabeça, o pescoço e a parte de cima do corpo parados. Mantenha o pescoço neutro, sem olhar para cima, para baixo nem inclinar a cabeça.",
+   "Pressione a testa contra a mão enquanto a mão faz a mesma força no sentido contrário, criando tensão sem deixar a cabeça se mover. Mantenha o pescoço alongado e evite subir os ombros ou inclinar o corpo.",
+   "Mantenha a contração por pelo menos 5 segundos, respirando normalmente, e depois relaxe. Repita pelo número de repetições desejado."
+  ],
+  "name": "Fortalecimento do pescoço: frente",
+  "source_sha256": "63323276a91f5a2ac84d7128bbd621cfa7d3bf8864cc94aa16742be37d8b5908"
+ },
+ "EX-neck-strength-sides-01KZ3V3DYX6ZS73404ZXY1K7AV": {
+  "instructions": [
+   "Sente-se com a coluna ereta numa posição confortável, com os ombros relaxados e baixos. Apoie a palma da mão esquerda no lado esquerdo da cabeça.",
+   "Pressione a cabeça contra a mão enquanto, ao mesmo tempo, pressiona a mão contra a cabeça. Crie tensão suficiente para resistir ao movimento sem de fato mover a cabeça.",
+   "Mantenha a cabeça e o pescoço numa posição neutra e a postura firme e ereta. Mantenha os ombros relaxados e baixos durante todo o exercício, sem encolhê-los nem subi-los em direção às orelhas.",
+   "Mantenha a tensão isométrica por pelo menos 5 segundos, respirando normalmente. Mantenha a pressão controlada e evite forçar o pescoço ou os ombros.",
+   "Solte a tensão devagar e repita o exercício do outro lado, mantendo a mesma posição controlada."
+  ],
+  "name": "Fortalecimento do pescoço: lados",
+  "source_sha256": "0e9b91d18a57bf540e51cbe77b6639f1a0de8396dd79b09e5d2f6cfd909bef03"
+ },
+ "EX-nordic-walking-3HRTYYH6FR4SRDREVMB4PGE4EX": {
+  "instructions": [
+   "Fique em pé com os bastões de caminhada nórdica bem presos nas alças. Mantenha os ombros relaxados, o peito aberto, o abdômen levemente contraído e a postura alta. Segure os bastões inclinados para trás do corpo, de forma relaxada, em vez de mantê-los na vertical.",
+   "Comece a caminhar com a pisada natural do calcanhar para a ponta do pé e alterne braços e pernas: quando uma perna vai para frente, o braço oposto também vai. Finque o bastão do lado oposto mais ou menos ao mesmo tempo em que o calcanhar do pé da frente correspondente toca o chão. Mantenha o bastão inclinado para trás, sem fincá-lo na vertical.",
+   "Segure o bastão quando ele tocar o chão e empurre-o ativamente para trás enquanto o corpo avança. Estenda o braço naturalmente para trás sem subir o ombro. Conforme o braço passa para trás do corpo, abra a mão aos poucos e deixe a alça sustentar o bastão. A mão deve terminar atrás do corpo, de preferência além da linha do tronco.",
+   "Deixe o outro braço balançar naturalmente para frente e traga o bastão para frente para o próximo passo. Mantenha os movimentos fluidos e coordenados, com braços e pernas num ritmo diagonal natural. Evite passos grandes demais ou forçar o movimento dos braços.",
+   "Mantenha a postura ereta e relaxada durante toda a caminhada. Mantenha a cabeça erguida, os ombros baixos e relaxados e a coluna numa posição neutra. Deixe o tronco girar naturalmente com a alternância de braços e pernas, mantendo o abdômen levemente contraído.",
+   "Continue caminhando num ritmo regular e confortável, respirando naturalmente. Concentre-se num ciclo suave de fincar → segurar → empurrar → soltar → levar à frente, usando os bastões ativamente para ajudar a avançar, em vez de apenas carregá-los."
+  ],
+  "name": "Caminhada nórdica",
+  "source_sha256": "888c1645c288e9c08ec1a75c68bfc0efd6955dda9c95944512825ed0da7a84cd"
+ },
+ "EX-oblique-twists-01KZ3V3DYW2R5BX5WFZN2A3N5C": {
+  "instructions": [
+   "Sentado com a coluna ereta e os pés um pouco acima do chão, segure na borda da mesa.",
+   "Use o abdômen para girar a cadeira de um lado para o outro.",
+   "Mantenha as costas retas e o abdômen contraído o tempo todo."
+  ],
+  "name": "Giros do tronco na cadeira (oblíquos)",
+  "source_sha256": "d5be5714595b7af6c8cb251d62b0e6bad74b7468770a56c56b13ae2c67b0741a"
+ },
+ "EX-open-book-thoracic-rotation-78V233QDEM551GFDTCK7G4YXQC": {
+  "instructions": [
+   "Deite-se de lado com o quadril e os joelhos dobrados e os braços estendidos para frente.",
+   "Leve o braço de cima por cima do corpo, acompanhando-o com os olhos.",
+   "Deixe a parte de cima do tronco girar sem forçar os joelhos a se separarem nem tirá-los do chão.",
+   "Volte devagar e repita do outro lado."
+  ],
+  "name": "Rotação torácica em livro aberto",
+  "source_sha256": "ba53fa3ea00865720f5e1e0e7f614e19efd7da291d07506476745bf99bf6128a"
+ },
+ "EX-opposite-arm-and-leg-lift-01KZ3V3DYPMJ0VD30AKHABF5P1": {
+  "instructions": [
+   "Deite-se de bruços no chão com os braços estendidos à frente.",
+   "Recolha o queixo em direção ao peito e tire o peito do chão contraindo os músculos das costas.",
+   "Levante o braço esquerdo e a perna direita alguns centímetros do chão e mantenha por alguns segundos; depois apoie os dois no chão e troque de lado."
+  ],
+  "name": "Elevação de braço e perna opostos, de bruços",
+  "source_sha256": "2e12677c715f49863f984addf087f870e719b02ec2dc0f6fee8a974fd68e48b2"
+ },
+ "EX-outdoor-leisure-cycling-36GPMTSAGEH3RAPDJSKQ2JA0GD": {
+  "instructions": [
+   "Confira o ajuste da bicicleta, os freios, o capacete e o trajeto.",
+   "Comece numa marcha leve e acelere aos poucos.",
+   "Mantenha uma trajetória previsível e uma pedalada constante.",
+   "Freie com suavidade e com antecedência, usando as duas mãos, e apoie um pé no chão ao parar."
+  ],
+  "name": "Passeio de bicicleta ao ar livre",
+  "source_sha256": "fa1a91382a32a60f5edf60e64ee4a5e9704ed9e8a1fb79a9cdd495e2d0c28203"
+ },
+ "EX-pallof-press-1Q1QK615SWWMD19AGNT9C9SJ46": {
+  "instructions": [
+   "Fique de lado para um elástico bem preso e segure-o com as duas mãos na altura do peito.",
+   "Adote uma base estável e contraia o tronco com suavidade.",
+   "Empurre as mãos para frente sem deixar o tronco girar.",
+   "Traga as mãos de volta ao peito e repita."
+  ],
+  "name": "Pallof press (antirrotação)",
+  "source_sha256": "157d096d2700dc596243c50e520af1d4f01d530120d2a7166e7914ee0854afea"
+ },
+ "EX-pelvic-mobility-01KZ3V3DYY2J67YNXR955N44JZ": {
+  "instructions": [
+   "Fique em pé, com a coluna ereta, os pés na largura do quadril e as mãos na cintura.",
+   "Tire um calcanhar do chão e deixe o quadril do mesmo lado subir um pouco.",
+   "Mantenha a parte da frente dos pés no chão o tempo todo.",
+   "Durante o exercício, mantenha o tronco o mais parado possível.",
+   "Faça o movimento de forma lenta e suave."
+  ],
+  "name": "Elevação da pelve em pé",
+  "source_sha256": "21fd8807d4b596c5254d8729c3c56858bb33b3dd4a8ba2d68225dd2fe17be592"
+ },
+ "EX-pistol-squats-01KZ3V3DYR43D2FTV12ZVQHG10": {
+  "instructions": [
+   "Fique em pé, com a coluna ereta, os pés na largura do quadril, e levante a perna direita à sua frente.",
+   "Dobre o joelho de apoio e desça o quadril devagar para trás, mantendo a postura correta e a perna estendida paralela ao chão.",
+   "Empurre o chão com o calcanhar esquerdo para voltar à posição inicial.",
+   "Troque para o lado direito e repita."
+  ],
+  "name": "Agachamento pistola (unilateral)",
+  "source_sha256": "d083a541f7d2ce8988b22fb10a3c2aaada2d7aa3d69acbe18ca1b8ff5545e8c0"
+ },
+ "EX-plank-jacks-01KZ3V3DYR43D2FTV12ZVQHG0Y": {
+  "instructions": [
+   "Comece em prancha alta, com os pés juntos e a pelve encaixada (inclinada para trás).",
+   "Mantendo a parte de cima do corpo parada e o quadril alto, salte afastando os pés o máximo possível e aterrisse com suavidade.",
+   "Salte de volta ao centro e repita."
+  ],
+  "name": "Polichinelo na prancha",
+  "source_sha256": "d0766fe9b83b7c482364be28339fd05129acb71ba70d0c55d43d9126acf1644d"
+ },
+ "EX-plank-to-down-dog-01KZ3V3DYT59YPX0KBDFY9QZX9": {
+  "instructions": [
+   "Comece em prancha alta, com as mãos logo abaixo dos ombros.",
+   "Contraia o abdômen e empurre com os braços e os ombros para levar o quadril para cima, na posição de cachorro olhando para baixo, mantendo a cabeça alinhada com os braços.",
+   "Volte devagar à prancha e repita."
+  ],
+  "name": "Prancha para cachorro olhando para baixo",
+  "source_sha256": "9635decacdaf324119038f0ad088d36cb29aa4642e09c97993fff9a56e271a14"
+ },
+ "EX-plank-to-toe-touch-01KZ3V3DYR43D2FTV12ZVQHG0Z": {
+  "instructions": [
+   "Comece em prancha alta, com os pés na largura do quadril.",
+   "Use o abdômen para elevar o quadril e leve uma mão para trás para tocar o tornozelo da perna oposta, sustentando o peso do corpo com a outra mão.",
+   "Volte à prancha e repita do outro lado."
+  ],
+  "name": "Prancha com toque no tornozelo",
+  "source_sha256": "f0b797fd3442e2261fa2408d181ac5906d8064f29bbbfa1a9128784de2708536"
+ },
+ "EX-plank-with-hip-dip-01KZ3V3DYPMJ0VD30AKHABF5P2": {
+  "instructions": [
+   "Comece em prancha com o corpo em linha reta, os pés na largura do quadril e os cotovelos dobrados, abaixo dos ombros.",
+   "Gire o quadril para a direita e desça o corpo quase até o chão.",
+   "Volte à posição inicial e repita para o lado esquerdo.",
+   "Continue alternando os lados."
+  ],
+  "name": "Prancha com rotação do quadril",
+  "source_sha256": "ebae86014814bee8594258e61e96f502a0803f269ffb1ecf66b1fd70b7842431"
+ },
+ "EX-plank-with-leg-lift-01KZ3V3DYT59YPX0KBDFY9QZXE": {
+  "instructions": [
+   "Comece em prancha, apoiado nos antebraços e nas pontas dos pés, com as costas retas e o abdômen contraído.",
+   "Levante uma perna reta e mantenha.",
+   "Volte ao centro e repita com a outra perna."
+  ],
+  "name": "Prancha com elevação da perna",
+  "source_sha256": "580be1f24d3c04cc2393b766439fa8e61484bd94593d7ed3257c20b7822dbb0e"
+ },
+ "EX-plie-squat-01KZ3V3DYPMJ0VD30AKHABF5NV": {
+  "instructions": [
+   "Comece com as pernas bem afastadas e as pontas dos pés viradas para fora, a 45 graus.",
+   "Leve o quadril devagar para trás enquanto dobra os joelhos, mantendo as costas retas, até o quadril ficar abaixo da altura dos joelhos.",
+   "Suba empurrando com o quadril e estenda totalmente o corpo no alto do agachamento."
+  ],
+  "name": "Agachamento sumô (plié)",
+  "source_sha256": "d89d855ff67bc69e75c13c22c90dd0270a1158a4e9a42ba83e79fe45c583d141"
+ },
+ "EX-prayer-press-01KZ3V3DYX6ZS73404ZXY1K7AW": {
+  "instructions": [
+   "Sente-se ou fique em pé com a coluna ereta e junte as palmas das mãos à frente do peito.",
+   "Aponte os cotovelos para fora e relaxe os ombros para baixo.",
+   "Pressione as palmas uma contra a outra com firmeza e mantenha a tensão por pelo menos 5 segundos."
+  ],
+  "name": "Pressão das palmas (posição de prece)",
+  "source_sha256": "7bdd391901ed284e06a791301a73e27e510488b9633ba0039f019c6531173540"
+ },
+ "EX-progressive-muscle-relaxation-scan-5XARCT0GY18M59VV7BYPRETPJR": {
+  "instructions": [
+   "Deite-se ou sente-se confortavelmente e perceba a respiração natural.",
+   "Contraia levemente um grupo de músculos por um breve momento.",
+   "Solte a tensão e perceba a diferença.",
+   "Continue por vários grupos de músculos, sem fazer força máxima."
+  ],
+  "name": "Relaxamento muscular progressivo",
+  "source_sha256": "fff93ef28ecd9e69285924c7c587effd1288b8ae87a39652ec383ac7493640e7"
+ },
+ "EX-prone-t-raise-01KZ3V3DYJQ0B83JNMDWZ8R58R": {
+  "instructions": [
+   "Deite-se de bruços no chão com os braços abertos em forma de T.",
+   "Mantenha o queixo recolhido e a cabeça alinhada com o resto da coluna.",
+   "Com os polegares para cima, aproxime as escápulas enquanto leva as mãos para fora.",
+   "Não projete o queixo para frente, não encolha os ombros, não deixe os ombros rolarem para frente e não arqueie a lombar."
+  ],
+  "name": "Elevação em T, de bruços",
+  "source_sha256": "e8dc4fcc76b8821ccd8474d748c6b8c2233f0fbb56c21672d0a37ee79d368c62"
+ },
+ "EX-pursed-lip-breathing-6WW2B2081KNX7AJTQX6DBM2VEK": {
+  "instructions": [
+   "Sente-se confortavelmente no chão ou numa cadeira, como preferir. Mantenha a postura ereta e relaxada, com o pescoço e os ombros relaxados durante todo o exercício.",
+   "Puxe o ar suavemente pelo nariz, com a boca fechada. Inspire devagar e naturalmente por cerca de dois segundos. Não é preciso respirar fundo. Deixe a barriga se expandir suavemente ao inspirar.",
+   "Solte o ar devagar pelos lábios levemente franzidos, como se estivesse soprando uma bebida quente ou assobiando de leve. Expire de forma lenta e contínua por quatro segundos ou mais. Deixe a barriga voltar suavemente em direção à coluna ao expirar.",
+   "Volte à respiração normal sempre que precisar.",
+   "DICAS:\nA respiração com lábios franzidos pode parecer estranha ou desconfortável no começo. Com a prática regular, fica mais fácil. Estas dicas também ajudam:\n\n- Experimente colocar as mãos na barriga para senti-la entrar e sair enquanto respira.\n- Sempre solte o ar por mais tempo do que puxa.\n- Respire de forma lenta e tranquila, para dentro e para fora, até conseguir controlar a respiração.\n- Não force o ar para fora dos pulmões."
+  ],
+  "name": "Respiração com lábios franzidos",
+  "source_sha256": "c0e99195a8fb2931cb74dabb6b113df83458e4d1162be8c7607d5c16697fcd21"
+ },
+ "EX-recumbent-cycling-72MG3ZZEJ161WQAFJ77HZ3M6A7": {
+  "instructions": [
+   "Ajuste o banco para que os joelhos fiquem levemente dobrados quando a perna estiver mais esticada.",
+   "Sente-se apoiado no encosto e coloque os pés nos pedais.",
+   "Pedale de forma suave, com uma resistência tranquila.",
+   "Diminua a pedalada aos poucos antes de parar."
+  ],
+  "name": "Bicicleta reclinada",
+  "source_sha256": "eed30c283652f5b80af9ea03f4d514ba05ffc121531cb284c5f9a23d7c0b4f63"
+ },
+ "EX-resistance-band-external-rotation-16NTFZD99TYV6RGFPJQ2FBVS1C": {
+  "instructions": [
+   "Prenda um elástico ao lado do corpo, na altura do cotovelo.",
+   "Fique de lado em relação ao ponto onde o elástico está preso (tronco paralelo ao elástico).",
+   "Segure o elástico com o cotovelo dobrado a 90º e junto ao corpo.",
+   "Gire o antebraço para fora, mantendo a parte de cima do braço parada.",
+   "Volte devagar, sem deixar o ombro rolar para frente."
+  ],
+  "name": "Rotação externa do ombro com elástico",
+  "source_sha256": "51866fadb8c8ddf921136509a5a9e10d1036c1e84c5a86e4cd7160716ac2c915"
+ },
+ "EX-reverse-crunch-01KZ3V3DYT59YPX0KBDFY9QZXA": {
+  "instructions": [
+   "Deite-se de costas com os braços ao lado do corpo e os joelhos dobrados.",
+   "Levante as pernas dobradas até as panturrilhas ficarem paralelas ao chão.",
+   "Use o abdômen para elevar o quadril e trazer os joelhos em direção ao peito.",
+   "Abaixe as pernas com controle até a posição inicial e repita."
+  ],
+  "name": "Abdominal reverso",
+  "source_sha256": "ad1730fd2d74d313870fc425f550ea5802a24f3811a14333639bbd7a6cb0d84f"
+ },
+ "EX-reverse-lunge-0FF0HS93ZGDE03PATSSMMQW4ZP": {
+  "instructions": [
+   "Fique em pé, com a postura alta e os pés na largura do quadril.",
+   "Dê um passo para trás com um pé e desça os dois joelhos com controle.",
+   "Mantenha o pé da frente totalmente apoiado, o tronco ereto e firme e as mãos juntas à frente do corpo.",
+   "Empurre com o pé da frente para voltar e depois alterne os lados."
+  ],
+  "name": "Avanço para trás",
+  "source_sha256": "521be4af18458b116a8659c4f8563626c089c8c2c171277476ee6988496e75c5"
+ },
+ "EX-romanian-deadlift-with-dumbbells-02YF72Q5VZ8YVWB7F7Z5GQ9D97": {
+  "instructions": [
+   "Fique em pé com os pés mais ou menos na largura do quadril e um halter em cada mão, à frente das coxas. Mantenha os joelhos levemente dobrados, o abdômen contraído e a coluna neutra.",
+   "Leve o quadril para trás mantendo o peito aberto e as costas retas. Deixe o tronco inclinar naturalmente para frente conforme o quadril vai para trás, com os halteres perto das pernas.",
+   "Abaixe os halteres com controle pela frente das pernas. Continue até sentir um alongamento confortável na parte de trás das coxas ou chegar ao limite da sua mobilidade, mantendo as costas neutras.",
+   "Leve o quadril para frente e contraia os glúteos para voltar a ficar em pé. Fique com a postura alta, sem inclinar para trás nem arquear demais a lombar."
+  ],
+  "name": "Levantamento terra romeno com halteres",
+  "source_sha256": "2979ce9185850839d7c2ff778585976653a550a8f1b0bc9fcf7a489e353c350a"
+ },
+ "EX-rowing-machine-29N80H8900F2BJY8VMJMZ393A2": {
+  "instructions": [
+   "Sente-se no remo com os pés bem presos e segure a pegada com as duas mãos. Comece com os joelhos dobrados, os braços estendidos e o tronco levemente inclinado para frente a partir do quadril, mantendo as costas neutras.",
+   "Empurre com firmeza com os pés para estender as pernas. Conforme as pernas se esticam, abra o quadril e leve o tronco à posição ereta; depois puxe a pegada em direção às costelas de baixo.",
+   "Primeiro estenda os braços para frente e depois incline o tronco para frente a partir do quadril. Quando os braços passarem dos joelhos, dobre os joelhos e deslize suavemente de volta à posição inicial.",
+   "Repita o movimento num ritmo regular, coordenando pernas, quadril e braços a cada remada. Mantenha o movimento controlado e evite puxadas bruscas ou com trancos."
+  ],
+  "name": "Remo ergômetro",
+  "source_sha256": "d62dd143cbf75fe1492e153b8db21fefdaef313e6f24abe9b63e32ef4d6f55e1"
+ },
+ "EX-russian-twist-01KZ3V3DYQG2ZAZAGXM9YXKZ4A": {
+  "instructions": [
+   "Deite-se no chão com os joelhos dobrados.",
+   "Levante o tronco até formar um ângulo de 45 graus com as pernas.",
+   "Mantendo essa posição, gire o tronco para a direita e para a esquerda, levando os braços junto e mantendo as pernas paradas."
+  ],
+  "name": "Giro russo",
+  "source_sha256": "82c70e4c146f849ef70ec41091ac4d6360c0bec968ac03d95385a64240381af6"
+ },
+ "EX-seated-cable-row-7W26NWHN2WWGXMYGAZ6CJGS5S8": {
+  "instructions": [
+   "Sente-se com os pés apoiados e segure a pegada do cabo.",
+   "Comece com a postura alta, os braços estendidos e os ombros relaxados.",
+   "Puxe a pegada em direção às costelas de baixo, levando os cotovelos para trás junto ao tronco. No fim da remada, aproxime bem as escápulas, como se segurasse uma bola de tênis entre elas.",
+   "Volte com a pegada devagar, sem deixar o tronco desabar."
+  ],
+  "name": "Remada sentada no cabo",
+  "source_sha256": "8cb2a72e65fed0e109ff55a1bbf65cecd63cee8a463a3829e04cfe1f774aeb17"
+ },
+ "EX-seated-chest-press-machine-269KM1A5E15DCPF3YP0P54B8HH": {
+  "instructions": [
+   "Ajuste o banco até as pegadas ficarem alinhadas com o meio do peito e sente-se com as costas apoiadas.",
+   "Coloque as mãos nas pegadas e mantenha os punhos neutros.",
+   "Mantenha os ombros para baixo e as escápulas próximas durante todo o movimento.",
+   "Empurre para frente de forma suave, sem encolher os ombros.",
+   "Volte com as pegadas devagar até sentir um alongamento confortável."
+  ],
+  "name": "Supino sentado na máquina",
+  "source_sha256": "263390785f2bb307f533ee4fb66f7427205853c1a76980dacdc7604c8685db4a"
+ },
+ "EX-seated-flutter-kicks-01KZ3V3DYX6ZS73404ZXY1K7AG": {
+  "instructions": [
+   "Sente-se na cadeira com as pernas estendidas à frente.",
+   "Tire os dois pés do chão e alterne-os num movimento rápido, pelo tempo indicado ou o máximo que conseguir."
+  ],
+  "name": "Tesoura com as pernas, sentado",
+  "source_sha256": "a44068c294516361886d9e916470279f16635d4fa76cee5a721374773ad6f213"
+ },
+ "EX-seated-forward-fold-01KZ3V3DYY2J67YNXR955N44JX": {
+  "instructions": [
+   "Sente-se numa cadeira com os pés no chão e os braços ao lado do corpo.",
+   "Estenda a perna direita à frente e apoie o calcanhar no chão.",
+   "Mantendo a perna reta, incline-se devagar para frente.",
+   "Você deve sentir um alongamento na parte de trás da perna direita.",
+   "Mantenha a posição por algumas respirações e depois troque de lado."
+  ],
+  "name": "Flexão do tronco à frente, sentado",
+  "source_sha256": "57ddea2b19391b7a54aa1111b1c1a14c49e483a16aa3bec3010ecc6b11678dbd"
+ },
+ "EX-seated-leg-raises-01KZ3V3DYW2R5BX5WFZN2A3N5D": {
+  "instructions": [
+   "Sente-se com a coluna ereta e os pés apoiados no chão.",
+   "Levante uma perna de cada vez, mantendo o abdômen firme.",
+   "Para deixar mais difícil, tente levantar as duas ao mesmo tempo."
+  ],
+  "name": "Elevação de pernas, sentado",
+  "source_sha256": "2138e62f12772ca8bc3cbc981c64705fe44f7a571db415343951c17e9091d295"
+ },
+ "EX-seated-marching-2364WRN2Q3TTBFTF3BCRXS0VHC": {
+  "instructions": [
+   "Sente-se com a coluna ereta perto da beirada de uma cadeira estável, com os dois pés apoiados no chão, mais ou menos na largura do quadril. Mantenha o peito aberto, os ombros relaxados e o abdômen levemente contraído. Deixe os braços apoiados naturalmente ao lado do corpo ou cruzados confortavelmente sobre o peito.",
+   "Levante um joelho em direção ao peito num movimento lento e controlado, mantendo o tronco ereto. Mantenha o abdômen contraído para a lombar não arquear demais.",
+   "Apoie o pé de volta no chão com suavidade e depois levante o outro joelho. Continue alternando os lados, mantendo a posição sentada estável e a pelve neutra.",
+   "Mantenha um ritmo suave e controlado e respire naturalmente durante todo o exercício. Mantenha o abdômen contraído e evite compensar inclinando o tronco para trás ou arqueando a lombar."
+  ],
+  "name": "Marcha sentado",
+  "source_sha256": "6dde2be2276a61cc5bba3fe3adb69ec9e653d89eb16266c9978a873d66d65e88"
+ },
+ "EX-seated-side-rib-breathing-35DVDBNQR1K3ZNKJZP974SC7C7": {
+  "instructions": [
+   "Sente-se com a postura alta e apoie as mãos de leve nas laterais das costelas de baixo.",
+   "Puxe o ar e sinta as costelas se expandirem contra as mãos.",
+   "Solte o ar devagar e deixe as costelas voltarem.",
+   "Mantenha os ombros relaxados o tempo todo."
+  ],
+  "name": "Respiração lateral das costelas, sentado",
+  "source_sha256": "77fa1d329d030ff834dea03b99840c90468f929189aa2f1e2a37f4212dd30fdd"
+ },
+ "EX-seated-thoracic-rotation-5GREXXPBRA5R5BJG9GZ5WPGV5D": {
+  "instructions": [
+   "Sente-se com a postura alta, os pés apoiados e os braços cruzados sobre o peito.",
+   "Gire a parte de cima do tronco com suavidade para um lado.",
+   "Faça uma pausa dentro de uma amplitude confortável.",
+   "Volte ao centro e repita para o outro lado."
+  ],
+  "name": "Rotação torácica sentado",
+  "source_sha256": "8d97f1df5bb7254ce30f0d47d2e674a3af237606df5f846f11196e5dbe179329"
+ },
+ "EX-semi-tandem-balance-26YQC49A8BXJMP3JP4ZR91YK3Q": {
+  "instructions": [
+   "Fique em pé ao lado de um apoio, com um pé um pouco à frente do outro.",
+   "Mantenha os dois pés totalmente apoiados e olhe para frente.",
+   "Mantenha a posição respirando de forma relaxada.",
+   "Troque o pé da frente e repita."
+  ],
+  "name": "Equilíbrio semitandem",
+  "source_sha256": "54342628aa85d81e563a35ec8e4cb9788990adf8bcc6d4c3cdb38a77e3230ebe"
+ },
+ "EX-shadow-boxing-0621K2XH5QMSMNYRPPBHBAKD7N": {
+  "instructions": [
+   "Fique em pé numa base estável, com um pé à frente do outro e as mãos perto do queixo.",
+   "Estenda um braço para frente num soco horizontal e controlado e traga-o de volta.",
+   "Alterne os braços, transferindo o peso de leve.",
+   "Mantenha o ritmo suave e evite esticar os cotovelos de forma brusca."
+  ],
+  "name": "Boxe no ar (shadow boxing)",
+  "source_sha256": "8961987283c1f6a70ad7349c0bc027983510336af40e491518882914a2746a85"
+ },
+ "EX-shoulder-circles-01KZ3V3DYW2R5BX5WFZN2A3N55": {
+  "instructions": [
+   "Sente-se ou fique em pé com a coluna ereta.",
+   "Mantenha as costas retas.",
+   "Contraia o abdômen.",
+   "Deixe os ombros soltos, com os braços pendendo ao lado do corpo.",
+   "Faça círculos com os dois braços para trás ao mesmo tempo.",
+   "Faça círculos o maior e mais redondos possível."
+  ],
+  "name": "Círculos com os ombros",
+  "source_sha256": "56f73c19e2699ae8a5f809bfa601b55a941d38d78d169281d231d3008d682fb1"
+ },
+ "EX-shoulder-pendulum-40CR9QCETH2PZERVWQ83A8FEGZ": {
+  "instructions": [
+   "Apoie uma mão numa cadeira e incline o tronco um pouco para frente.",
+   "Deixe o outro braço pendurado e relaxado.",
+   "Faça pequenos movimentos com o corpo para criar círculos suaves com o braço.",
+   "Inverta a direção e depois troque de braço."
+  ],
+  "name": "Pêndulo do ombro",
+  "source_sha256": "77af691a00e5ae74deb77a3c346fa5d52b527ecc0dd70e0b6b997a0479e3c10f"
+ },
+ "EX-shoulder-shrugs-01KZ3V3DYX6ZS73404ZXY1K7AJ": {
+  "instructions": [
+   "Sente-se ou fique em pé com a coluna ereta numa posição confortável, com os pés firmes e os braços relaxados ao lado do corpo. Mantenha a cabeça e o pescoço neutros.",
+   "Levante devagar os dois ombros em direção às orelhas, mantendo os braços relaxados. Faça uma pausa rápida lá em cima, sem tensionar o pescoço.",
+   "Abaixe os ombros devagar e deixe-os relaxar totalmente. Concentre-se em soltar a tensão enquanto os ombros descem.",
+   "Repita o movimento pelo número de repetições desejado, com o movimento suave e controlado."
+  ],
+  "name": "Encolhimento dos ombros",
+  "source_sha256": "cce66d205e5fe02bb0711eef74b2f2e6aae76bf04fc6a6270365c7e944868456"
+ },
+ "EX-side-lunge-01KZ3V3DYHXH4EXHPN509HZ77E": {
+  "instructions": [
+   "Fique em pé com os pés mais ou menos na largura do quadril e as mãos na cintura.",
+   "Agora puxe o ar e, ao mesmo tempo, dê um passo largo para o lado.",
+   "A perna que dá o passo dobra o joelho; a outra perna fica reta.",
+   "Depois solte o ar e empurre o corpo de volta à posição inicial, apoiando-se no calcanhar da perna dobrada."
+  ],
+  "name": "Avanço lateral",
+  "source_sha256": "e8c25d33bb17916aee4bd594e0f4f0150f0eb882dd748a87b6136d8a63e9e1d1"
+ },
+ "EX-side-plank-from-knees-3GDN2VG76E5THARTAZHY0NSVJG": {
+  "instructions": [
+   "Deite-se de lado com os joelhos dobrados e o cotovelo abaixo do ombro.",
+   "Pressione o antebraço e o joelho contra o chão.",
+   "Levante o quadril até o tronco formar uma linha reta e mantenha.",
+   "Desça devagar e repita do outro lado."
+  ],
+  "name": "Prancha lateral com os joelhos apoiados",
+  "source_sha256": "7a4f7eb71b144c8bf94a4d0ee1c1c45dc8ea67e1213fbf9c8b30322c037e1d76"
+ },
+ "EX-side-shift-squats-01KZ3V3DYT59YPX0KBDFY9QZXD": {
+  "instructions": [
+   "Fique em pé, com a coluna ereta e os pés um pouco mais afastados que a largura dos ombros.",
+   "Leve o quadril para trás e agache para um lado, mantendo o peito aberto.",
+   "Empurre o chão com a perna dobrada e volte à posição inicial.",
+   "Repita para o outro lado, mantendo a mesma base."
+  ],
+  "name": "Agachamento cossaco",
+  "source_sha256": "0f62bc14f01da43041f9d53cff7824123d7ac44534d7831542a8747ca327eba4"
+ },
+ "EX-side-step-aerobic-drill-19P75K6P7A61Q7C5DF8SWKZ1Y0": {
+  "instructions": [
+   "Fique em pé com os joelhos levemente dobrados e os pés paralelos.",
+   "Dê um passo para um lado e traga o outro pé até ele.",
+   "Continue para o lado por alguns passos e depois mude de direção.",
+   "Mantenha o tronco voltado para frente e evite cruzar os pés."
+  ],
+  "name": "Passo lateral aeróbico",
+  "source_sha256": "fb887af5f2d4d3410410571f2f77b2286d68430a5ffb0ac30fe397c2d9044354"
+ },
+ "EX-single-leg-deadlift-01KZ3V3DYJQ0B83JNMDWZ8R58W": {
+  "instructions": [
+   "Comece em pé, com as mãos ao lado do corpo e os polegares para frente.",
+   "Mantenha a perna de apoio levemente dobrada e incline o tronco para frente a partir do quadril, mantendo o peito aberto e as costas numa posição neutra.",
+   "Incline o mais baixo que conseguir, deixando a parte de trás das coxas alongar e mantendo a cabeça neutra."
+  ],
+  "name": "Levantamento terra unilateral",
+  "source_sha256": "e270c8e9a69e1a303e73531b90283aaa678d088effd8eac478199a986f559aa8"
+ },
+ "EX-single-leg-glute-bridge-740GSXTBK7FSCZA7Z7J1VR4GNV": {
+  "instructions": [
+   "Deite-se de costas com os dois joelhos dobrados; depois estenda uma perna e tire o pé um pouco do chão.",
+   "Mantenha a pelve nivelada e empurre o chão com o pé de apoio.",
+   "Levante o quadril sem girar o tronco.",
+   "Desça devagar e repita do outro lado."
+  ],
+  "name": "Ponte de glúteo unilateral",
+  "source_sha256": "b59a62ea7205e7da7ebef22bd48249d7f997b66c751225fa496fa1f0761aec5b"
+ },
+ "EX-single-leg-hop-01KZ3V3DYKP7H891JXAGSWKWPK": {
+  "instructions": [
+   "Passe o peso para uma perna e tire a outra perna do chão.",
+   "Desça rapidamente até um quarto de agachamento e leve os braços para trás do tronco.",
+   "Salte para cima e aterrisse com suavidade, absorvendo o impacto com o quadril e os joelhos."
+  ],
+  "name": "Salto unipodal",
+  "source_sha256": "efbfb0a020fed03c7573d86cd126202305cb3c89c8b9ee9ceb84d3ce1841d45c"
+ },
+ "EX-single-leg-stand-with-support-6C2T4BNG6KVMGAC6C1KHCHX9XE": {
+  "instructions": [
+   "Fique em pé ao lado de uma cadeira e passe o peso para uma perna.",
+   "Tire o outro pé um pouco do chão.",
+   "Mantenha a pelve nivelada e o olhar fixo.",
+   "Abaixe o pé e repita do outro lado."
+  ],
+  "name": "Apoio numa perna só com suporte",
+  "source_sha256": "1dfaba570842f7375038e027720c468d081631bd35ba52d9e936ed72a7ad5e21"
+ },
+ "EX-sit-up-01KZ3V3DYMQ0JFE1ZDQWY74XFC": {
+  "instructions": [
+   "Deite-se de costas num colchonete, com os joelhos dobrados e os pés apoiados no chão, mais ou menos na largura do quadril.",
+   "Apoie as mãos de leve atrás da cabeça, com os cotovelos abertos, ou cruze os braços sobre o peito. Contraia o abdômen com suavidade, puxando o umbigo um pouco em direção à coluna, sem prender a respiração.",
+   "Solte o ar e levante o tronco devagar usando o abdômen. Mantenha a contração suave do abdômen enquanto leva o peito em direção aos joelhos.",
+   "Desça o tronco devagar até o colchonete, mantendo o abdômen contraído e o controle durante todo o movimento."
+  ],
+  "name": "Abdominal completo",
+  "source_sha256": "d52f933c26312f90beb7296fda084de96b0a21202cc1c7ed29bbb33ec1090326"
+ },
+ "EX-squat-leg-raises-01KZ3V3DYT59YPX0KBDFY9QZXG": {
+  "instructions": [
+   "Comece em agachamento, com o quadril para trás e os pés na largura dos ombros.",
+   "Ao ficar em pé, passe o peso para a perna direita e levante a perna esquerda para o lado.",
+   "Volte ao agachamento e repita com a perna direita."
+  ],
+  "name": "Agachamento com elevação lateral da perna",
+  "source_sha256": "836d1b2c17350f79a74df1f3e77fd6ff43270ec8326e66170926b3e10448ec82"
+ },
+ "EX-stability-ball-hamstring-curl-6Y6XH8AVPY7S3RJ5EZPGZ9KM72": {
+  "instructions": [
+   "Deite-se de costas com os calcanhares sobre uma bola suíça.",
+   "Levante o quadril até uma posição de ponte confortável.",
+   "Dobre os joelhos para rolar a bola em direção ao corpo, mantendo o quadril elevado.",
+   "Estenda as pernas devagar, mantendo o quadril controlado."
+  ],
+  "name": "Flexão de joelhos na bola suíça",
+  "source_sha256": "bbff09e7a3a7817c8a05f50ac1d202c365d6d1ad72d6de8f1ef8112e537c4778"
+ },
+ "EX-stair-climbing-at-easy-pace-7PCJ9DTZCD8X10C05TDDS40Q66": {
+  "instructions": [
+   "Fique em pé perto do corrimão, de frente para a escada.",
+   "Suba num ritmo regular, apoiando o pé inteiro quando possível.",
+   "Use o corrimão de leve e mantenha a respiração controlada.",
+   "Desça com cuidado ou use outro caminho se descer não for adequado."
+  ],
+  "name": "Subir escadas em ritmo leve",
+  "source_sha256": "0ff1ced3ea74376eea7c39ccda6c878f93d4bb86fdc5485b720329bff9060266"
+ },
+ "EX-standard-push-up-2JAXEZ5GHQJK37N03V66V5QVEA": {
+  "instructions": [
+   "Apoie as mãos abaixo dos ombros ou um pouco mais afastadas e estenda as pernas.",
+   "Mantenha o tronco numa linha controlada.",
+   "Abaixe o peito dobrando os cotovelos numa amplitude confortável, sem deixar o peito tocar o chão.",
+   "Empurre o chão para voltar ao início."
+  ],
+  "name": "Flexão de braço tradicional",
+  "source_sha256": "add6804eece06a46fcf1ed231ac75325b739b5302873e2d98ca2f595b204f021"
+ },
+ "EX-standing-forward-bend-01KZ3V3DYKP7H891JXAGSWKWPW": {
+  "instructions": [
+   "Fique em pé numa posição relaxada, com os pés na largura do quadril e as mãos ao lado do corpo.",
+   "Comece a descer devagar, enrolando a coluna em direção aos pés.",
+   "Tente manter as pernas retas, mas sem travar os joelhos.",
+   "Desça o máximo que conseguir até sentir um alongamento na parte de trás das coxas e mantenha essa posição enquanto respira."
+  ],
+  "name": "Flexão do tronco à frente, em pé",
+  "source_sha256": "44419552696665928a649108f346d6f2930a1cff1d93662f617739bbf5a09512"
+ },
+ "EX-standing-glute-kickback-01KZ3V3DYKP7H891JXAGSWKWPT": {
+  "instructions": [
+   "Fique em pé numa posição relaxada, de frente para uma parede ou mesa onde possa se apoiar.",
+   "Mantenha as costas retas, com uma mão na parede ou na mesa como apoio.",
+   "Levante devagar uma perna para trás, usando o glúteo para conduzir o movimento.",
+   "Suba o mais alto que conseguir com conforto, mantendo as costas retas; depois volte ao centro e repita com a outra perna."
+  ],
+  "name": "Coice de glúteo em pé",
+  "source_sha256": "b07ffbf69ea2612034c09419d76785d7603eb99d9c5c962be1f9f761b160e959"
+ },
+ "EX-standing-hip-circles-01KZ3V3DYKP7H891JXAGSWKWPP": {
+  "instructions": [
+   "Fique parado num lugar, com os pés na largura dos ombros.",
+   "Coloque as mãos na cintura e comece a fazer círculos devagar com o quadril.",
+   "Não mexa nada além do quadril e tente fazer movimentos amplos o suficiente.",
+   "Mude de direção depois de algumas repetições."
+  ],
+  "name": "Círculos com o quadril em pé",
+  "source_sha256": "169599187ba9e6ed7aba886d7796d8c69ce9c8d4e4c50aa296e4d51b626221a6"
+ },
+ "EX-standing-hip-flexor-stretch-0M5RMVAXAFDWC886X74XZP6NQJ": {
+  "instructions": [
+   "Fique em pé segurando numa cadeira ou parede como apoio e dê um passo completo para trás com um pé.",
+   "Encaixe a pelve com suavidade e passe o peso para frente.",
+   "Mantenha o calcanhar de trás levantado e o tronco ereto.",
+   "Volte e repita com a outra perna atrás."
+  ],
+  "name": "Alongamento dos flexores do quadril em pé",
+  "source_sha256": "968fca0cc60e714f8b296edc8dffa509d8e1684f4bc7d6783f551bd4af297b4a"
+ },
+ "EX-standing-knee-hugs-01KZ3V3DYS3422TGERTFBDCBSJ": {
+  "instructions": [
+   "Fique em pé, com a postura alta e os braços ao lado do corpo.",
+   "Suba um joelho o mais alto que conseguir e puxe-o em direção ao peito com os dois braços.",
+   "Mantenha essa posição por algumas respirações antes de apoiar a perna no chão e repetir do outro lado."
+  ],
+  "name": "Abraço no joelho em pé",
+  "source_sha256": "b971de73797435980ad6a190a22d3e5ca8c337c9ee57f7b421ba428d0de42c50"
+ },
+ "EX-standing-quadriceps-stretch-0NMW4RJFR5VXQVF5E1T2Z4PMN7": {
+  "instructions": [
+   "Fique em pé ao lado de uma cadeira e segure-a como apoio.",
+   "Dobre um joelho e segure o tornozelo ou a barra da calça atrás.",
+   "Mantenha os joelhos próximos um do outro e o tronco ereto.",
+   "Solte devagar e troque de lado."
+  ],
+  "name": "Alongamento do quadríceps em pé",
+  "source_sha256": "241bcedbb038ab93c2e40fd2be253b32243bdb8dbbaa4494e95130b2d7b22977"
+ },
+ "EX-standing-resistance-band-row-7P62141Y97NV3KSY6D6DC6WXW7": {
+  "instructions": [
+   "Prenda um elástico de resistência com firmeza, mais ou menos na altura do peito.",
+   "Fique em pé, com a postura alta, segurando as duas pontas com os braços estendidos.",
+   "Leve os cotovelos para trás e traga as mãos em direção às costelas.",
+   "Volte devagar, sem deixar os ombros se curvarem para frente de forma brusca."
+  ],
+  "name": "Remada em pé com elástico",
+  "source_sha256": "df22ee9a2f8960e6dfc5b7a27f876498b732778bbfe85770fd2b8e6b199acf91"
+ },
+ "EX-stationary-cycling-3PW53NXNXBBED2HFFH7SA8PJ09": {
+  "instructions": [
+   "Ajuste o banco na altura do quadril e apoie bem os dois pés nos pedais, de forma que a perna não fique totalmente esticada e o joelho continue levemente dobrado no ponto mais baixo da pedalada.",
+   "Comece a pedalar com pouca resistência.",
+   "Mantenha uma pedalada suave e a parte de cima do corpo relaxada.",
+   "Diminua a resistência e pedale leve antes de parar."
+  ],
+  "name": "Bicicleta ergométrica",
+  "source_sha256": "3bfda7d99c3100a793f262fd61e667314fc23a46c37810da1bd5789db467456f"
+ },
+ "EX-stationary-split-squat-7QZT4JZ13FV8CQ3WQF0TN91JZS": {
+  "instructions": [
+   "Fique em pé com um pé à frente do outro, cada um numa linha diferente.",
+   "Desça na vertical dobrando os dois joelhos, mantendo o pé da frente apoiado.",
+   "Pare numa profundidade confortável, com o tronco controlado.",
+   "Empurre o chão com os pés para voltar ao início e depois troque de lado."
+  ],
+  "name": "Agachamento afundo parado",
+  "source_sha256": "3332e666ef2b4e2f1630707fea77a2958a7ab1e32fb5992dfc34f3c2aad82b46"
+ },
+ "EX-stretch-breathe-01KZ3V3DYND08RZF4CTKT9VFTE": {
+  "instructions": [
+   "Sentado ou em pé, levante os braços acima da cabeça e entrelace os dedos.",
+   "Estique os braços para cima o máximo que conseguir e respire fundo algumas vezes.",
+   "Volte os braços para o lado do corpo e repita quantas vezes quiser."
+  ],
+  "name": "Alongar e respirar",
+  "source_sha256": "466be14c06e1d2ae257ba7ea150d83beb61dec80f805b592e77baef9efbab2f6"
+ },
+ "EX-suitcase-carry-5Q2TEDCGHJVAVZDACBMG37BKSR": {
+  "instructions": [
+   "Segure um kettlebell com uma mão, ao lado do corpo.",
+   "Fique em pé, com a postura alta, sem inclinar o corpo, e comece a caminhar.",
+   "Dê passos controlados, mantendo os ombros nivelados.",
+   "Apoie a carga no chão com segurança e depois repita do outro lado."
+  ],
+  "name": "Caminhada com carga de um lado (mala)",
+  "source_sha256": "0e46f3d5d70a8ae6770f8c20f3b35b5d43d27f1441b75f8b6121eae5ee249f5c"
+ },
+ "EX-supine-360-degree-breathing-2EMA45DDDCCKCWCQEMS21DMBN3": {
+  "instructions": [
+   "Deite-se de costas com os joelhos dobrados e as mãos ao redor das costelas de baixo.",
+   "Puxe o ar suavemente e sinta a expansão para a frente, para os lados e para trás.",
+   "Solte o ar devagar, mantendo a mandíbula e os ombros relaxados.",
+   "Continue com respirações suaves e tranquilas."
+  ],
+  "name": "Respiração 360 graus, deitado de costas",
+  "source_sha256": "eb1c83bba3f7c1db7b9240d7d0566cac192e563a5e5f4b6585515e59a776b748"
+ },
+ "EX-supine-hamstring-stretch-with-band-4H0R49CJ8KKJB37HJMF022G0QV": {
+  "instructions": [
+   "Deite-se de costas e passe um elástico em volta de um pé.",
+   "Levante uma perna segurando o elástico com as duas mãos, mantendo a outra perna estendida no chão.",
+   "Mantenha a pelve relaxada e pare quando sentir um alongamento leve.",
+   "Abaixe devagar e troque de lado."
+  ],
+  "name": "Alongamento da parte de trás da coxa, deitado",
+  "source_sha256": "99e320628191397803d915ce92103fe2dee94315f02f41fc76a3dc0e8a6f1324"
+ },
+ "EX-supine-twist-pose-01KZ3V3DYR43D2FTV12ZVQHG17": {
+  "instructions": [
+   "Deite-se de costas, dobre os joelhos, gire o quadril para a direita, estenda a perna direita e cruze o joelho esquerdo para o lado direito.",
+   "Estenda o braço esquerdo para o lado e apoie a mão esquerda sobre o joelho esquerdo.",
+   "Vire a cabeça para a esquerda e mantenha a postura de 30 segundos a 1 minuto.",
+   "Solte o ar ao desfazer a postura e repita do outro lado."
+  ],
+  "name": "Torção deitado de costas",
+  "source_sha256": "a77e40312ab1f89c5e0849d9f16c27632689d2bff64898aa04cebe2095d9dd88"
+ },
+ "EX-swimmers-01KZ3V3DYPMJ0VD30AKHABF5P5": {
+  "instructions": [
+   "Deite-se de bruços com os braços estendidos acima da cabeça e as pernas retas para trás. Mantenha a testa ou o queixo perto do chão e o pescoço numa posição neutra.",
+   "Contraia levemente o abdômen e tire um pouco do chão o braço e a perna opostos. Mantenha a pelve estável e a lombar numa posição neutra. Evite levantar demais os braços e as pernas ou arquear a lombar.",
+   "Alterne os lados num movimento suave e controlado: levante o braço direito com a perna esquerda e depois o braço esquerdo com a perna direita. Mantenha o abdômen contraído durante todo o movimento para estabilizar a pelve e evitar arquear demais a lombar.",
+   "Continue alternando os lados pelo tempo desejado. Respire de forma regular e concentre-se em manter o abdômen firme e os movimentos controlados durante todo o exercício."
+  ],
+  "name": "Super-homem nadando",
+  "source_sha256": "d582134bb2ca833a5ba18bc73181dd20d0b0ddd0801f45684c662f885ea84bac"
+ },
+ "EX-tandem-stance-4BXN5P5EWKDXAXX1V3XBPVAM9H": {
+  "instructions": [
+   "Fique em pé ao lado de uma cadeira, com um pé logo à frente do outro, usando a cadeira como apoio se precisar.",
+   "Mantenha o tronco alto e o olhar para frente.",
+   "Mantenha a posição sem agarrar o chão com os dedos dos pés.",
+   "Saia da posição com segurança e troque os pés."
+  ],
+  "name": "Posição tandem (um pé à frente do outro)",
+  "source_sha256": "98301d3584abcfedc135613e1676d74b08bd020cc0d56b245cce84b14c90c5b9"
+ },
+ "EX-thumb-stretch-01KZ3V3DYQG2ZAZAGXM9YXKZ42": {
+  "instructions": [
+   "Segure uma mão à sua frente, com a palma para cima e os dedos relaxados e estendidos.",
+   "Leve o polegar devagar pela palma em direção à base do dedo mínimo, mantendo os outros dedos relaxados.",
+   "Leve o polegar pela palma até onde for confortável, faça uma pausa rápida e sinta o alongamento com suavidade, sem forçar o movimento.",
+   "Volte o polegar devagar à posição inicial e estenda-o para fora de novo. Repita pelo número de repetições desejado e depois troque de mão."
+  ],
+  "name": "Alongamento do polegar",
+  "source_sha256": "ca79d0fe57bf5ee11d72a5997c84228759993b4248b0bbebc12764e8914c8a1f"
+ },
+ "EX-tibialis-raise-against-wall-76FV9RX9M9F4Z30F7YEWW3NJVF": {
+  "instructions": [
+   "Por segurança, faça o exercício descalço ou com um calçado firme, bem ajustado e com boa aderência. Evite chinelos folgados ou meias sem aderência.",
+   "Fique de costas para uma parede, a cerca de 20 a 30 cm dela. Apoie as costas confortavelmente na parede e mantenha o abdômen levemente contraído. Mantenha as pernas retas e os calcanhares firmes no chão.",
+   "Com os calcanhares no chão, levante as pontas e a parte da frente dos pés o máximo possível em direção às canelas. Mantenha o equilíbrio e evite inclinar ou balançar o corpo.",
+   "Faça uma pausa de 2 segundos lá em cima e depois abaixe as pontas dos pés devagar e com controle até o chão. Faça uma pausa de 2 segundos embaixo antes da próxima repetição.",
+   "Tente completar 25 repetições seguidas, mantendo a postura estável, o movimento controlado e a amplitude completa o tempo todo."
+  ],
+  "name": "Elevação da ponta dos pés (tibial) na parede",
+  "source_sha256": "23c9873beee463e5d3ecbd734ab9b86846e7cdc1be58aedeee4f3b547a3ec5dc"
+ },
+ "EX-toe-stand-01KZ3V3DYVRGF8XTCP211A7W9E": {
+  "instructions": [
+   "Fique em pé, com a coluna ereta e os pés mais ou menos na largura do quadril. Suba devagar na ponta dos pés, tirando os calcanhares do chão. Mantenha o abdômen contraído e a postura ereta.",
+   "Mantenha a posição de 10 a 30 segundos. Distribua o peso por igual na parte da frente dos pés e concentre-se em manter o equilíbrio. Abaixe os calcanhares até o chão devagar e com controle."
+  ],
+  "name": "Ficar na ponta dos pés",
+  "source_sha256": "d15d6ce7025ea1f6fb688f1c0f2f449c6a9bed831a7c4c9ebe147d6809ce6774"
+ },
+ "EX-toe-yoga-4SMMB9HR7T58YBY962MG54SRF3": {
+  "instructions": [
+   "Sente-se ou fique em pé com o pé inteiro apoiado.",
+   "Levante o dedão, mantendo os outros dedos no chão.",
+   "Abaixe o dedão e depois levante os outros dedos, mantendo o dedão no chão.",
+   "Alterne devagar, sem dobrar os dedos com força."
+  ],
+  "name": "Ioga para os dedos dos pés",
+  "source_sha256": "75613e79e3febeb73694df69925ad612c72affea7e86611f1bf29ff0948554c7"
+ },
+ "EX-towel-push-01KZ3V3DYT59YPX0KBDFY9QZXC": {
+  "instructions": [
+   "Comece apoiado nas mãos e nos joelhos, com uma toalha embaixo das mãos.",
+   "Mantendo o abdômen firme e contraído, deslize a toalha e estenda o corpo para frente.",
+   "Estenda o corpo o máximo que conseguir com controle; depois volte ao centro e repita."
+  ],
+  "name": "Deslizamento com toalha",
+  "source_sha256": "4b2afa94a02536951c3325f89679077a9e9b8dab757e337026839438684a50fd"
+ },
+ "EX-tree-pose-01KZ3V3DYND08RZF4CTKT9VFTF": {
+  "instructions": [
+   "Fique em pé, com a coluna ereta e os pés juntos. Passe o peso para um pé e contraia o abdômen para ajudar a manter o equilíbrio.",
+   "Dobre o outro joelho e apoie a sola do pé na parte interna da panturrilha ou da coxa da perna de apoio.",
+   "Junte as mãos à frente do peito ou, se for confortável, levante os braços acima da cabeça com as palmas voltadas uma para a outra ou encostadas. Mantenha a perna de apoio firme e o quadril voltado para frente.",
+   "Mantenha a posição por várias respirações lentas e profundas. Fixe o olhar num ponto para ajudar no equilíbrio; depois abaixe a perna devagar e repita do outro lado."
+  ],
+  "name": "Postura da árvore",
+  "source_sha256": "de7104580273f6ad8e2f8eb6fb6248606f19417f39a1717cbfcfc22b4f681d77"
+ },
+ "EX-tricep-dips-01KZ3V3DYND08RZF4CTKT9VFTG": {
+  "instructions": [
+   "Apoie as mãos atrás de você numa cadeira, com os dedos voltados para frente.",
+   "Estenda as pernas no chão à sua frente e comece a dobrar os cotovelos.",
+   "Desça o corpo até os braços formarem um ângulo de 90 graus.",
+   "Suba o corpo de volta até os braços ficarem retos."
+  ],
+  "name": "Mergulho para tríceps no banco",
+  "source_sha256": "c5393ee80e63e96ddf193f2e02d84c042fc935e9647b820745df71cb93398573"
+ },
+ "EX-triceps-stretch-01KZ3V3DYMQ0JFE1ZDQWY74XF5": {
+  "instructions": [
+   "Estenda um braço para cima e depois dobre o cotovelo, deixando a mão atrás da cabeça ou das costas.",
+   "Com a outra mão, puxe com suavidade o cotovelo do braço dobrado até sentir o alongamento no tríceps.",
+   "Mantenha um pouco, depois solte e sacuda o braço e troque de lado."
+  ],
+  "name": "Alongamento do tríceps",
+  "source_sha256": "c50a432cb72289a9fb2af2a4333abf9829318756c95c62c12d116112ea115025"
+ },
+ "EX-upper-back-stretch-01KZ3V3DYY2J67YNXR955N44K1": {
+  "instructions": [
+   "Entrelace as mãos à frente do peito e incline o queixo para baixo.",
+   "Arredonde as costas e empurre as mãos entrelaçadas para frente.",
+   "Com as mãos estendidas, afaste as escápulas e empurre os braços para frente até sentir um alongamento na parte de cima das costas.",
+   "Ao puxar o ar, volte com suavidade à posição normal e repita."
+  ],
+  "name": "Alongamento da parte de cima das costas",
+  "source_sha256": "410d4ad2c8c639df6656ab2de0b235e33f92ae354ce2f1cd2d8e1a443e1cdac2"
+ },
+ "EX-upper-trapezius-neck-stretch-1JJB2C5S586XGGHZTZRPM23XR7": {
+  "instructions": [
+   "Sente-se ou fique em pé com a postura alta e a coluna numa posição neutra. Mantenha os ombros relaxados e os braços apoiados confortavelmente ao lado do corpo.",
+   "Incline a cabeça devagar para um lado, levando a orelha com suavidade em direção ao ombro do mesmo lado. Mantenha os dois ombros relaxados e baixos.",
+   "Mantenha o queixo voltado para frente, sem girar nem tombar a cabeça. Mantenha o alongamento numa posição confortável e respire de forma lenta e regular.",
+   "Volte a cabeça devagar ao centro, sem movimentos bruscos. Repita o alongamento do outro lado pelo tempo indicado."
+  ],
+  "name": "Alongamento do trapézio superior (pescoço)",
+  "source_sha256": "e669be381db4a8bec6d58aa633b3c41ad2c27188af0da1119c2de8067592824f"
+ },
+ "EX-upward-plank-01KZ3V3DYS3422TGERTFBDCBSG": {
+  "instructions": [
+   "Sente-se no chão com as pernas à frente e as mãos apoiadas no chão atrás de você, com os dedos voltados para o corpo.",
+   "Use os glúteos para tirar o quadril do chão até o corpo ficar em linha reta.",
+   "Mantenha essa posição e depois desça devagar."
+  ],
+  "name": "Prancha invertida",
+  "source_sha256": "00b2910cb3504b42b80b40846175436c8b0eff4db9c4379f9c8380361dd77be6"
+ },
+ "EX-v-up-01KZ3V3DYPMJ0VD30AKHABF5P6": {
+  "instructions": [
+   "Deite-se no chão com os braços estendidos atrás da cabeça.",
+   "Use o abdômen para levantar os braços e as pernas ao mesmo tempo e tente alcançar os pés.",
+   "Desça com controle até o chão e repita."
+  ],
+  "name": "Abdominal em V",
+  "source_sha256": "87124e4cb5869593bfddeface9cdc780170d3f67d97666ff59f4973a810e7d13"
+ },
+ "EX-walk-jog-intervals-245GCM5CMJVBXQNTF1XPE740WX": {
+  "instructions": [
+   "Comece com uma caminhada confortável.",
+   "Corra leve por um intervalo curto e tranquilo, com passos relaxados.",
+   "Volte a caminhar até a respiração se acalmar.",
+   "Continue alternando, sem forçar o ritmo."
+  ],
+  "name": "Intervalos de caminhada e corrida",
+  "source_sha256": "79bd923312b59bf9b94e1b3e6112bdb7b791fa778cb41b231bf99b35adf1e461"
+ },
+ "EX-walking-knee-to-chest-01KZ3V3DYJQ0B83JNMDWZ8R58Q": {
+  "instructions": [
+   "Comece em pé, com as pernas na largura dos ombros.",
+   "Mantenha o calcanhar da perna de apoio no chão e essa perna reta.",
+   "Contraia o glúteo do lado da perna de apoio para a pelve não inclinar.",
+   "Puxe um joelho bem junto ao peito, mantendo a outra perna estendida e reta.",
+   "Não dobre a perna de apoio, não suba na ponta do pé nem curve a coluna para frente."
+  ],
+  "name": "Caminhada com joelho ao peito",
+  "source_sha256": "0b7841b6b8dcde295dfaa58c6ff181ced7c6ce4453dbcb9f2da74fb57fa4b3b4"
+ },
+ "EX-wall-calf-stretch-40EFV2R0PYRM6D86GZDDP9R4FJ": {
+  "instructions": [
+   "Apoie as duas mãos numa parede e leve um pé para trás.",
+   "Mantenha o calcanhar de trás no chão e os dedos apontando para frente.",
+   "Dobre o joelho da frente e incline-se para frente com suavidade.",
+   "Volte e troque de lado."
+  ],
+  "name": "Alongamento da panturrilha na parede",
+  "source_sha256": "1b820d9cc41bf8589123cfaab2b6fc04c7574abdf7a9cc1714057ca0a7c8d5fe"
+ },
+ "EX-wall-hip-flexor-mobilisation-01KZ3V3DYJQ0B83JNMDWZ8R58P": {
+  "instructions": [
+   "Ajoelhe-se numa perna, de costas para a parede, com o pé da frente um passo à frente.",
+   "Apoie o pé de trás na parede, com o joelho o mais perto dela que conseguir.",
+   "Use o abdômen para puxar as costelas para baixo e mantenha o cóccix encaixado, para manter o tronco controlado.",
+   "Contraia o glúteo do lado da perna de trás para alongar ainda mais os flexores do quadril."
+  ],
+  "name": "Alongamento dos flexores do quadril na parede",
+  "source_sha256": "82d275212331ea4ee9f458a0d2ebd1fe59fdc88d556503b20aa624381c69a0ef"
+ },
+ "EX-wall-push-running-01KZ3V3DYKP7H891JXAGSWKWPR": {
+  "instructions": [
+   "Fique em pé a mais ou menos um metro de uma parede ou superfície plana em que possa se apoiar.",
+   "Incline-se para frente até as palmas das mãos ficarem apoiadas na parede, sem mudar os pés de lugar.",
+   "Agora comece a caminhar e depois a correr no lugar, apoiado na parede com as mãos.",
+   "Concentre-se em subir mais os joelhos e aumente o ritmo aos poucos, conforme se sentir mais confortável."
+  ],
+  "name": "Corrida com as mãos na parede",
+  "source_sha256": "57ca47afa04c1b215b8add5bdbf82e5072574426a7908f34ce35dc69e98bccbe"
+ },
+ "EX-wall-push-up-4142F3V3M07GQC9F8SH26B4VKX": {
+  "instructions": [
+   "Apoie as duas mãos numa parede, na altura do peito.",
+   "Leve os pés para trás até o corpo formar uma linha confortável.",
+   "Dobre os cotovelos e leve o peito em direção à parede, com o corpo inteiro se movendo junto.",
+   "Empurre a parede e volte, sem travar os cotovelos com força."
+  ],
+  "name": "Flexão de braço na parede",
+  "source_sha256": "f2d8bb1cbb3a219a565080637023296538f80722bf4b62e0301abf79d2bf4caf"
+ },
+ "EX-wall-shoulder-slide-441N8NQ14SD4X0X0WXTMNR1F7H": {
+  "instructions": [
+   "Fique em pé de costas para a parede, com os cotovelos dobrados e a parte de trás dos antebraços e das mãos encostada na parede.",
+   "Mantenha as costelas relaxadas e deslize os braços para cima.",
+   "Pare antes de os ombros subirem ou de aparecer desconforto.",
+   "Deslize os braços de volta para baixo com controle."
+  ],
+  "name": "Deslizamento dos braços na parede",
+  "source_sha256": "e033770cd651e0f7b0c2ebae5101fca478f5972d46459b39f725d83c06ab788c"
+ },
+ "EX-wrist-extension-with-dumbbell-4TGG8ZVKD5WB3JDJ2T65YQJPMR": {
+  "instructions": [
+   "Sente-se com o antebraço apoiado num banco e a palma da mão para baixo.",
+   "Deixe a mão livre para se mover além da borda.",
+   "Levante o dorso da mão numa amplitude pequena e confortável.",
+   "Abaixe o halter devagar."
+  ],
+  "name": "Extensão de punho com halter",
+  "source_sha256": "d14880bf50d4746c2302d0977ef5cedcd492e3b67a68416795abc41489249da9"
+ },
+ "EX-wrist-flexor-stretch-0V8NJG2C45AX4YCM5Z1Z4YGVFA": {
+  "instructions": [
+   "Estenda um braço para frente com a palma da mão para cima.",
+   "Use a outra mão para levar os dedos para trás com suavidade.",
+   "Mantenha o cotovelo levemente dobrado e o ombro relaxado.",
+   "Solte e repita do outro lado."
+  ],
+  "name": "Alongamento dos flexores do punho",
+  "source_sha256": "2b0878412f0a011709614e00d03f7660813fbeabe02083aabf18197ced208a38"
+ }
+}

@@ -1052,10 +1052,8 @@ test('the fixed English notices of the library appear in Portuguese', async () =
 
 test('library search and the upper-limb shortcut filter on the server', async () => {
   await openSettings('Biblioteca de referência');
-  await fill('Buscar exercícios (em inglês)', '  raise ');
-  await act(async () =>
-    field('Buscar exercícios (em inglês)').props.onSubmitEditing(),
-  );
+  await fill('Buscar exercícios', '  raise ');
+  await act(async () => field('Buscar exercícios').props.onSubmitEditing());
   expect(services.exerciseLibrary.search).toHaveBeenLastCalledWith({
     query: 'raise',
     body_part: undefined,
@@ -1427,6 +1425,42 @@ test('adding to the catalog sends the pt-BR text only with both fields', async (
   );
 });
 
+test('a translated library item shows only Portuguese and adds without a form', async () => {
+  services.exerciseLibrary.search.mockResolvedValue({
+    ...libraryPage,
+    items: libraryPage.items.map(item => ({
+      ...item,
+      name_pt_br: 'Item traduzido de teste',
+    })),
+  });
+  services.exerciseLibrary.get.mockResolvedValue({
+    ...libraryDetail,
+    name_pt_br: 'Item traduzido de teste',
+    instructions_pt_br: [
+      { step_number: 2, description: 'Segundo passo traduzido.' },
+      { step_number: 1, description: 'Primeiro passo traduzido.' },
+    ],
+  });
+  await openSettings('Biblioteca de referência');
+  expect(hasText('Reference Item Test')).toBe(false);
+  await press('Item traduzido de teste');
+  const steps = texts();
+  expect(steps.indexOf('Primeiro passo traduzido.')).toBeLessThan(
+    steps.indexOf('Segundo passo traduzido.'),
+  );
+  expect(hasText('First step text.')).toBe(false);
+  expect(hasText('Texto de referência')).toBe(false);
+  expect(hasText('Nome original')).toBe(false);
+  expect(hasText('Texto em português (opcional)')).toBe(false);
+
+  await press('Lado direito');
+  await press('Adicionar ao catálogo');
+  expect(services.exerciseLibrary.addToCatalog).toHaveBeenCalledWith(
+    'EX-test-1',
+    ['right'],
+  );
+});
+
 test('the translation of a catalog exercise is edited with the original beside it', async () => {
   services.exerciseLibrary.get.mockResolvedValue({
     ...libraryDetail,
@@ -1725,11 +1759,11 @@ test('library search debounces typing, resets pagination and cancels drafts on c
       expect.objectContaining({ page: 2 }),
     );
     const before = services.exerciseLibrary.search.mock.calls.length;
-    await fill('Buscar exercícios (em inglês)', 'r');
+    await fill('Buscar exercícios', 'r');
     await act(async () => {
       jest.advanceTimersByTime(200);
     });
-    await fill('Buscar exercícios (em inglês)', 'raise');
+    await fill('Buscar exercícios', 'raise');
     await act(async () => {
       jest.advanceTimersByTime(349);
     });

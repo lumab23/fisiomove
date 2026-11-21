@@ -16,6 +16,11 @@ from app.modules.exercise_library.schemas import (
     OPENEXERCISEBASE_SOURCE,
     SOURCE_NAME,
 )
+from app.modules.exercise_library.translations import (
+    TRANSLATED_AT,
+    TRANSLATOR_NAME,
+    library_translation,
+)
 
 # Server-relative path of a stored image; assumes the default `API_PREFIX`.
 IMAGE_PATH = "/api/v1/exercises/{exercise_id}/images/{position}"
@@ -93,6 +98,8 @@ class ExerciseLocalizationResponse(BaseModel):
     instructions: str
     translated_by_name: str
     translated_at: datetime
+    # False for the FisioMove team translation of the library (DEC-011).
+    reviewed_by_physiotherapist: bool = True
 
 
 def _utc(value: datetime) -> datetime:
@@ -122,12 +129,17 @@ def exercise_source(
         )
     else:
         # CC BY-NC requires indicating changes: the translation is one.
+        review = (
+            ""
+            if localization.reviewed_by_physiotherapist
+            else " (not reviewed by a physiotherapist)"
+        )
         attribution = (
             f"Adapted from {name}, licensed under {license_name}. Name and "
             "instructions translated into Portuguese by "
             f"{localization.translated_by_name} on "
-            f"{localization.translated_at.date().isoformat()}; the original "
-            "English text is preserved."
+            f"{localization.translated_at.date().isoformat()}{review}; the "
+            "original English text is preserved."
         )
     return ExerciseSourceResponse(
         source=name,
@@ -143,12 +155,16 @@ TRANSLATOR_FALLBACK_NAME = "fisioterapeuta do FisioMove"
 
 
 def exercise_localization(value: Any) -> ExerciseLocalizationResponse | None:
-    """Build the pt-BR block from an `Exercise` row (all columns or none)."""
+    """Build the pt-BR block from an `Exercise` row (all columns or none).
+
+    Without a physiotherapist's translation, a library exercise whose text is
+    still the translated one gets the FisioMove team translation (DEC-011).
+    """
     name = getattr(value, "name_pt_br", None)
     instructions = getattr(value, "instructions_pt_br", None)
     translated_at = getattr(value, "translated_at", None)
     if name is None or instructions is None or translated_at is None:
-        return None
+        return _library_localization(value)
     # Patients see this text in workout snapshots, so the account email is never
     # used (DEC-005); without a profile name, a neutral role label is shown.
     profile = getattr(value, "translator_profile", None)
@@ -161,6 +177,28 @@ def exercise_localization(value: Any) -> ExerciseLocalizationResponse | None:
         instructions=instructions,
         translated_by_name=translated_by_name,
         translated_at=_utc(translated_at),
+    )
+
+
+def _library_localization(value: Any) -> ExerciseLocalizationResponse | None:
+    if getattr(value, "source", None) != OPENEXERCISEBASE_SOURCE:
+        return None
+    translation = library_translation(getattr(value, "source_external_id", None))
+    original_name = getattr(value, "name", None)
+    original_steps = getattr(value, "instructions", None)
+    if (
+        translation is None
+        or original_name is None
+        or original_steps is None
+        or not translation.matches(original_name, original_steps)
+    ):
+        return None
+    return ExerciseLocalizationResponse(
+        name=translation.name,
+        instructions=format_steps(list(translation.instructions)),
+        translated_by_name=TRANSLATOR_NAME,
+        translated_at=TRANSLATED_AT,
+        reviewed_by_physiotherapist=False,
     )
 
 

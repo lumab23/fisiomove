@@ -11,8 +11,10 @@ SOURCE_NAME = (
 LICENSE_NAME = "CC BY-NC 4.0"
 LICENSE_URL = "https://creativecommons.org/licenses/by-nc/4.0/"
 CHANGES_NOTICE = (
-    "Only selected descriptive fields are shown; text is kept in the original "
-    "language without edits. Performance metrics and variations are omitted."
+    "Only selected descriptive fields are shown. Names and instructions are "
+    "translated into Portuguese by the FisioMove team (not reviewed by a "
+    "physiotherapist); the original English text is preserved. Performance "
+    "metrics and variations are omitted."
 )
 USAGE_NOTICE = (
     "External reference material. A physiotherapist may add it to the FisioMove "
@@ -32,6 +34,8 @@ class LibraryAttribution(BaseModel):
 class LibraryExerciseSummaryResponse(BaseModel):
     external_id: str
     name: str
+    # Portuguese name from the FisioMove translation; `null` when there is none.
+    name_pt_br: str | None = None
     categories: list[str]
     body_parts: list[str]
     equipment: list[str]
@@ -65,11 +69,15 @@ class CatalogExerciseStatus(BaseModel):
 class LibraryExerciseDetailResponse(BaseModel):
     external_id: str
     name: str
+    name_pt_br: str | None = None
     categories: list[str]
     body_parts: list[str]
     equipment: list[str]
     instructions: list[LibraryInstructionStepResponse]
     instructions_language: str = "en"
+    # Same numbering as `instructions`; `null` without a translation that
+    # matches the current source text.
+    instructions_pt_br: list[LibraryInstructionStepResponse] | None = None
     image_urls: list[str]
     review_status: str | None
     created_by: str | None
