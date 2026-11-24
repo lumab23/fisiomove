@@ -4,13 +4,7 @@ import {
   lastNativeAlert,
 } from '../test-utils/nativeAlerts';
 import React from 'react';
-import {
-  AccessibilityInfo,
-  Image,
-  Linking,
-  ScrollView,
-  Text,
-} from 'react-native';
+import { AccessibilityInfo, Image, ScrollView, Text } from 'react-native';
 import ReactTestRenderer, { act } from 'react-test-renderer';
 import { ApiError } from '../src/api/errors';
 import { appDependencies } from '../src/app/dependencies';
@@ -571,8 +565,7 @@ test('workout values start empty and a single allowed side needs no choice', asy
   expect(hasText('Rascunho salvo')).toBe(true);
 });
 
-const countingLabel =
-  'Contagem pela câmera (só para flexão de cotovelo de um lado)';
+const countingLabel = 'Contagem pela câmera';
 const countingNotice =
   'Não validada clinicamente; os valores são de demonstração acadêmica.';
 const countingOn = 'Contagem pela câmera: ligada.';
@@ -625,7 +618,7 @@ test('the editor offers camera counting per one-sided item, off by default', asy
     disabled: false,
   });
   expect(hasText(countingOn)).toBe(true);
-  expect(hasText(countingNotice)).toBe(true);
+  expect(hasText(countingNotice)).toBe(false);
   expect(hasText(countingRepublish)).toBe(true);
 
   await fill('Séries', '3');
@@ -681,7 +674,7 @@ test('editing keeps an existing counting rule and the review shows its state', a
   await openPatient();
   await press('Treino · Rascunho');
   expect(hasText(countingOn)).toBe(true);
-  expect(hasText(countingNotice)).toBe(true);
+  expect(hasText(countingNotice)).toBe(false);
   // A draft with the rule has not reached the patient yet.
   expect(hasText(unpublishedCounting)).toBe(true);
   await press('Editar treino');
@@ -1007,13 +1000,10 @@ test('the reference library lists items with attribution', async () => {
   expect(hasText(usageNotice)).toBe(false);
   expect(hasText('Reference Item Test')).toBe(true);
   expect(hasText('Ombros, full body')).toBe(true);
-  expect(hasText('Fonte: Fonte de teste')).toBe(true);
-  expect(hasText('Licença: CC BY-NC 4.0')).toBe(true);
-  expect(hasText(attribution.changes)).toBe(true);
-  const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
-  await press('Abrir a licença CC BY-NC 4.0');
-  expect(open).toHaveBeenCalledWith(attribution.license_url);
-  open.mockRestore();
+  // Source and license are not shown in the app (2026-11-22).
+  expect(hasText('Fonte: Fonte de teste')).toBe(false);
+  expect(hasText('Licença: CC BY-NC 4.0')).toBe(false);
+  expect(hasText(attribution.changes)).toBe(false);
 });
 
 test('the fixed English notices of the library appear in Portuguese', async () => {
@@ -1039,12 +1029,12 @@ test('the fixed English notices of the library appear in Portuguese', async () =
   });
   await openSettings('Biblioteca de referência');
   expect(hasText('Material de referência externo.')).toBe(false);
-  expect(hasText('Mostramos só alguns campos descritivos')).toBe(true);
+  expect(hasText('Mostramos só alguns campos descritivos')).toBe(false);
   expect(hasText('External reference material')).toBe(false);
   expect(hasText('Only selected descriptive fields')).toBe(false);
   await press('Reference Item Test');
   expect(hasText('Material de referência externo.')).toBe(false);
-  expect(hasText('Mostramos só alguns campos descritivos')).toBe(true);
+  expect(hasText('Mostramos só alguns campos descritivos')).toBe(false);
   expect(hasText('External reference material')).toBe(false);
   expect(hasText('Only selected descriptive fields')).toBe(false);
   expect(hasText('texto em inglês')).toBe(false);
@@ -1126,10 +1116,10 @@ test('library details show original steps, AI origin and no prescription values'
     false,
   );
   expect(hasText(usageNotice)).toBe(false);
-  expect(hasText('Texto de referência')).toBe(true);
-  expect(hasText('Conteúdo gerado por IA')).toBe(true);
+  expect(hasText('Texto de referência')).toBe(false);
+  expect(hasText('Conteúdo gerado por IA')).toBe(false);
   expect(hasText('Situação de revisão na fonte: accepted_with_edits')).toBe(
-    true,
+    false,
   );
   const steps = texts();
   expect(steps.indexOf('First step text.')).toBeLessThan(
@@ -1142,7 +1132,7 @@ test('library details show original steps, AI origin and no prescription values'
         node.props.children === 'First step text.',
     ).length,
   ).toBeGreaterThan(0);
-  expect(hasText('Fonte: Fonte de teste')).toBe(true);
+  expect(hasText('Fonte: Fonte de teste')).toBe(false);
   for (const label of [
     'Adicionar e usar neste treino',
     'Salvar rascunho',
@@ -1170,7 +1160,7 @@ test('library details from a professional author do not claim AI', async () => {
   await openSettings('Biblioteca de referência');
   await press('Reference Item Test');
   expect(hasText('Conteúdo gerado por IA')).toBe(false);
-  expect(hasText('Autoria informada pela fonte: professional')).toBe(true);
+  expect(hasText('Autoria informada pela fonte: professional')).toBe(false);
 });
 
 test('settings is the third tab with profile, library and sign out', async () => {
@@ -1230,7 +1220,7 @@ test('adding to the catalog requires an explicit side choice', async () => {
   );
   expect(hasText('Adicionado ao catálogo por você')).toBe(true);
   expect(pressables('Adicionar ao catálogo')).toHaveLength(0);
-  expect(hasText('Fonte: Fonte de teste')).toBe(true);
+  expect(hasText('Fonte: Fonte de teste')).toBe(false);
 });
 
 test.each([
@@ -1248,7 +1238,7 @@ test.each([
   await press('Reference Item Test');
   expect(hasText(seal)).toBe(true);
   expect(pressables('Adicionar ao catálogo')).toHaveLength(0);
-  expect(hasText('Fonte: Fonte de teste')).toBe(true);
+  expect(hasText('Fonte: Fonte de teste')).toBe(false);
 });
 
 test.each([
@@ -1537,9 +1527,7 @@ test('the editor card shows the pt-BR name and the pencil opens the name page', 
   services.exercises.list.mockResolvedValue(pageOf([translatedExercise]));
   await openPatient();
   await press('Criar treino');
-  await selectExercise(
-    'Item de referência de teste (original: Reference Item Test)',
-  );
+  await selectExercise('Item de referência de teste');
   // Only the name and the prescription fields: no steps, images or source.
   expect(hasText('Item de referência de teste')).toBe(true);
   expect(pressables('Ver orientações do exercício')).toHaveLength(0);
@@ -1593,7 +1581,7 @@ test('the review shows the snapshot pt-BR name, the original and the image', asy
   await openPatient();
   await press('Treino · Rascunho');
   expect(hasText('Item de referência de teste')).toBe(true);
-  expect(hasText('Nome da biblioteca: Reference Item Test')).toBe(true);
+  expect(hasText('Nome da biblioteca: Reference Item Test')).toBe(false);
   expect(
     app.root.findAllByType(Image).map(node => node.props.accessibilityLabel),
   ).toEqual(['Imagem 1 de 1 do exercício Item de referência de teste']);

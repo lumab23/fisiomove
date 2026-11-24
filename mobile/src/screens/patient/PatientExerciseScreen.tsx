@@ -56,12 +56,7 @@ import {
   typography,
 } from '../../theme/theme';
 import { Button, EmptyState } from '../../ui';
-import {
-  exerciseSourceText,
-  exerciseText,
-  sideLabels,
-  textLanguage,
-} from './workoutText';
+import { exerciseText, sideLabels, textLanguage } from './workoutText';
 
 /** Screen refresh while active or resting; not a clinical value. */
 const CLOCK_REFRESH_MS = 1000;
@@ -176,13 +171,23 @@ function Execution({ session }: { session: ActiveSession }) {
   const automaticCount =
     movementEngine !== null && progress?.manual_counting === false;
   const [framing, setFraming] = useState<FramingFeedback | null>(null);
-  const count = progress?.repetitions_in_current_set ?? 0;
   const goal = progress?.repetitions ?? item.repetitions;
   const sets = progress?.sets ?? item.sets;
-  const setNumber = Math.min((progress?.completed_sets ?? 0) + 1, sets);
+  const completedSets = progress?.completed_sets ?? 0;
+  // The session zeroes the counter when a set closes; until the next set
+  // starts, the screen keeps showing the set that was just finished.
+  const showingClosedSet =
+    completedSets > 0 &&
+    (snapshot.status === 'resting' ||
+      snapshot.status === 'completed' ||
+      (snapshot.status === 'paused' && snapshot.rest_remaining_ms > 0));
+  const count = showingClosedSet
+    ? goal
+    : (progress?.repetitions_in_current_set ?? 0);
+  const setNumber = showingClosedSet
+    ? completedSets
+    : Math.min(completedSets + 1, sets);
   const text = exerciseText(item);
-  // CC BY-NC 4.0 requires the attribution wherever library content is shown.
-  const source = exerciseSourceText(item);
 
   // Repetition, set and next item feedback (Q-P2). The session decides what
   // counts; nothing is told while paused (RN20) and nothing describes the
@@ -295,11 +300,6 @@ function Execution({ session }: { session: ActiveSession }) {
               {text.name}
             </Text>
             <Text style={exercise.subtitle}>{sideLabels[item.side]}</Text>
-            {automaticCount ? (
-              <Text style={exercise.demoNotice}>
-                Contagem demonstrativa · não validada clinicamente
-              </Text>
-            ) : null}
           </View>
           <View style={exercise.controls}>
             {paused ? (
@@ -370,11 +370,6 @@ function Execution({ session }: { session: ActiveSession }) {
             accessibilityLabel={`Orientação do profissional: ${item.professional_guidance}`}
           >
             {item.professional_guidance}
-          </Text>
-        ) : null}
-        {source ? (
-          <Text style={exercise.source} numberOfLines={1}>
-            {source}
           </Text>
         ) : null}
         {snapshot.status === 'active' && !automaticCount ? (

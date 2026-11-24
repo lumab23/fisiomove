@@ -94,10 +94,7 @@ type ItemDraft = {
 /** The only counting rule the app runs; not clinically validated (DEC-013). */
 const demoCountingRule: CountingRule = 'demo-elbow-flexion:v1';
 
-const automaticCountingLabel =
-  'Contagem pela câmera (só para flexão de cotovelo de um lado)';
-const automaticCountingNotice =
-  'Não validada clinicamente; os valores são de demonstração acadêmica.';
+const automaticCountingLabel = 'Contagem pela câmera';
 /** Per-item state, in the editor and in the review (plan of 2026-11-15, c1). */
 function countingStateText(on: boolean) {
   return `Contagem pela câmera: ${on ? 'ligada' : 'desligada'}.`;
@@ -667,12 +664,7 @@ function ItemEditor({
           <Text style={editorStyles.caption}>
             {countingStateText(counting)}
           </Text>
-          {counting ? (
-            <>
-              <Badge label={automaticCountingNotice} tone="warning" />
-              <Body>{republishNotice}</Body>
-            </>
-          ) : null}
+          {counting ? <Body>{republishNotice}</Body> : null}
         </CheckboxField>
       ) : null}
       <View style={editorStyles.seriesRow}>
@@ -922,13 +914,8 @@ export function WorkoutReviewScreen() {
  * when translated, its library reference, image and prescribed values.
  */
 function ReviewItem({ item }: { item: WorkoutItem }) {
-  const localized = exerciseLocalization(item.exercise_snapshot);
-  const originalName = item.exercise_snapshot.name;
   return (
     <Card white title={exerciseName(item)}>
-      {localized && typeof originalName === 'string' ? (
-        <Body>{`Nome da biblioteca: ${originalName}`}</Body>
-      ) : null}
       <ExerciseImageGallery
         limit={1}
         images={exerciseImages(item.exercise_snapshot)}
@@ -938,9 +925,6 @@ function ReviewItem({ item }: { item: WorkoutItem }) {
       <Body>{prescriptionText(item, prescribedSideLabels)}</Body>
       <Body>{restText(item)}</Body>
       <Body>{countingStateText(Boolean(item.counting_rule))}</Body>
-      {item.counting_rule ? (
-        <Badge label={automaticCountingNotice} tone="warning" />
-      ) : null}
       {item.professional_guidance ? (
         <Body>{item.professional_guidance}</Body>
       ) : null}

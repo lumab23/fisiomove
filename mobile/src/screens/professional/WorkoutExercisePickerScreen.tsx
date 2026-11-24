@@ -76,19 +76,13 @@ export function WorkoutExercisePickerScreen() {
             <ListGroup>
               {found.map((exercise: Exercise) => {
                 const translation = exerciseLocalization(exercise);
-                const label = translation
-                  ? `${translation.name} (original: ${exercise.name})`
-                  : exercise.name;
+                const label = translation ? translation.name : exercise.name;
                 return (
                   <ListRow
                     key={exercise.id}
                     icon="activity"
                     title={label}
-                    description={
-                      exercise.source
-                        ? 'Exercício do catálogo · Fonte externa'
-                        : 'Exercício do catálogo'
-                    }
+                    description="Exercício do catálogo"
                     accessibilityHint="Adiciona este exercício ao treino para configurar a prescrição."
                     onPress={() =>
                       navigation.popTo(

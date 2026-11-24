@@ -13,7 +13,7 @@ import type {
   MovementUpdate,
 } from '../../features/exercise-engine/types';
 import { Screen } from '../../components/Screen';
-import { Badge, Body, Button, Card } from '../../ui';
+import { Body, Button, Card } from '../../ui';
 import { colors, fonts, spacing, typography } from '../../theme/theme';
 
 type Side = 'left' | 'right';
@@ -67,7 +67,6 @@ export function DemoAutoCountScreen() {
 
   return (
     <Screen back="Voltar" title="Contagem automática">
-      <Badge label="Demonstração · não validada clinicamente" tone="warning" />
       <Card white title="Flexão e extensão do cotovelo">
         <Body>
           Demonstração local da contagem pela câmera. Nada é salvo nem enviado.

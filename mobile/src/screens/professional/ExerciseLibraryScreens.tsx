@@ -10,7 +10,6 @@ import {
   Image,
   AccessibilityInfo,
   findNodeHandle,
-  Linking,
   Keyboard,
   Pressable,
   StyleSheet,
@@ -30,7 +29,6 @@ import { useScreenMessage } from '../../components/ScreenMessage';
 import { appDependencies } from '../../app/dependencies';
 import type {
   CatalogExerciseStatus,
-  LibraryAttribution,
   LibraryExerciseSummary,
   Side,
 } from '../../contracts/domain';
@@ -53,7 +51,6 @@ import {
   typography,
 } from '../../theme/theme';
 import {
-  Badge,
   Body,
   Button,
   Card,
@@ -140,17 +137,6 @@ export function bodyPartLabel(value: string) {
   return bodyPartLabels[key] ?? value.replace(/_/g, ' ');
 }
 
-/** True when the provider's `created_by` says the content came from AI. */
-export function isAiGenerated(createdBy: string | null) {
-  if (!createdBy) {
-    return false;
-  }
-  const words = createdBy.toLowerCase().replace(/[_-]+/g, ' ');
-  return /\b(ai|a\.i\.|ia|artificial intelligence|llm|gpt|generated)\b/.test(
-    words,
-  );
-}
-
 const unavailableCode = 'external_library_unavailable';
 const pageSize = 20;
 
@@ -226,45 +212,6 @@ function OriginalText({
  * (`USAGE_NOTICE`/`CHANGES_NOTICE`, DEC-014). Another text from the API is
  * shown as received, marked as English.
  */
-const libraryNotices: Record<string, string> = {
-  'External reference material. A physiotherapist may add it to the FisioMove catalog for academic use; prescription values are always set by the physiotherapist.':
-    'Material de referência externo. O fisioterapeuta pode adicioná-lo ao catálogo do FisioMove para uso acadêmico; os valores da prescrição são sempre definidos pelo fisioterapeuta.',
-  'Only selected descriptive fields are shown; text is kept in the original language without edits. Performance metrics and variations are omitted.':
-    'Mostramos só alguns campos descritivos; o texto fica no idioma original, sem edições. Métricas de desempenho e variações foram omitidas.',
-};
-
-function LibraryNotice({ children }: { children: string }) {
-  const translated = libraryNotices[children.trim()];
-  return translated ? (
-    <Body>{translated}</Body>
-  ) : (
-    <OriginalText>{children}</OriginalText>
-  );
-}
-
-function openUrl(url: string) {
-  Linking.openURL(url).catch(() => undefined);
-}
-
-function AttributionCard({ attribution }: { attribution: LibraryAttribution }) {
-  return (
-    <Card white title="Fonte e licença">
-      <Body>{`Fonte: ${attribution.source}`}</Body>
-      <Body>{`Licença: ${attribution.license}`}</Body>
-      <Link
-        label={`Abrir a licença ${attribution.license}`}
-        onPress={() => openUrl(attribution.license_url)}
-      />
-      <Link
-        label="Abrir a fonte dos dados"
-        onPress={() => openUrl(attribution.source_url)}
-      />
-      <Body>Alterações feitas pelo FisioMove:</Body>
-      <LibraryNotice>{attribution.changes}</LibraryNotice>
-    </Card>
-  );
-}
-
 function BodyPartFilter({
   value,
   onChange,
@@ -508,7 +455,6 @@ export function ExerciseLibraryScreen() {
                 ) : null}
               </View>
             ) : null}
-            <AttributionCard attribution={data.attribution} />
           </>
         )}
       </LibraryView>
@@ -534,17 +480,6 @@ export function ExerciseLibraryDetailScreen() {
             <>
               <Title>{name}</Title>
               <CatalogSeal status={data.catalog_exercise} />
-              {isAiGenerated(data.created_by) ? (
-                <Card white title="Conteúdo gerado por IA">
-                  <Body>
-                    Segundo a fonte, este conteúdo foi criado com inteligência
-                    artificial.
-                  </Body>
-                  {data.review_status ? (
-                    <Body>{`Situação de revisão na fonte: ${data.review_status}`}</Body>
-                  ) : null}
-                </Card>
-              ) : null}
               {data.image_urls.map((url, index) => (
                 <Image
                   key={url}
@@ -555,22 +490,15 @@ export function ExerciseLibraryDetailScreen() {
                   style={s.image}
                 />
               ))}
-              <Card white title="Informações da fonte">
+              <Card white title="Informações">
                 <Body>
                   {`Partes do corpo: ${data.body_parts.map(bodyPartLabel).join(', ') || 'não informadas'}`}
                 </Body>
                 <Body>
                   {`Equipamento: ${data.equipment.join(', ') || 'não informado'}`}
                 </Body>
-                {data.created_by && !isAiGenerated(data.created_by) ? (
-                  <Body>{`Autoria informada pela fonte: ${data.created_by}`}</Body>
-                ) : null}
-                {data.review_status && !isAiGenerated(data.created_by) ? (
-                  <Body>{`Situação de revisão na fonte: ${data.review_status}`}</Body>
-                ) : null}
               </Card>
               <SectionTitle>Passos</SectionTitle>
-              {translated ? null : <Badge label="Texto de referência" />}
               {steps.length ? (
                 [...steps]
                   .sort((a, b) => a.step_number - b.step_number)
@@ -589,7 +517,7 @@ export function ExerciseLibraryDetailScreen() {
                     </View>
                   ))
               ) : (
-                <Body>A fonte não informou passos para este exercício.</Body>
+                <Body>Este exercício não tem passos cadastrados.</Body>
               )}
               <CatalogAction
                 externalId={data.external_id}
@@ -599,7 +527,6 @@ export function ExerciseLibraryDetailScreen() {
                 pickFor={pickFor}
                 onAdded={exercise.reload}
               />
-              <AttributionCard attribution={data.attribution} />
             </>
           );
         }}

@@ -362,9 +362,6 @@ function Framing({
             ? 'Veja se os dois braços aparecem inteiros na imagem.'
             : 'Veja se o braço aparece inteiro na imagem.'}
         </Body>
-        <Text style={styles.demo}>
-          Os pontos são estimativas; não validam o movimento.
-        </Text>
       </Card>
     </Screen>
   );

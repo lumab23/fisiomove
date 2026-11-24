@@ -92,8 +92,6 @@ function MovementGuidance({ session }: { session: ActiveSession }) {
   const item = currentWorkoutItem(session);
   const content = exerciseText(item);
   const language = textLanguage(content.original);
-  // CC BY-NC 4.0 requires the attribution wherever library content is shown.
-  const source = exerciseSourceText(item);
   const guidance = [item.professional_guidance, session.workout.instructions]
     .map(text => text?.trim())
     .filter((text): text is string => Boolean(text));
@@ -138,7 +136,6 @@ function MovementGuidance({ session }: { session: ActiveSession }) {
       ) : (
         <Body>Este exercício não tem passos escritos.</Body>
       )}
-      {source ? <Text style={styles.demo}>{source}</Text> : null}
     </Screen>
   );
 }
@@ -323,7 +320,7 @@ function SessionSummary({ session }: { session: ActiveSession | null }) {
       <Text style={styles.demo}>
         {byTouchOnly
           ? 'As repetições foram contadas pelos seus toques.'
-          : 'A contagem pela câmera é uma demonstração, não validada clinicamente.'}
+          : 'As repetições foram contadas pela câmera.'}
       </Text>
     </Card>
   );

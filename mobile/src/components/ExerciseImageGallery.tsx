@@ -22,7 +22,7 @@ export function ExerciseImageGallery({
   exerciseName,
   limit,
   inverse = false,
-  showAttribution = true,
+  showAttribution = false,
 }: {
   images: ExerciseImage[];
   exerciseName: string;

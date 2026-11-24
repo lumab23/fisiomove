@@ -280,7 +280,7 @@ describe('ExerciseImageGallery', () => {
       uri: 'http://api.test/api/v1/exercises/e-1/images/1',
       headers: { Authorization: 'Bearer old' },
     });
-    expect(texts()).toContain(imageAttribution);
+    expect(texts()).not.toContain(imageAttribution);
   });
 
   test('a limit shows the first image and keeps the total in the alt text', async () => {
@@ -305,7 +305,7 @@ describe('ExerciseImageGallery', () => {
     expect(texts()).toContain(
       'Não foi possível carregar a imagem 1 de 2 do exercício Nome de teste.',
     );
-    expect(texts()).toContain(imageAttribution);
+    expect(texts()).not.toContain(imageAttribution);
   });
 
   test('a failed renewal shows the text instead of the image', async () => {

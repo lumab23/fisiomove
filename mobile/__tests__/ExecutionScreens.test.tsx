@@ -541,7 +541,7 @@ test('execution shows the item, the guidance and the source as published', async
   expect(hasText('Seu braço esquerdo')).toBe(true);
   expect(hasText('Série 1 de 2')).toBe(true);
   expect(hasText('Mantenha as costas apoiadas.')).toBe(true);
-  expect(hasText('Fonte: OpenExerciseBase (CC BY-NC 4.0)')).toBe(true);
+  expect(hasText('Fonte: OpenExerciseBase (CC BY-NC 4.0)')).toBe(false);
   expect(
     app.root.findAll(
       node =>
@@ -641,7 +641,7 @@ test('"Como fazer" pauses and shows only the snapshot and professional texts', a
   ).toBe(true);
   expect(hasText('Mantenha as costas apoiadas.')).toBe(true);
   expect(hasText('Faça devagar.')).toBe(true);
-  expect(hasText('Fonte: OpenExerciseBase (CC BY-NC 4.0)')).toBe(true);
+  expect(hasText('Fonte: OpenExerciseBase (CC BY-NC 4.0)')).toBe(false);
   // No corrective text invented by the app (RN18).
   expect(hasText('Volte à posição inicial.')).toBe(false);
   expect(hasText('limite orientado')).toBe(false);
@@ -703,12 +703,12 @@ test('"Como fazer" shows the pt-BR text, all API images and the changed attribut
     hasText(
       'Imagem: OpenExerciseBase (CC BY-NC 4.0); parte do material da fonte pode ter sido gerada por IA',
     ),
-  ).toBe(true);
+  ).toBe(false);
   expect(
     hasText(
       'Adaptado de OpenExerciseBase (CC BY-NC 4.0). Nome e passos traduzidos para o português por Dra. Teste em 06/11/2026',
     ),
-  ).toBe(true);
+  ).toBe(false);
 });
 
 test('"Como fazer" fetches the library image for an older snapshot', async () => {
@@ -893,7 +893,7 @@ async function startCounted() {
 test('a counted item counts synthetic cycles up to the prescription (RN19)', async () => {
   await startCounted();
   expect(hasText('Contagem demonstrativa · não validada clinicamente')).toBe(
-    true,
+    false,
   );
   expect(hasButton('Contar repetição')).toBe(false);
   expect(hasButton('Contar manualmente')).toBe(true);
@@ -1047,6 +1047,44 @@ test('each touch repetition vibrates and is announced; a closed set is shown', a
   expect(vibrate).toHaveBeenCalledTimes(6);
   // No movement description or correction in any message (RN18).
   expect(announced().join(' ')).not.toMatch(/braço|cotovelo|posição|corrij/i);
+});
+
+test('a closed set stays full on screen during rest and pause', async () => {
+  let clock = Date.now();
+  jest.spyOn(Date, 'now').mockImplementation(() => clock);
+  const showsRepetition = (label: string) =>
+    app.root.findAll(node => node.props.accessibilityLabel === label).length >
+    0;
+  await startGuided();
+  for (let i = 0; i < 3; i += 1) {
+    await press('Contar repetição');
+  }
+  expect(hasText('Descanso: 30 s')).toBe(true);
+  expect(showsRepetition('Repetição 3 de 3')).toBe(true);
+  expect(hasText('Série 1 de 2')).toBe(true);
+  await press('Pausar');
+  expect(showsRepetition('Repetição 3 de 3')).toBe(true);
+  expect(hasText('Série 1 de 2')).toBe(true);
+  await press('Continuar exercício');
+  clock += 31000;
+  await act(() => new Promise(resolve => setTimeout(resolve, 1100)));
+  expect(showsRepetition('Repetição 0 de 3')).toBe(true);
+  expect(hasText('Série 2 de 2')).toBe(true);
+});
+
+test('the last set stays full when the workout is completed', async () => {
+  await openFraming();
+  await press('Começar exercício');
+  for (let i = 0; i < 6; i += 1) {
+    await press('Contar repetição');
+  }
+  expect(hasText('Você fez tudo o que foi prescrito.')).toBe(true);
+  expect(
+    app.root.findAll(
+      node => node.props.accessibilityLabel === 'Repetição 3 de 3',
+    ).length,
+  ).toBeGreaterThan(0);
+  expect(hasText('Série 2 de 2')).toBe(true);
 });
 
 test('the next item is shown and announced after the rest', async () => {
