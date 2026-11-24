@@ -1238,6 +1238,8 @@ test.each([
   await press('Reference Item Test');
   expect(hasText(seal)).toBe(true);
   expect(pressables('Adicionar ao catálogo')).toHaveLength(0);
+  // The library detail has no translation button (2026-11-24).
+  expect(pressables('Tradução em português')).toHaveLength(0);
   expect(hasText('Fonte: Fonte de teste')).toBe(false);
 });
 
@@ -1452,19 +1454,13 @@ test('a translated library item shows only Portuguese and adds without a form', 
 });
 
 test('the translation of a catalog exercise is edited with the original beside it', async () => {
-  services.exerciseLibrary.get.mockResolvedValue({
-    ...libraryDetail,
-    catalog_exercise: {
-      exercise_id: 'exercise-imported',
-      approval_status: 'approved',
-      added_by_me: false,
-    },
-  });
+  services.exercises.list.mockResolvedValue(pageOf([importedExercise]));
+  services.exercises.get.mockResolvedValue(importedExercise);
   services.exercises.updateLocalization.mockResolvedValue(translatedExercise);
-  await openSettings('Biblioteca de referência');
-  await press('Reference Item Test');
-  await press('Tradução em português');
-  expect(selectedTab()).toBe('Configurações');
+  await openPatient();
+  await press('Criar treino');
+  await selectExercise('Reference Item Test');
+  await press('Editar nome do exercício');
   expect(services.exercises.get).toHaveBeenCalledWith('exercise-imported');
   expect(hasText('Texto de referência')).toBe(true);
   expect(hasText('1. First step text.')).toBe(true);
@@ -1493,21 +1489,15 @@ test('the translation of a catalog exercise is edited with the original beside i
 });
 
 test('an existing translation is prefilled and a 404 is explained', async () => {
+  services.exercises.list.mockResolvedValue(pageOf([translatedExercise]));
   services.exercises.get.mockResolvedValue(translatedExercise);
   services.exercises.updateLocalization.mockRejectedValueOnce(
     new ApiError('not_found', 'x', 404, 'exercise_not_found'),
   );
-  services.exerciseLibrary.get.mockResolvedValue({
-    ...libraryDetail,
-    catalog_exercise: {
-      exercise_id: 'exercise-imported',
-      approval_status: 'approved',
-      added_by_me: true,
-    },
-  });
-  await openSettings('Biblioteca de referência');
-  await press('Reference Item Test');
-  await press('Tradução em português');
+  await openPatient();
+  await press('Criar treino');
+  await selectExercise('Item de referência de teste');
+  await press('Editar nome do exercício');
   expect(field('Nome em português (opcional)').props.value).toBe(
     'Item de referência de teste',
   );

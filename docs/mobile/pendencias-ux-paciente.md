@@ -191,8 +191,9 @@ Atualizado em 09/11/2026 (DEC-013, plano de 2026-11-09, passos 10 e 11).
   fila, sem o campo, continuam válidos. O resumo da conclusão indica a origem
   quando algum item não foi só por toque. O histórico (`GET /me/sessions`) não
   traz itens e não mostra a origem.
-- **Tela de desenvolvimento.** `DemoAutoCountScreen` (`__DEV__`) usa o mesmo
-  gatilho; os textos de instrução de movimento foram neutralizados.
+- **Tela de desenvolvimento.** A `DemoAutoCountScreen` e o botão "Testar
+  contagem automática" foram removidos em 2026-11-24, depois que a contagem foi
+  testada no treino real; a contagem pela câmera fica só na execução do treino.
 
 Pendente: uma série contada pela câmera num treino real no iPhone (passo 14,
 KI-006) e o espelhamento do lado (passo 4, bloqueado por medição). As faixas de

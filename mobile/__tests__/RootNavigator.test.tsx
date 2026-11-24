@@ -104,7 +104,6 @@ test('each role reaches only its own routes', () => {
     'Calibration',
     'CameraPermission',
     'ConfirmExit',
-    'DemoAutoCount',
     'MovementGuidance',
     'PatientCompletion',
     'PatientExercise',

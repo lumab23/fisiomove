@@ -583,27 +583,12 @@ function CatalogAction({
   };
   if (status) {
     // Already in the catalog: sides and text were chosen on the first
-    // addition; the pt-BR text is edited on its own screen (DEC-011).
-    return status.approval_status === 'approved' ? (
-      <>
-        {pickFor ? (
-          <Button
-            label="Usar neste treino"
-            onPress={() => chooseForWorkout(status.exercise_id)}
-          />
-        ) : null}
-        <Button
-          secondary
-          label="Tradução em português"
-          accessibilityHint="Abre o nome e os passos em português deste exercício do catálogo."
-          onPress={() =>
-            navigation.navigate('CatalogExerciseTranslation', {
-              exerciseId: status.exercise_id,
-              origin: pickFor ? undefined : 'settings',
-            })
-          }
-        />
-      </>
+    // addition; the name is edited from the workout editor (DEC-011).
+    return status.approval_status === 'approved' && pickFor ? (
+      <Button
+        label="Usar neste treino"
+        onPress={() => chooseForWorkout(status.exercise_id)}
+      />
     ) : null;
   }
   const add = async () => {

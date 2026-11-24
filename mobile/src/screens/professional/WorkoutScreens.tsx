@@ -483,7 +483,7 @@ function WorkoutForm({
       {!drafts.length ? (
         <EmptyState
           title="Adicione os exercícios do treino"
-          message="Escolha no catálogo e configure a prescrição em cada card."
+          message="Escolha os exercícios e defina as séries, as repetições e o descanso de cada um."
         />
       ) : null}
       {workout?.status === 'published' || workout?.status === 'archived' ? (
